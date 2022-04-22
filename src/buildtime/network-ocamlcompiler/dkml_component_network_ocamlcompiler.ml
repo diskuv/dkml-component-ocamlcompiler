@@ -103,9 +103,6 @@ let execute_install_admin ctx =
 let execute_install_user ctx =
   match Context.Abi_v2.is_windows ctx.Context.host_abi_v2 with
   | true ->
-      (* TODO:
-         2. Modify setup-userprofile.ps1 to allow the deployment slot to
-             be at the arbitrary location %{prefix}%. *)
       let important_paths = get_important_paths ctx in
       let bytecode =
         ctx.Context.path_eval "%{_:share-generic}%/setup_userprofile.bc"
@@ -117,6 +114,10 @@ let execute_install_user ctx =
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%")
           % "--msys2-dir"
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%/tools/MSYS2")
+          % "--opam32-bindir"
+          % Fpath.to_string (ctx.Context.path_eval "%{dkml-component-staging-opam32:share-abi}%/bin")
+          % "--opam64-bindir"
+          % Fpath.to_string (ctx.Context.path_eval "%{dkml-component-staging-opam64:share-abi}%/bin")
           % "--abi"
           % Context.Abi_v2.to_canonical_string ctx.Context.host_abi_v2
           % "--dkml-dir"

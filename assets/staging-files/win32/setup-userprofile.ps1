@@ -112,6 +112,11 @@
 .Parameter MSYS2Dir
     When specified the specified MSYS2 installation directory will be used.
     Useful in CI situations.
+.Parameter OpamBinDir
+    When specified the specified Opam binaries directory will be used that
+    contains opam.exe, opam-installer.exe and opam-putenv.exe. The entire
+    OpamBinDir, including subdirectories, will be copied to the installation
+    so that any DLLs (if any) are available alongside opam.exe.
 .Parameter IncrementalDeployment
     Advanced.
 
@@ -164,6 +169,8 @@ param (
     $ParentProgressId = -1,
     [string]
     $MSYS2Dir,
+    [string]
+    $OpamBinDir,
     # We will use the same standard established by C:\Users\<user>\AppData\Local\Programs\Microsoft VS Code
     [string]
     $InstallationPrefix = "$env:LOCALAPPDATA\Programs\DiskuvOCaml",
@@ -1385,6 +1392,17 @@ try {
             (Test-Path -Path "$ProgramEssentialBinDir\opam-putenv.exe") -and `
             (Test-Path -Path "$ProgramEssentialBinDir\opam-installer.exe")) {
             # okay. already installed
+        } elseif ($null -ne $OpamBinDir -and "" -ne $OpamBinDir -and `
+            (Test-Path -Path "$OpamBinDir\opam.exe") -and `
+            (Test-Path -Path "$OpamBinDir\opam-putenv.exe") -and `
+            (Test-Path -Path "$OpamBinDir\opam-installer.exe")) {
+            # install them
+            $OpamBinMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$OpamBinDir"
+            Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
+                -Command (
+                    "install -d '$ProgramEssentialBinMSYS2AbsPath' && " +
+                    "rsync -a '$OpamBinMSYS2AbsPath'/bin/ '$ProgramEssentialBinMSYS2AbsPath'/"
+                )
         } elseif (!$global:SkipOpamImport -and (Import-DiskuvOCamlAsset `
                 -PackageName "opam-reproducible" `
                 -ZipFile "opam-$DkmlHostAbi.zip" `

@@ -7,6 +7,7 @@
  (libraries
   dkml-component-network-ocamlcompiler.common
   dkml-install.api
+  diskuvbox
   bos
   fpath
   base64
