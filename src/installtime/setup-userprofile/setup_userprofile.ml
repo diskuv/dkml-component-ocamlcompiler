@@ -6,13 +6,22 @@ open Dkml_install_api
    the 64-bit binaries) to a temporary directory. It would be nice if we could
    directly install into the installation prefix, but the legacy PowerShell scripts
    will delete the contents of the installation prefix. *)
-let setup_opam_res ~temp_dir ~opam32_bindir ~opam64_bindir =
+let setup_opam_res ~temp_dir ~opam32_bindir_opt ~opam64_bindir_opt =
   let open Diskuvbox in
   let dst = Fpath.(temp_dir / "opam") in
+  let copy_if_exists dir_opt =
+    match dir_opt with
+    | Some src -> (
+        match OS.Dir.exists src with
+        | Ok true -> copy_dir ~src ~dst ()
+        | Ok false -> Result.ok ()
+        | Error v -> Result.error (Fmt.str "%a" Rresult.R.pp_msg v))
+    | None -> Result.ok ()
+  in
   Rresult.R.error_to_msg ~pp_error:Fmt.string
     (let ( let* ) = Result.bind in
-     let* () = copy_dir ~src:opam32_bindir ~dst () in
-     let* () = copy_dir ~src:opam64_bindir ~dst () in
+     let* () = copy_if_exists opam32_bindir_opt in
+     let* () = copy_if_exists opam64_bindir_opt in
      Result.ok dst)
 
 (* Call the PowerShell (legacy!) setup-userprofile.ps1 script *)
@@ -36,24 +45,24 @@ let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
   Result.ok (log_spawn_and_raise cmd)
 
 let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
-    ~opam32_bindir ~opam64_bindir =
+    ~opam32_bindir_opt ~opam64_bindir_opt =
   (* Install opam *)
   let ( let* ) = Rresult.R.bind in
   let* prefix_dir = Fpath.of_string prefix_dir in
   let* temp_dir = Fpath.of_string temp_dir in
   let* dkml_dir = Fpath.of_string dkml_dir in
   let* msys2_dir = Fpath.of_string msys2_dir in
-  let* opam32_bindir = Fpath.of_string opam32_bindir in
-  let* opam64_bindir = Fpath.of_string opam64_bindir in
-  let* opam_dir = setup_opam_res ~temp_dir ~opam32_bindir ~opam64_bindir in
+  let* opam_dir =
+    setup_opam_res ~temp_dir ~opam32_bindir_opt ~opam64_bindir_opt
+  in
   setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
     ~msys2_dir ~opam_dir
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
-    msys2_dir opam32_bindir opam64_bindir =
+    msys2_dir opam32_bindir_opt opam64_bindir_opt =
   match
     setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
-      ~opam32_bindir ~opam64_bindir
+      ~opam32_bindir_opt ~opam64_bindir_opt
   with
   | Ok () -> ()
   | Error msg -> Logs.err (fun l -> l "%a" Rresult.R.pp_msg msg)
@@ -70,11 +79,15 @@ let prefix_dir_t =
 
 let msys2_dir_t = Arg.(required & opt (some dir) None & info [ "msys2-dir" ])
 
-let opam32_bindir_t =
-  Arg.(required & opt (some dir) None & info [ "opam32-bindir" ])
+let opam32_bindir_opt_t =
+  let v = Arg.(value & opt (some string) None & info [ "opam32-bindir" ]) in
+  let u = function None -> None | Some x -> Some (Fpath.v x) in
+  Term.(const u $ v)
 
-let opam64_bindir_t =
-  Arg.(required & opt (some dir) None & info [ "opam64-bindir" ])
+let opam64_bindir_opt_t =
+  let v = Arg.(value & opt (some string) None & info [ "opam64-bindir" ]) in
+  let u = function None -> None | Some x -> Some (Fpath.v x) in
+  Term.(const u $ v)
 
 let abi_t =
   let open Context.Abi_v2 in
@@ -97,7 +110,8 @@ let () =
   let t =
     Term.
       ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-        $ abi_t $ prefix_dir_t $ msys2_dir_t $ opam32_bindir_t $ opam64_bindir_t,
+        $ abi_t $ prefix_dir_t $ msys2_dir_t $ opam32_bindir_opt_t
+        $ opam64_bindir_opt_t,
         info "setup-userprofile.bc"
           ~doc:
             "Install Git for Windows and Opam, compiles OCaml and install \
