@@ -56,6 +56,21 @@ build: [
   #   <dkmldir>/vendor/dkml-compiler/
   ["install" "-d" "dkmldir/vendor/dkml-compiler/src"]
   ["tar" "xCfz" "dkmldir/vendor/dkml-compiler" "dl/dkml-compiler.tar.gz" "--strip-components=1"]
+
+  # Build component
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "--promote-install-files=false"
+    "@install"
+    "@runtest" {with-test}
+    "@doc" {with-doc}
+  ]
+  ["dune" "install" "-p" name "--create-install-files" name]
 ]
 install: [
   #   Run r-c-ocaml-1-setup.sh
@@ -102,21 +117,6 @@ install: [
   ["install" "-d" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/dkml-runtime-distribution"]
   ["tar" "xCfz" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/dkml-runtime-distribution"    "dl/dkml-runtime-distribution.tar.gz" "--strip-components=1"]
   ["tar" "xCfz" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/dkml-runtime-distribution" "dl/dkml-runtime-distribution.tar.gz" "--strip-components=1"]
-
-  # 4. Build install plugin
-  [
-    "dune"
-    "build"
-    "-p"
-    name
-    "-j"
-    jobs
-    "--promote-install-files=false"
-    "@install"
-    "@runtest" {with-test}
-    "@doc" {with-doc}
-  ]
-  ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/diskuv/dkml-component-ocamlcompiler.git"
 extra-source "dl/ocaml.tar.gz" {
