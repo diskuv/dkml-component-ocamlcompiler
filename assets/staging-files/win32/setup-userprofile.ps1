@@ -213,7 +213,7 @@ $PSDefaultParameterValues = @{'Out-File:Encoding' = 'utf8'} # for Tee-Object. ht
 
 $dsc = [System.IO.Path]::DirectorySeparatorChar
 $env:PSModulePath += "$([System.IO.Path]::PathSeparator)$HereDir${dsc}SingletonInstall"
-$env:PSModulePath += "$([System.IO.Path]::PathSeparator)$HereDir${dsc}dkmldir${dsc}vendor${dsc}dkml-runtime-distribution${dsc}src${dsc}windows"
+$env:PSModulePath += "$([System.IO.Path]::PathSeparator)$DkmlPath${dsc}vendor${dsc}dkml-runtime-distribution${dsc}src${dsc}windows"
 Import-Module Deployers
 Import-Module UnixInvokers
 Import-Module Machine
