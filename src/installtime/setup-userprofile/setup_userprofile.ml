@@ -43,6 +43,8 @@ let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
   let* temp_dir = Fpath.of_string temp_dir in
   let* dkml_dir = Fpath.of_string dkml_dir in
   let* msys2_dir = Fpath.of_string msys2_dir in
+  let* opam32_bindir = Fpath.of_string opam32_bindir in
+  let* opam64_bindir = Fpath.of_string opam64_bindir in
   let* opam_dir = setup_opam_res ~temp_dir ~opam32_bindir ~opam64_bindir in
   setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
     ~msys2_dir ~opam_dir
