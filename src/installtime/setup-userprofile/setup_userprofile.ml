@@ -34,9 +34,10 @@ let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
   let cmd =
     Cmd.(
       v (Fpath.to_string setup_bat)
-      % "-InstallationPrefix" % Fpath.to_string prefix_dir % "-MSYS2Dir"
-      % Fpath.to_string msys2_dir % "-OpamBinDir" % Fpath.to_string opam_dir
-      % "-DkmlPath" % normalized_dkml_path % "-DkmlHostAbi"
+      % "-AllowRunAsAdmin" % "-InstallationPrefix" % Fpath.to_string prefix_dir
+      % "-MSYS2Dir" % Fpath.to_string msys2_dir % "-OpamBinDir"
+      % Fpath.to_string opam_dir % "-DkmlPath" % normalized_dkml_path
+      % "-DkmlHostAbi"
       % Context.Abi_v2.to_canonical_string abi
       % "-TempParentPath" % Fpath.to_string temp_dir % "-SkipProgress")
   in
