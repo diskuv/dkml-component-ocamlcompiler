@@ -56,8 +56,9 @@ let do_needs_install_admin_on_windows ~ctx =
             "Detected that a compatible Visual Studio was already installed; \
              will not request administrator privileges");
       (* REMOVEME: testing *)
-      if OS.Env.opt_var "DKML_COMPONENT_OCAMLCOMPILER_ADMIN" ~absent:"" = "true" then true else
-      false
+      if OS.Env.opt_var "DKML_COMPONENT_OCAMLCOMPILER_ADMIN" ~absent:"" = "true"
+      then true
+      else false
   | Ok (`Exited ec) ->
       Logs.warn (fun l ->
           l
@@ -115,9 +116,13 @@ let execute_install_user ctx =
           % "--msys2-dir"
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%/tools/MSYS2")
           % "--opam32-bindir"
-          % Fpath.to_string (ctx.Context.path_eval "%{dkml-component-staging-opam32:share-abi}%/bin")
+          % Fpath.to_string
+              (ctx.Context.path_eval
+                 "%{dkml-component-staging-opam32:share-abi}%/bin")
           % "--opam64-bindir"
-          % Fpath.to_string (ctx.Context.path_eval "%{dkml-component-staging-opam64:share-abi}%/bin")
+          % Fpath.to_string
+              (ctx.Context.path_eval
+                 "%{dkml-component-staging-opam64:share-abi}%/bin")
           % "--abi"
           % Context.Abi_v2.to_canonical_string ctx.Context.host_abi_v2
           % "--dkml-dir"
@@ -136,7 +141,13 @@ let register () =
 
       let component_name = "network-ocamlcompiler"
 
-      let depends_on = [ "staging-ocamlrun"; "network-unixutils" ]
+      let depends_on =
+        [
+          "staging-ocamlrun";
+          "network-unixutils";
+          "staging-opam32";
+          "staging-opam64";
+        ]
 
       let needs_install_admin ~ctx =
         match Context.Abi_v2.is_windows ctx.Context.host_abi_v2 with
