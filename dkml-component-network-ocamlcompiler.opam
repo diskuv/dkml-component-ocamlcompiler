@@ -49,9 +49,9 @@ build: [
   ["install" "-d" "dkmldir"]
   ["sh" "-c" "printf 'dkml_root_version=%s\\n' \"$DKML_VER\" > dkmldir/.dkmlroot"]
 
-  #   <dkmldir>/vendor/dkml-runtime-common/
-  ["install" "-d" "dkmldir/vendor/dkml-runtime-common"]
-  ["tar" "xCfz" "dkmldir/vendor/dkml-runtime-common" "dl/dkml-runtime-common.tar.gz" "--strip-components=1"]
+  #   <dkmldir>/vendor/drc/
+  ["install" "-d" "dkmldir/vendor/drc"]
+  ["tar" "xCfz" "dkmldir/vendor/drc" "dl/dkml-runtime-common.tar.gz" "--strip-components=1"]
 
   #   <dkmldir>/vendor/dkml-compiler/
   ["install" "-d" "dkmldir/vendor/dkml-compiler/src"]
@@ -81,7 +81,7 @@ install: [
   [
     "sh" "-eufc"
     """
-    env TOPDIR=dkmldir/vendor/dkml-runtime-common/all/emptytop \
+    env TOPDIR=dkmldir/vendor/drc/all/emptytop \
       dkmldir/vendor/dkml-compiler/src/r-c-ocaml-1-setup.sh \
       -d dkmldir \
       -t '%{_:share}%/staging-files/generic' \
@@ -113,10 +113,10 @@ install: [
   ["cp" "-rp" "dkmldir" "%{_:share}%/staging-files/windows_x86"]
   ["cp" "-rp" "dkmldir" "%{_:share}%/staging-files/windows_x86_64"]
   #   Untar runtime-distribution
-  ["install" "-d" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/dkml-runtime-distribution"]
-  ["install" "-d" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/dkml-runtime-distribution"]
-  ["tar" "xCfz" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/dkml-runtime-distribution"    "dl/dkml-runtime-distribution.tar.gz" "--strip-components=1"]
-  ["tar" "xCfz" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/dkml-runtime-distribution" "dl/dkml-runtime-distribution.tar.gz" "--strip-components=1"]
+  ["install" "-d" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd"]
+  ["install" "-d" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd"]
+  ["tar" "xCfz" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd"    "dl/dkml-runtime-distribution.tar.gz" "--strip-components=1"]
+  ["tar" "xCfz" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd" "dl/dkml-runtime-distribution.tar.gz" "--strip-components=1"]
 ]
 dev-repo: "git+https://github.com/diskuv/dkml-component-ocamlcompiler.git"
 extra-source "dl/ocaml.tar.gz" {
@@ -129,22 +129,23 @@ extra-source "dl/flexdll.tar.gz" {
 }
 extra-source "dl/dkml-runtime-common.tar.gz" {
   # dkml-runtime-common can be less or equal to DKML_VER
-  src: "https://github.com/diskuv/dkml-runtime-common/archive/refs/tags/v0.4.0-prerel19_r4.tar.gz"
+  src: "https://github.com/diskuv/dkml-runtime-common/archive/refs/tags/v0.4.0-prerel19_r5.tar.gz"
   checksum: [
-    "sha256=07a3621663287d073a842c7e102e62495bda6177035084ee64193e15babab72f"
+    "sha256=576effbcc9fb4b16d886c7531ddd3b809e9a275d2cc54633c009da859cc6d24b"
   ]
 }
 extra-source "dl/dkml-runtime-distribution.tar.gz" {
   # dkml-runtime-distribution can be less or equal to DKML_VER
-  src: "https://github.com/diskuv/dkml-runtime-distribution/archive/refs/tags/v0.4.0-prerel19_r16.tar.gz"
+  src: "https://github.com/diskuv/dkml-runtime-distribution/archive/refs/tags/v0.4.0-prerel19_r17.tar.gz"
   checksum: [
-    "sha256=27e79f9a330c879bb6a117b5dfa1bff5b31038e4676cf040a51f46af96b3dc71"
+    "sha256=02f3893c4c9639e0b364f0aea9134c5a443eea360434bfaab890622773804f5b"
   ]
 }
 extra-source "dl/dkml-compiler.tar.gz" {
   # dkml-compiler can be less or equal to DKML_VER
-  src: "https://github.com/diskuv/dkml-compiler/archive/refs/tags/v4.12.1-prerel8.tar.gz"
+  src: "https://github.com/diskuv/dkml-compiler/archive/refs/tags/v4.12.1-prerel10.tar.gz"
   checksum: [
-    "sha256=0adf5824cfafeb3beb064750828fda23dd6452d7b379ee1a5668fc60cae772de"
+    "md5=f43157a664e6966bf3f3433b2d57fb68"
+    "sha256=f24c013a014dfa91c003ce0d6aeba5df464bc523b31ac4a6f34990768d74acad"
   ]
 }

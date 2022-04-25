@@ -79,7 +79,7 @@ if (!(Test-Path -Path $DkmlPath\.dkmlroot)) {
 
 $dsc = [System.IO.Path]::DirectorySeparatorChar
 $env:PSModulePath += "$([System.IO.Path]::PathSeparator)$HereDir${dsc}SingletonInstall"
-$env:PSModulePath += "$([System.IO.Path]::PathSeparator)$DkmlPath${dsc}vendor${dsc}dkml-runtime-distribution${dsc}src${dsc}windows"
+$env:PSModulePath += "$([System.IO.Path]::PathSeparator)$DkmlPath${dsc}vendor${dsc}drd${dsc}src${dsc}windows"
 Import-Module Deployers
 Import-Module Machine
 
