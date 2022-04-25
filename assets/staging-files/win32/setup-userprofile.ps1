@@ -34,7 +34,7 @@
     new systems can take hours to build this is an important benefit.
 
     One last complication. Opam global switches are subdirectories of the Opam root; we cannot change their location
-    use the swapping Blue Green deployment technique. So we _do not_ use an Opam global switch for `diskuv-host-tools`.
+    use the swapping Blue Green deployment technique. So we _do not_ use an Opam global switch for `dkml`.
     We use external (aka local) Opam switches instead.
 
     MSYS2
@@ -1455,14 +1455,14 @@ try {
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
-    # BEGIN opam switch create <host-tools>
+    # BEGIN opam switch create <dkml>
 
     if ($StopBeforeInstallSystemSwitch) {
         Write-Host "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
         exit 0
     }
 
-    $global:ProgressActivity = "Create host-tools Opam Switch"
+    $global:ProgressActivity = "Create dkml Opam Switch"
     Write-ProgressStep
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
@@ -1566,12 +1566,12 @@ try {
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
-    # BEGIN install host-tools and `with-dkml` to Programs
+    # BEGIN install dkml switch and `with-dkml` to Programs
 
-    $global:ProgressActivity = "Install host-tools binaries"
+    $global:ProgressActivity = "Install dkml binaries"
     Write-ProgressStep
 
-    $DiskuvHostToolsDir = "$ProgramPath\host-tools\_opam"
+    $DiskuvHostToolsDir = "$ProgramPath\dkml\_opam"
     $ProgramLibOcamlDir = "$ProgramPath\lib\ocaml"
     $ProgramStubsDir = "$ProgramPath\lib\ocaml\stublibs"
 
@@ -1605,7 +1605,7 @@ try {
     # Toplevel files. Opam sets OCAML_TOPLEVEL_PATH=lib/toplevel, but we should place them in lib/ocaml so we don't
     # have to define our own system OCAML_TOPLEVEL_PATH which would interfere with Opam. Besides, installing a toplevel
     # containing package like "ocamlfind" in a local switch can autopopulate lib/ocaml anyway if we are using the
-    # OCaml system compiler (host-tools switch, ocaml.exe binary). So place in lib/ocaml anyway.
+    # OCaml system compiler (dkml switch, ocaml.exe binary). So place in lib/ocaml anyway.
     if (!(Test-Path -Path $ProgramLibOcamlDir)) { New-Item -Path $ProgramLibOcamlDir -ItemType Directory | Out-Null }
     foreach ($toplevel in $FlavorToplevels) {
         if (!(Test-Path "$DiskuvHostToolsDir\lib\toplevel\$toplevel")) {
@@ -1623,7 +1623,7 @@ try {
             "install `"`$OPAMVARROOT\plugins\diskuvocaml\with-dkml\$dkml_root_version\with-dkml.exe`" '$ProgramGeneralBinDir\with-dkml.exe'")
 
 
-    # END opam install `diskuv-host-tools` to Programs
+    # END install dkml switch and `with-dkml` to Programs
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
