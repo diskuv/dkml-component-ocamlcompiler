@@ -170,26 +170,34 @@ function Stop-BlueGreenDeploy {
         $DeploymentId,
         [switch]$Success
     )
+    Write-Host "Stop-BlueGreenDeploy1"
     $state = Get-BlueGreenDeployState -ParentPath $ParentPath | ConvertFrom-Json
+    Write-Host "Stop-BlueGreenDeploy2"
     $matchSlotIdx = -1
+    Write-Host "Stop-BlueGreenDeploy3"
     if ($DeploymentId -eq $state[0].id) {
         $matchSlotIdx = 0
     }
+    Write-Host "Stop-BlueGreenDeploy4"
 
     # If and only if the caller says the deployment is success
     if ($Success) {
+        Write-Host "Stop-BlueGreenDeploy5"
         if ($matchSlotIdx -lt 0) {
             throw "The deployment $DeploymentId says it finished but was not present. Other than the chance that the deployer has a bug assigning deployment ids, it is very likely that the deployment was evicted by another deployment"
         }
         # Save success and leave
         $state[$matchSlotIdx].success = $true
+        Write-Host "Stop-BlueGreenDeploy6"
         Set-BlueGreenDeployState -ParentPath $ParentPath -DeployState $state
+        Write-Host "Stop-BlueGreenDeploy7"
         return
     }
 
     # Deployment was aborted by caller.
 
     # is it still taking a slot?
+    Write-Host "Stop-BlueGreenDeploy8"
     if ($matchSlotIdx -ge 0) {
         # recreate the directory with no content
         $DeployPath = Join-Path -Path $ParentPath -ChildPath $matchSlotIdx
@@ -197,11 +205,17 @@ function Stop-BlueGreenDeploy {
 
         # free the slot, but protect against race condition where an external
         # package manager takes over the slot
+        Write-Host "Stop-BlueGreenDeploy9"
         $state2 = Get-BlueGreenDeployState -ParentPath $ParentPath | ConvertFrom-Json
+        Write-Host "Stop-BlueGreenDeploy10"
         $reserved = $state2[$matchSlotIdx].reserved
+        Write-Host "Stop-BlueGreenDeploy11"
         $state[$matchSlotIdx] = $DeploySlotInitValue | ConvertTo-Json -Depth 5 | ConvertFrom-Json # clone
+        Write-Host "Stop-BlueGreenDeploy12"
         $state[$matchSlotIdx].reserved = $reserved # restore 'reserved'
+        Write-Host "Stop-BlueGreenDeploy13"
         Set-BlueGreenDeployState -ParentPath $ParentPath -DeployState $state
+        Write-Host "Stop-BlueGreenDeploy14"
     }
 }
 Export-ModuleMember -Function Stop-BlueGreenDeploy
