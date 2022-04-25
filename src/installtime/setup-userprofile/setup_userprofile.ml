@@ -49,22 +49,22 @@ let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
     ~opam32_bindir_opt ~opam64_bindir_opt =
   (* Install opam *)
   let ( let* ) = Rresult.R.bind in
-  let* msystem = OS.Env.(parse "MSYSTEM" (some string) ~absent:None) in
+  let* cygpath_opt = OS.Cmd.find_tool (Cmd.v "cygpath") in
   let* () =
-    match msystem with
-    | None | Some "" -> Ok ()
+    match cygpath_opt with
+    | None -> Ok ()
     | Some x ->
         Rresult.R.error_msgf
-          "Detected that the setup program has been called inside an MSYS2 \
-           environment. In particular, the environment variable MSYSTEM=%s. \
+          "Detected that the setup program has been called inside a Cygwin or \
+           MSYS2 environment. In particular, %a was available in the PATH. \
            Since the setup program uses its own MSYS2 environment, and since \
-           MSYS2 does not support one MSYS2 environment calling another MSYS2 \
-           environment, it is highly probable the installation will fail. \
-           Please rerun the setup program directly from a Command Prompt, \
-           PowerShell, the File Explorer or directly from the browser \
+           MSYS2 does not support one MSYS2 or Cygwin environment calling \
+           another MSYS2 environment, it is highly probable the installation \
+           will fail. Please rerun the setup program directly from a Command \
+           Prompt, PowerShell, the File Explorer or directly from the browser \
            Downloads if you downloaded it. Do not use Git Bash (part of Git \
            for Windows) or anything else that contains an MSYS2 environment."
-          x
+          Fpath.pp x
   in
   let* prefix_dir = Fpath.of_string prefix_dir in
   let* temp_dir = Fpath.of_string temp_dir in
