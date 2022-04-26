@@ -1401,7 +1401,7 @@ try {
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
                 -Command (
                     "install -d '$ProgramEssentialBinMSYS2AbsPath' && " +
-                    "rsync -a '$OpamBinMSYS2AbsPath'/bin/ '$ProgramEssentialBinMSYS2AbsPath'/"
+                    "rsync -a '$OpamBinMSYS2AbsPath'/ '$ProgramEssentialBinMSYS2AbsPath'/"
                 )
         } elseif (!$global:SkipOpamImport -and (Import-DiskuvOCamlAsset `
                 -PackageName "opam-reproducible" `
