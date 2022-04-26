@@ -117,12 +117,10 @@ let execute_install_user ctx =
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%/tools/MSYS2")
           % "--opam32-bindir"
           % Fpath.to_string
-              (ctx.Context.path_eval
-                 "%{dkml-component-staging-opam32:share-abi}%/bin")
+              (ctx.Context.path_eval "%{staging-opam32:share-abi}%/bin")
           % "--opam64-bindir"
           % Fpath.to_string
-              (ctx.Context.path_eval
-                 "%{dkml-component-staging-opam64:share-abi}%/bin")
+              (ctx.Context.path_eval "%{staging-opam64:share-abi}%/bin")
           % "--abi"
           % Context.Abi_v2.to_canonical_string ctx.Context.host_abi_v2
           % "--dkml-dir"
