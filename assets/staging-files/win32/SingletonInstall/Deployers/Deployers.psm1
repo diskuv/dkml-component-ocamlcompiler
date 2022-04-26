@@ -52,7 +52,7 @@ $ErrorActionPreference = "Stop"
 $DeployStateJson = "deploy-state-v1.json"
 $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 
-$DeploySlotInitValue = [ordered]@{ "id" = $null; "lastepochms" = 0; "reserved" = $false; "success" = $false }
+$DeploySlotInitValue = [PSCustomObject]@{ "id" = $null; "lastepochms" = 0; "reserved" = $false; "success" = $false }
 $DeployStateInitValue = @( $DeploySlotInitValue )
 
 # Initialize-BlueGreenDeploy
@@ -104,7 +104,7 @@ function Start-BlueGreenDeploy {
     Initialize-BlueGreenDeploy -ParentPath $ParentPath
 
     # move to the next deploy slot
-    $state = Get-BlueGreenDeployState -ParentPath $ParentPath | ConvertFrom-Json
+    $state = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
     if ($null -eq $FixedSlotIdx) {
         $slotIdx = Step-BlueGreenDeploySlot -ParentPath $ParentPath -DeploymentId $DeploymentId -DeployState $state
     } else {
@@ -170,34 +170,26 @@ function Stop-BlueGreenDeploy {
         $DeploymentId,
         [switch]$Success
     )
-    Write-Host "Stop-BlueGreenDeploy1"
-    $state = Get-BlueGreenDeployState -ParentPath $ParentPath | ConvertFrom-Json
-    Write-Host "Stop-BlueGreenDeploy2"
+    $state = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
     $matchSlotIdx = -1
-    Write-Host "Stop-BlueGreenDeploy3"
     if ($DeploymentId -eq $state[0].id) {
         $matchSlotIdx = 0
     }
-    Write-Host "Stop-BlueGreenDeploy4"
 
     # If and only if the caller says the deployment is success
     if ($Success) {
-        Write-Host "Stop-BlueGreenDeploy5"
         if ($matchSlotIdx -lt 0) {
             throw "The deployment $DeploymentId says it finished but was not present. Other than the chance that the deployer has a bug assigning deployment ids, it is very likely that the deployment was evicted by another deployment"
         }
         # Save success and leave
         $state[$matchSlotIdx].success = $true
-        Write-Host "Stop-BlueGreenDeploy6"
         Set-BlueGreenDeployState -ParentPath $ParentPath -DeployState $state
-        Write-Host "Stop-BlueGreenDeploy7"
         return
     }
 
     # Deployment was aborted by caller.
 
     # is it still taking a slot?
-    Write-Host "Stop-BlueGreenDeploy8"
     if ($matchSlotIdx -ge 0) {
         # recreate the directory with no content
         $DeployPath = Join-Path -Path $ParentPath -ChildPath $matchSlotIdx
@@ -205,17 +197,11 @@ function Stop-BlueGreenDeploy {
 
         # free the slot, but protect against race condition where an external
         # package manager takes over the slot
-        Write-Host "Stop-BlueGreenDeploy9"
-        $state2 = Get-BlueGreenDeployState -ParentPath $ParentPath | ConvertFrom-Json
-        Write-Host "Stop-BlueGreenDeploy10"
+        $state2 = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
         $reserved = $state2[$matchSlotIdx].reserved
-        Write-Host "Stop-BlueGreenDeploy11"
-        $state[$matchSlotIdx] = $DeploySlotInitValue | ConvertTo-Json -Depth 5 | ConvertFrom-Json # clone
-        Write-Host "Stop-BlueGreenDeploy12"
+        $state[$matchSlotIdx] = Copy-BlueGreenDeploySlot $DeploySlotInitValue
         $state[$matchSlotIdx].reserved = $reserved # restore 'reserved'
-        Write-Host "Stop-BlueGreenDeploy13"
         Set-BlueGreenDeployState -ParentPath $ParentPath -DeployState $state
-        Write-Host "Stop-BlueGreenDeploy14"
     }
 }
 Export-ModuleMember -Function Stop-BlueGreenDeploy
@@ -236,7 +222,7 @@ function Get-BlueGreenDeployIsFinished {
         Write-Output $false
         return
     }
-    $state = Get-BlueGreenDeployState -ParentPath $ParentPath | ConvertFrom-Json
+    $state = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
     if ($DeploymentId -eq $state[0].id) {
         Write-Output $state[0].success
         return
@@ -270,18 +256,13 @@ Export-ModuleMember -Function Get-PossibleSlotPaths
 # Private Functions
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Get-BlueGreenDeployState
+# Copy-BlueGreenDeploySlot
 # ------------------------
-function Get-BlueGreenDeployState {
+function Copy-BlueGreenDeploySlot {
     param (
         [Parameter(Mandatory = $true)]
-        $ParentPath
+        $slot
     )
-    $jsState = [System.IO.File]::ReadAllText("$ParentPath\$DeployStateJson", $Utf8NoBomEncoding)
-    $jsState = $jsState | ConvertFrom-Json
-
-    # fill in only valid state
-    $slot = $jsState[0]
 
     # Type convert each field
     if ($null -eq $slot.id) {
@@ -294,9 +275,48 @@ function Get-BlueGreenDeployState {
     $reserved = [bool]($slot.reserved)
     $success = [bool]($slot.success)
 
-    $state = @( @{ "id" = $id; "lastepochms" = $lastepochms; "reserved" = $reserved; "success" = $success } )
+    [PSCustomObject]@{ "id" = $id; "lastepochms" = $lastepochms; "reserved" = $reserved; "success" = $success }
+}
 
-    Write-Output (ConvertTo-Json -Depth 5 $state)
+# Get-BlueGreenDeployState
+# ------------------------
+function Get-BlueGreenDeployState {
+    param (
+        [Parameter(Mandatory = $true)]
+        $ParentPath
+    )
+    $jsState = [System.IO.File]::ReadAllText("$ParentPath\$DeployStateJson", $Utf8NoBomEncoding)
+    $jsState = ConvertFrom-Json ($jsState)
+
+    # fill in only valid state
+    $slot = Copy-BlueGreenDeploySlot $jsState[0]
+
+    ConvertTo-Json -Depth 5 -Compress (@( $slot ))
+}
+
+# Copy-BlueGreenDeployState
+# ------------------------
+function Copy-BlueGreenDeployState {
+    param(
+        [Parameter(Mandatory = $true)]
+        $DeployState
+    )
+
+    # Always force an array, even with wonky PowerShell scalar deconversion
+    # when array size = 1.
+    if ($DeployState.Count -eq 0) {
+        return @()
+    } elseif ($DeployState.Count -eq 1) {
+        $state = @( $true )
+    } else {
+        $state = 1..$DeployState.Count | ForEach-Object { $true }
+    }
+
+    for ($i = 0; $i -lt $DeployState.Count; $i++) {
+        $state[$i] = Copy-BlueGreenDeploySlot $DeployState[$i]
+    }
+
+    ConvertTo-Json -Depth 5 -Compress $state
 }
 
 # Set-BlueGreenDeployState
@@ -320,8 +340,25 @@ function Set-BlueGreenDeployState {
     if (Test-Path "$ParentPath\$DeployStateJson") {
         Copy-Item "$ParentPath\$DeployStateJson" -Destination "$ParentPath\$DeployStateJson.bak" -Force
     }
-    $Str = $DeployState | ConvertTo-Json -Depth 5
-    [System.IO.File]::WriteAllText("$ParentPath\$DeployStateJson.tmp", $Str, $Utf8NoBomEncoding) 
+
+    # Convert array of PSCustomObject into JSON array.
+    # Always force an array, even with wonky PowerShell scalar deconversion
+    # when array size = 1.
+    if ($DeployState.Count -eq 0) {
+        $Str = "[]"
+    } else {
+        if ($DeployState.Count -eq 1) {
+            $arr = @( $true )
+        } else {
+            $arr = 1..$DeployState.Count | ForEach-Object { $true }
+        }
+        for ($i = 0; $i -lt $DeployState.Count; $i++) {
+            $arr[$i] = Copy-BlueGreenDeploySlot $DeployState[$i]
+        }
+        $Str = ConvertTo-Json -Depth 5 ($arr)
+    }
+
+    [System.IO.File]::WriteAllText("$ParentPath\$DeployStateJson.tmp", $Str, $Utf8NoBomEncoding)
     if (Test-Path "$ParentPath\$DeployStateJson") {
         Remove-Item "$ParentPath\$DeployStateJson" -Force
     }
@@ -349,7 +386,7 @@ function Step-BlueGreenDeploySlotDryRun {
         [Parameter(Mandatory = $true)]
         $CurrentEpochMs
     )
-    $state = $ImmutableDeployState | ConvertTo-Json -Depth 5 | ConvertFrom-Json # clone
+    $state = ConvertFrom-Json (Copy-BlueGreenDeployState $ImmutableDeployState)
 
     # use what we picked (which is an indirect reference to $state)
     $state[0].lastepochms = $CurrentEpochMs
@@ -357,7 +394,7 @@ function Step-BlueGreenDeploySlotDryRun {
     $state[0].success = $false
 
     # give slot back to caller
-    Write-Output @{ "chosenSlotIdx" = 0; "stateAfterUpdate" = $state }
+    @{ "chosenSlotIdx" = 0; "stateAfterUpdate" = $state }
 }
 
 # Step-BlueGreenDeploySlot
