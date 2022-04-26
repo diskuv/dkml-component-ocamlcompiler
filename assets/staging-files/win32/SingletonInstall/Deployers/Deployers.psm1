@@ -99,14 +99,13 @@ function Start-BlueGreenDeploy {
         $FixedSlotIdx,
         $LogFunction
     )
-
-    Write-Host "Start-BlueGreenDeploy $((Get-Host).Name) $((Get-Host).Version)"
-
+    
     # init state if not done already
     Initialize-BlueGreenDeploy -ParentPath $ParentPath
 
     # move to the next deploy slot
     $state = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
+    if (-not ($state -is [array])) { $state = @( $state ) } # fix ConvertFrom-Json flattening single element in PWSH 7    
     if ($null -eq $FixedSlotIdx) {
         $slotIdx = Step-BlueGreenDeploySlot -ParentPath $ParentPath -DeploymentId $DeploymentId -DeployState $state
     } else {
@@ -173,12 +172,10 @@ function Stop-BlueGreenDeploy {
         [switch]$Success
     )
     $state = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
-    Write-Host "Stop-BlueGreenDeploy state = $state"
-    Write-Host "Stop-BlueGreenDeploy Type(state) = $($state.GetType())"
+    if (-not ($state -is [array])) { $state = @( $state ) } # fix ConvertFrom-Json flattening single element in PWSH 7
     if (-not ($state -is [array])) {
-        throw "The deployment $DeploymentId was stopped but the state was in an incorrect format; it was supposed to be an array but was instead $($state.GetType())"
+        throw "The deployment $DeploymentId was stopped because the state was in an incorrect format; it was supposed to be an array but was instead $($state.GetType())"
     }
-    Write-Host "Stop-BlueGreenDeploy Length(state) = $($state.Count)"
     $matchSlotIdx = -1
     if ($DeploymentId -eq $state[0].id) {
         $matchSlotIdx = 0
@@ -206,14 +203,9 @@ function Stop-BlueGreenDeploy {
         # free the slot, but protect against race condition where an external
         # package manager takes over the slot
         $state2 = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
+        if (-not ($state2 -is [array])) { $state2 = @( $state2 ) } # fix ConvertFrom-Json flattening single element in PWSH 7
         $reserved = $state2[$matchSlotIdx].reserved
-        Write-Host "Stop-BlueGreenDeploy DeploySlotInitValue = $DeploySlotInitValue"
-        Write-Host "Stop-BlueGreenDeploy (1) state[matchSlotIdx] = $($state[$matchSlotIdx])"
-        $x = Copy-BlueGreenDeploySlot $DeploySlotInitValue
-        Write-Host "Stop-BlueGreenDeploy x = $x"
-        Write-Host "Stop-BlueGreenDeploy Type(x) = $($x.GetType())"
         $state[$matchSlotIdx] = Copy-BlueGreenDeploySlot $DeploySlotInitValue
-        Write-Host "Stop-BlueGreenDeploy (2) state[matchSlotIdx] = $($state[$matchSlotIdx])"
         $state[$matchSlotIdx].reserved = $reserved # restore 'reserved'
         Set-BlueGreenDeployState -ParentPath $ParentPath -DeployState $state
     }
@@ -237,6 +229,7 @@ function Get-BlueGreenDeployIsFinished {
         return
     }
     $state = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
+    if (-not ($state -is [array])) { $state = @( $state ) } # fix ConvertFrom-Json flattening single element in PWSH 7
     if ($DeploymentId -eq $state[0].id) {
         Write-Output $state[0].success
         return
@@ -299,18 +292,13 @@ function Get-BlueGreenDeployState {
         [Parameter(Mandatory = $true)]
         $ParentPath
     )
-    $jsState = [System.IO.File]::ReadAllText("$ParentPath\$DeployStateJson", $Utf8NoBomEncoding)
-    Write-Host "Get-BlueGreenDeployState ParentPath\DeployStateJson = $ParentPath\$DeployStateJson"
-    Write-Host "Get-BlueGreenDeployState Contents1 = $jsState"
-    Write-Host "Get-BlueGreenDeployState Type(Contents1) = $($jsState.GetType())"
+    $absDeployStateJson = Join-Path $ParentPath -ChildPath $DeployStateJson
+    $jsState = [System.IO.File]::ReadAllText("$absDeployStateJson", $Utf8NoBomEncoding)
     $jsState = ConvertFrom-Json ($jsState)
-    Write-Host "Get-BlueGreenDeployState Contents2 = $jsState"
-    Write-Host "Get-BlueGreenDeployState Type(Contents2) = $($jsState.GetType())"
+    if (-not ($jsState -is [array])) { $jsState = @( $jsState ) } # fix ConvertFrom-Json flattening single element in PWSH 7
 
     # fill in only valid state
     $slot = Copy-BlueGreenDeploySlot $jsState[0]
-    Write-Host "Get-BlueGreenDeployState slot = $slot"
-    Write-Host "Get-BlueGreenDeployState Type(slot) = $($slot.GetType())"
 
     ConvertTo-Json -Depth 5 -Compress (@( $slot ))
 }
@@ -358,8 +346,9 @@ function Set-BlueGreenDeployState {
     if ($null -eq $DeployState.reserved) {
         throw "Null 'reserved' deploy state"
     }
-    if (Test-Path "$ParentPath\$DeployStateJson") {
-        Copy-Item "$ParentPath\$DeployStateJson" -Destination "$ParentPath\$DeployStateJson.bak" -Force
+    $absDeployStateJson = Join-Path $ParentPath -ChildPath $DeployStateJson
+    if (Test-Path "$absDeployStateJson") {
+        Copy-Item "$absDeployStateJson" -Destination "$absDeployStateJson.bak" -Force
     }
 
     # Convert array of PSCustomObject into JSON array.
@@ -378,14 +367,12 @@ function Set-BlueGreenDeployState {
         }
         $Str = ConvertTo-Json -Depth 5 ($arr)
     }
-    Write-Host "Set-BlueGreenDeployState ParentPath\DeployStateJson = $ParentPath\$DeployStateJson"
-    Write-Host "Set-BlueGreenDeployState Str = $Str"
 
-    [System.IO.File]::WriteAllText("$ParentPath\$DeployStateJson.tmp", $Str, $Utf8NoBomEncoding)
-    if (Test-Path "$ParentPath\$DeployStateJson") {
-        Remove-Item "$ParentPath\$DeployStateJson" -Force
+    [System.IO.File]::WriteAllText("$absDeployStateJson.tmp", $Str, $Utf8NoBomEncoding)
+    if (Test-Path "$absDeployStateJson") {
+        Remove-Item "$absDeployStateJson" -Force
     }
-    Rename-Item "$ParentPath\$DeployStateJson.tmp" "$DeployStateJson" -Force
+    Rename-Item "$absDeployStateJson.tmp" "$DeployStateJson" -Force
 }
 
 # Step-BlueGreenDeploySlotDryRun
@@ -410,6 +397,7 @@ function Step-BlueGreenDeploySlotDryRun {
         $CurrentEpochMs
     )
     $state = ConvertFrom-Json (Copy-BlueGreenDeployState $ImmutableDeployState)
+    if (-not ($state -is [array])) { $state = @( $state ) } # fix ConvertFrom-Json flattening single element in PWSH 7
 
     # use what we picked (which is an indirect reference to $state)
     $state[0].lastepochms = $CurrentEpochMs
@@ -465,7 +453,13 @@ function Remove-DirectoryFully {
         # > ! Note
         # > This behavior was fixed in Windows versions 1909 and newer.
         # So we use the Command Prompt instead (with COMSPEC so that MSYS2 "cmd" does not get run).
-        & "$env:COMSPEC" /c "rd /s /q `"$Path`""
+        if ("$env:COMSPEC" -eq "") {
+            # not Windows
+            Remove-Item -Path $Path -Recurse -Force
+        } else {
+            # Windows
+            & "$env:COMSPEC" /c "rd /s /q `"$Path`""
+        }        
     }
 }
 Export-ModuleMember -Function Remove-DirectoryFully

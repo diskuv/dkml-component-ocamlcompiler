@@ -54,7 +54,7 @@ with-dkml dune exec -- src/installtime/setup-userprofile/setup_userprofile.exe `
     -v -v
 ```
 
-For all other operating systems run:
+For Unix operating systems, including macOS, run:
 
 ```bash
 # Use an Opam install which include supporting files

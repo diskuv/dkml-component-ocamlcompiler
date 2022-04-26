@@ -15,15 +15,20 @@ BeforeAll {
 
 Describe 'StopBlueGreenDeploy' {
     
+    # Regression test R001. Because old code (pre May 2022; pre DKML 0.4.0) used to flatten an array of one
+    # element to simply the one element (the surrounding array was gone), we should cover reading that
+    # bad input. The root cause was that PowerShell 7 will remove the surrounding array if it is piped
+    # to ConvertTo-Json rather than given as an argument to ConvertTo-Json.
     It 'Given no existing state, when no success, it does not error' {
         $DeploymentId = "testdeploymentid"
         $TestDir = "$TestDrive${dsc}StopBlueGreenDeploy1"
         New-CleanDirectory -Path $TestDir
-        Start-BlueGreenDeploy -ParentPath $TestDir -DeploymentId $DeploymentId
-        Stop-BlueGreenDeploy -ParentPath $TestDir -DeploymentId "testdeploymentid" -Success:$False
+        Start-BlueGreenDeploy -ParentPath $TestDir -DeploymentId $DeploymentId -Debug
+        Stop-BlueGreenDeploy -ParentPath $TestDir -DeploymentId "testdeploymentid" -Success:$False -Debug
     }
 
-    It 'Given real state, when no success, it does not error' {
+    # Regression test R002. Same as R001 except makes sure reads a buggy state json.
+    It 'Given real state with buggy+missing array, when no success, it does not error' {
         $DeploymentId = "testdeploymentid"
         $TestDir = "$TestDrive${dsc}StopBlueGreenDeploy2"
         New-CleanDirectory -Path $TestDir
@@ -35,7 +40,7 @@ Describe 'StopBlueGreenDeploy' {
             "reserved":  false
         }
         '        
-        Start-BlueGreenDeploy -ParentPath $TestDir -DeploymentId $DeploymentId
-        Stop-BlueGreenDeploy -ParentPath $TestDir -DeploymentId "testdeploymentid" -Success:$False
+        Start-BlueGreenDeploy -ParentPath $TestDir -DeploymentId $DeploymentId -Debug
+        Stop-BlueGreenDeploy -ParentPath $TestDir -DeploymentId "testdeploymentid" -Success:$False -Debug
     }
 }

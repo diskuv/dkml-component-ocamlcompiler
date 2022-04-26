@@ -1,0 +1,36 @@
+name: Powershell Tests
+on:
+  push:
+    branches:
+      - "main"
+    tags:
+      - v*
+
+jobs:
+  pester:
+    strategy:
+      fail-fast: false
+      matrix:
+        default_shell:
+          - pwsh
+          - powershell # PowerShell 5!
+        os:
+          - windows-latest
+          - macos-latest
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} ${{ matrix.default_shell }}
+    defaults:
+      run:
+        shell: ${{ matrix.default_shell }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Pester
+        run: Install-Module Pester -Force -Scope CurrentUser
+      - name: Test with Pester
+        run: Invoke-Pester -Path assets -CI | Export-CliXml -Path Unit.Tests.xml
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}-${{ matrix.default_shell }}-Unit-Tests
+          path: Unit.Tests.xml
