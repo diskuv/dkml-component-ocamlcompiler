@@ -100,6 +100,8 @@ function Start-BlueGreenDeploy {
         $LogFunction
     )
 
+    Write-Host "Start-BlueGreenDeploy $((Get-Host).Name) $((Get-Host).Version)"
+
     # init state if not done already
     Initialize-BlueGreenDeploy -ParentPath $ParentPath
 
@@ -171,6 +173,12 @@ function Stop-BlueGreenDeploy {
         [switch]$Success
     )
     $state = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
+    Write-Host "Stop-BlueGreenDeploy state = $state"
+    Write-Host "Stop-BlueGreenDeploy Type(state) = $($state.GetType())"
+    if (-not ($state -is [array])) {
+        throw "The deployment $DeploymentId was stopped but the state was in an incorrect format; it was supposed to be an array but was instead $($state.GetType())"
+    }
+    Write-Host "Stop-BlueGreenDeploy Length(state) = $($state.Count)"
     $matchSlotIdx = -1
     if ($DeploymentId -eq $state[0].id) {
         $matchSlotIdx = 0
@@ -199,7 +207,13 @@ function Stop-BlueGreenDeploy {
         # package manager takes over the slot
         $state2 = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
         $reserved = $state2[$matchSlotIdx].reserved
+        Write-Host "Stop-BlueGreenDeploy DeploySlotInitValue = $DeploySlotInitValue"
+        Write-Host "Stop-BlueGreenDeploy (1) state[matchSlotIdx] = $($state[$matchSlotIdx])"
+        $x = Copy-BlueGreenDeploySlot $DeploySlotInitValue
+        Write-Host "Stop-BlueGreenDeploy x = $x"
+        Write-Host "Stop-BlueGreenDeploy Type(x) = $($x.GetType())"
         $state[$matchSlotIdx] = Copy-BlueGreenDeploySlot $DeploySlotInitValue
+        Write-Host "Stop-BlueGreenDeploy (2) state[matchSlotIdx] = $($state[$matchSlotIdx])"
         $state[$matchSlotIdx].reserved = $reserved # restore 'reserved'
         Set-BlueGreenDeployState -ParentPath $ParentPath -DeployState $state
     }
@@ -286,10 +300,17 @@ function Get-BlueGreenDeployState {
         $ParentPath
     )
     $jsState = [System.IO.File]::ReadAllText("$ParentPath\$DeployStateJson", $Utf8NoBomEncoding)
+    Write-Host "Get-BlueGreenDeployState ParentPath\DeployStateJson = $ParentPath\$DeployStateJson"
+    Write-Host "Get-BlueGreenDeployState Contents1 = $jsState"
+    Write-Host "Get-BlueGreenDeployState Type(Contents1) = $($jsState.GetType())"
     $jsState = ConvertFrom-Json ($jsState)
+    Write-Host "Get-BlueGreenDeployState Contents2 = $jsState"
+    Write-Host "Get-BlueGreenDeployState Type(Contents2) = $($jsState.GetType())"
 
     # fill in only valid state
     $slot = Copy-BlueGreenDeploySlot $jsState[0]
+    Write-Host "Get-BlueGreenDeployState slot = $slot"
+    Write-Host "Get-BlueGreenDeployState Type(slot) = $($slot.GetType())"
 
     ConvertTo-Json -Depth 5 -Compress (@( $slot ))
 }
@@ -357,6 +378,8 @@ function Set-BlueGreenDeployState {
         }
         $Str = ConvertTo-Json -Depth 5 ($arr)
     }
+    Write-Host "Set-BlueGreenDeployState ParentPath\DeployStateJson = $ParentPath\$DeployStateJson"
+    Write-Host "Set-BlueGreenDeployState Str = $Str"
 
     [System.IO.File]::WriteAllText("$ParentPath\$DeployStateJson.tmp", $Str, $Utf8NoBomEncoding)
     if (Test-Path "$ParentPath\$DeployStateJson") {
