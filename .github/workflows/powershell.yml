@@ -24,7 +24,7 @@ jobs:
         shell: ${{ matrix.default_shell }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Pester
         run: Install-Module Pester -Force -Scope CurrentUser
       - name: Test with Pester
