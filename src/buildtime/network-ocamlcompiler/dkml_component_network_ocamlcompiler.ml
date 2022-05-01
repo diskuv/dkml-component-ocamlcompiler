@@ -84,7 +84,7 @@ let do_needs_install_admin_on_windows ~ctx =
 (** [execute_install_admin] will install Visual Studio on Windows, and do
     nothing on any other operating system. *)
 let execute_install_admin ctx =
-  match Context.Abi_v2.is_windows ctx.Context.host_abi_v2 with
+  match Context.Abi_v2.is_windows ctx.Context.target_abi_v2 with
   | true ->
       let important_paths = get_important_paths ctx in
       let bytecode =
@@ -102,7 +102,7 @@ let execute_install_admin ctx =
   | false -> ()
 
 let execute_install_user ctx =
-  match Context.Abi_v2.is_windows ctx.Context.host_abi_v2 with
+  match Context.Abi_v2.is_windows ctx.Context.target_abi_v2 with
   | true ->
       let important_paths = get_important_paths ctx in
       let bytecode =
@@ -122,7 +122,7 @@ let execute_install_user ctx =
           % Fpath.to_string
               (ctx.Context.path_eval "%{staging-opam64:share-abi}%/bin")
           % "--abi"
-          % Context.Abi_v2.to_canonical_string ctx.Context.host_abi_v2
+          % Context.Abi_v2.to_canonical_string ctx.Context.target_abi_v2
           % "--dkml-dir"
           % Fpath.to_string important_paths.dkmlpath
           % "--temp-dir"
@@ -148,7 +148,7 @@ let register () =
         ]
 
       let needs_install_admin ~ctx =
-        match Context.Abi_v2.is_windows ctx.Context.host_abi_v2 with
+        match Context.Abi_v2.is_windows ctx.Context.target_abi_v2 with
         | true -> do_needs_install_admin_on_windows ~ctx
         | _ -> false
 
