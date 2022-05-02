@@ -26,7 +26,7 @@ let setup_opam_res ~temp_dir ~opam32_bindir_opt ~opam64_bindir_opt =
 
 (* Call the PowerShell (legacy!) setup-userprofile.ps1 script *)
 let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
-    ~msys2_dir ~opam_dir =
+    ~msys2_dir ~opam_dir ~vcpkg =
   (* We cannot directly call PowerShell because we likely do not have
      administrator rights *)
   let setup_bat = Fpath.(v scripts_dir / "setup-userprofile.bat") in
@@ -41,12 +41,13 @@ let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
       % Context.Abi_v2.to_canonical_string abi
       % "-TempParentPath" % Fpath.to_string temp_dir % "-SkipProgress")
   in
+  let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
   Logs.info (fun l ->
       l "Installing Git, OCaml and other tools with@ @[%a@]" Cmd.pp cmd);
   Result.ok (log_spawn_and_raise cmd)
 
 let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
-    ~opam32_bindir_opt ~opam64_bindir_opt =
+    ~opam32_bindir_opt ~opam64_bindir_opt ~vcpkg =
   (* Install opam *)
   let ( let* ) = Rresult.R.bind in
   let* cygpath_opt = OS.Cmd.find_tool (Cmd.v "cygpath") in
@@ -74,13 +75,13 @@ let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
     setup_opam_res ~temp_dir ~opam32_bindir_opt ~opam64_bindir_opt
   in
   setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
-    ~msys2_dir ~opam_dir
+    ~msys2_dir ~opam_dir ~vcpkg
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
-    msys2_dir opam32_bindir_opt opam64_bindir_opt =
+    msys2_dir opam32_bindir_opt opam64_bindir_opt vcpkg =
   match
     setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
-      ~opam32_bindir_opt ~opam64_bindir_opt
+      ~opam32_bindir_opt ~opam64_bindir_opt ~vcpkg
   with
   | Ok () -> ()
   | Error msg -> Logs.err (fun l -> l "%a" Rresult.R.pp_msg msg)
@@ -114,6 +115,8 @@ let abi_t =
   in
   Arg.(required & opt (some (enum l)) None & info [ "abi" ])
 
+let vcpkg_t = Arg.(value & flag & info [ "vcpkg" ])
+
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
   Logs.set_level level;
@@ -129,7 +132,7 @@ let () =
     Term.
       ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
         $ abi_t $ prefix_dir_t $ msys2_dir_t $ opam32_bindir_opt_t
-        $ opam64_bindir_opt_t,
+        $ opam64_bindir_opt_t $ vcpkg_t,
         info "setup-userprofile.bc"
           ~doc:
             "Install Git for Windows and Opam, compiles OCaml and install \

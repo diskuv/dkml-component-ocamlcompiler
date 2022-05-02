@@ -7,3 +7,10 @@
   bos
   logs
   dkml-component-network-ocamlcompiler.common))
+
+(rule
+ (target dkml_options.ml)
+ (action
+ (with-stdout-to %{target}
+ (echo
+  "let option_vcpkg_available = %{lib-available:dkml-option-vcpkg}"))))

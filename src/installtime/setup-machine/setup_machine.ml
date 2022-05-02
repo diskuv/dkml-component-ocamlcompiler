@@ -1,7 +1,7 @@
 open Bos
 open Cmdliner
 
-let setup_res ~scripts_dir ~dkml_dir ~temp_dir =
+let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~vcpkg =
   (* We can directly call PowerShell because we have administrator rights.
      But for consistency we will call the .bat like in
      network_ocamlcompiler.ml and setup_userprofile.ml *)
@@ -13,11 +13,13 @@ let setup_res ~scripts_dir ~dkml_dir ~temp_dir =
       % "-DkmlPath" % normalized_dkml_path % "-TempParentPath" % temp_dir
       % "-SkipProgress" % "-AllowRunAsAdmin")
   in
+  let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
   Logs.info (fun l -> l "Installing Visual Studio with@ @[%a@]" Cmd.pp cmd);
   Result.ok (Dkml_install_api.log_spawn_and_raise cmd)
 
-let setup (_ : Dkml_install_api.Log_config.t) scripts_dir dkml_dir temp_dir =
-  match setup_res ~scripts_dir ~dkml_dir ~temp_dir with
+let setup (_ : Dkml_install_api.Log_config.t) scripts_dir dkml_dir temp_dir
+    vcpkg =
+  match setup_res ~scripts_dir ~dkml_dir ~temp_dir ~vcpkg with
   | Ok () -> ()
   | Error msg -> Logs.err (fun l -> l "%a" Rresult.R.pp_msg msg)
 
@@ -27,6 +29,8 @@ let scripts_dir_t =
 let dkml_dir_t = Arg.(required & opt (some string) None & info [ "dkml-dir" ])
 
 let tmp_dir_t = Arg.(required & opt (some string) None & info [ "temp-dir" ])
+
+let vcpkg_t = Arg.(value & flag & info [ "vcpkg" ])
 
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
@@ -41,7 +45,8 @@ let setup_log_t =
 let () =
   let t =
     Term.
-      ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t,
-        info "setup-machine.bc" ~doc:"Setup Visual Studio" )
+      ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
+        $ vcpkg_t,
+        info "setup-machine.bc" ~doc:"Install Visual Studio" )
   in
   Term.(exit @@ eval t)

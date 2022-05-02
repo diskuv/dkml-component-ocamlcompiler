@@ -19,6 +19,9 @@ depends: [
   "base64"                            {>= "3.5.0"}
   "diskuvbox"                         {>= "0.1.0"}
 ]
+depopts: [
+  "dkml-option-vcpkg"
+]
 build-env: [
   # If this version of Opam or trimmed fdopen repo are not available on GitLab as assets,
   # then setup-userprofile will compile them from scratch (using MSYS2 and

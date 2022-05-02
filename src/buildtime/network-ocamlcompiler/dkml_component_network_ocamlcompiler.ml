@@ -90,7 +90,7 @@ let execute_install_admin ctx =
       let bytecode =
         ctx.Context.path_eval "%{_:share-generic}%/setup_machine.bc"
       in
-      Staging_ocamlrun_api.spawn_ocamlrun ctx
+      let cmd =
         Cmd.(
           v (Fpath.to_string bytecode)
           % "--dkml-dir"
@@ -99,6 +99,12 @@ let execute_install_admin ctx =
           % Fpath.to_string important_paths.tmppath
           % "--scripts-dir"
           % Fpath.to_string important_paths.scriptsdir)
+      in
+      let cmd =
+        if Dkml_options.option_vcpkg_available then Cmd.(cmd % "--vcpkg")
+        else cmd
+      in
+      Staging_ocamlrun_api.spawn_ocamlrun ctx cmd
   | false -> ()
 
 let execute_install_user ctx =
@@ -108,7 +114,7 @@ let execute_install_user ctx =
       let bytecode =
         ctx.Context.path_eval "%{_:share-generic}%/setup_userprofile.bc"
       in
-      Staging_ocamlrun_api.spawn_ocamlrun ctx
+      let cmd =
         Cmd.(
           v (Fpath.to_string bytecode)
           % "--prefix"
@@ -129,6 +135,12 @@ let execute_install_user ctx =
           % Fpath.to_string important_paths.tmppath
           % "--scripts-dir"
           % Fpath.to_string important_paths.scriptsdir)
+      in
+      let cmd =
+        if Dkml_options.option_vcpkg_available then Cmd.(cmd % "--vcpkg")
+        else cmd
+      in
+      Staging_ocamlrun_api.spawn_ocamlrun ctx cmd
   | false -> ()
 
 let register () =
