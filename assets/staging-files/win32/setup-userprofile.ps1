@@ -424,7 +424,15 @@ $PkgHash = Get-Sha256Hex16OfText -Text ($FlavorPackages -join ',')
 $BinHash = Get-Sha256Hex16OfText -Text ($FlavorBinaries -join ',')
 $StubHash = Get-Sha256Hex16OfText -Text ($FlavorStubs -join ',')
 $ToplevelsHash = Get-Sha256Hex16OfText -Text ($FlavorToplevels -join ',')
-$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$DV_AvailableOpamVersion;ninja-$NinjaVersion;cmake-$CMakeVersion;jq-$JqVersion;inotify-$InotifyTag;cygwin-$CygwinHash;msys2-$MSYS2Hash;docker-$DockerHash;pkgs-$PkgHash;bins-$BinHash;stubs-$StubHash;toplevels-$ToplevelsHash"
+if ($null -ne $OpamBinDir -and "" -ne $OpamBinDir) {
+    $OpamHash = (& "$OpamBinDir\opam.exe" -version)
+} else {
+    $OpamHash = $DV_AvailableOpamVersion
+}
+$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;jq-$JqVersion;inotify-$InotifyTag;cygwin-$CygwinHash;msys2-$MSYS2Hash;docker-$DockerHash;pkgs-$PkgHash;bins-$BinHash;stubs-$StubHash;toplevels-$ToplevelsHash"
+if ($VcpkgCompatibility) {
+    $DeploymentId += ";ninja-$NinjaVersion;cmake-$CMakeVersion"
+}
 
 if ($OnlyOutputCacheKey) {
     Write-Output $DeploymentId
