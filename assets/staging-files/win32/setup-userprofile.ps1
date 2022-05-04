@@ -425,7 +425,7 @@ $BinHash = Get-Sha256Hex16OfText -Text ($FlavorBinaries -join ',')
 $StubHash = Get-Sha256Hex16OfText -Text ($FlavorStubs -join ',')
 $ToplevelsHash = Get-Sha256Hex16OfText -Text ($FlavorToplevels -join ',')
 if ($null -ne $OpamBinDir -and "" -ne $OpamBinDir) {
-    $OpamHash = (& "$OpamBinDir\opam.exe" -version)
+    $OpamHash = (& "$OpamBinDir\opam.exe" --version)
 } else {
     $OpamHash = $DV_AvailableOpamVersion
 }
