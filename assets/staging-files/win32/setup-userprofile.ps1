@@ -1117,7 +1117,7 @@ try {
                 Rename-Item -Path "$MSYS2ParentDir\$MSYS2BaseSubdir" -NewName "MSYS2"
             } else {
                 if (!(Test-Path -Path $MSYS2Dir)) { New-Item -Path $MSYS2Dir -ItemType Directory | Out-Null }
-                Invoke-Win32CommandWithProgress -FilePath $MSYS2SetupExe -ArgumentList "in", "--confirm-command", "--accept-messages", "--root", $MSYS2Dir
+                Invoke-Win32CommandWithProgress -FilePath $MSYS2SetupExe -ArgumentList "--silentUpdate", "--verbose", $MSYS2Dir
             }
         }
     }
