@@ -320,7 +320,10 @@ $CiFlavorPackages = Get-Content -Path $DkmlPath\vendor\drd\src\none\ci-pkgs.txt 
     "" -ne $_.Trim() -and -not $_.StartsWith("#")
 } | ForEach-Object { $_.Trim() }
 $CiFlavorBinaries = @(
-    "dune.exe"
+    "dune.exe",
+    "with-dkml.exe",
+    "dkml-findup.exe",
+    "dkml-fswatch.exe"
 )
 $CiFlavorStubs = @(
     # Stubs are important if the binaries need them.
@@ -524,7 +527,7 @@ function Import-DiskuvOCamlAsset {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 17
+$ProgressTotalSteps = 15
 if ($VcpkgCompatibility) {
     $ProgressTotalSteps = $ProgressTotalSteps + 2
 }
@@ -1165,20 +1168,10 @@ try {
     $DkmlMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$DkmlPath"
     Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
         -Command ("/usr/bin/install -d /opt/diskuv-ocaml/installtime && " +
-        "/usr/bin/rsync -a --delete '$DkmlMSYS2AbsPath'/vendor/drd/src/msys2/ '$DkmlMSYS2AbsPath'/vendor/drd/src/unix/ /opt/diskuv-ocaml/installtime/ && " +
+        "/usr/bin/rsync -a --delete '$DkmlMSYS2AbsPath'/vendor/drd/src/unix/ /opt/diskuv-ocaml/installtime/ && " +
         "/usr/bin/find /opt/diskuv-ocaml/installtime/ -type f | /usr/bin/xargs /usr/bin/dos2unix --quiet && " +
         "/usr/bin/find /opt/diskuv-ocaml/installtime/ -type f | /usr/bin/xargs /usr/bin/chmod +x")
-
-    # Create /opt/diskuv-ocaml/*.opam (so dkml-apps can be compiled from /opt/diskuv-ocaml/
-    # in the `BEGIN compile apps ...` section)
-    # - (P1) Explicit *.opam files must be in sync with contributors/release.sh
-    # - Since dkml-apps interspersed with opam-dkml, need opam-dkml.opam present or apps/opam-dkml removed
-    # - with-dkml.exe is part of dkml-apps.opam that is built differently in install-dkmlplugin-withdkml.sh
-    # - opam-dkml is part of opam-dkml.opam that is build differently in install-opamplugin-opam-dkml.sh
-    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command ("/usr/bin/install -d /opt/diskuv-ocaml && " +
-        "/usr/bin/install -v '$DkmlMSYS2AbsPath'/vendor/drd/opam-files/opam-dkml.opam '$DkmlMSYS2AbsPath'/vendor/drd/opam-files/dkml-apps.opam /opt/diskuv-ocaml/")
-
+    
     # END MSYS2
     # ----------------------------------------------------------------
 
@@ -1500,49 +1493,11 @@ try {
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
-    # BEGIN opam install opam-dkml
-    #
-    # The system switch will have already been created earlier by "opam init" section. Just with
-    # the CI flavor packages which is all that is necessary to compile the plugins.
+    # BEGIN install crossplatform-functions.sh
 
-    $global:ProgressActivity = "Install Opam plugin opam-dkml"
+    $global:ProgressActivity = "Install functions"
     Write-ProgressStep
 
-    # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
-    if (!$global:SkipOpamSetup) {
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command "env $UnixPlusPrecompleteVarsOnOneLine TOPDIR=/opt/diskuv-ocaml/installtime/apps DKML_FEATUREFLAG_CMAKE_PLATFORM=ON '$DkmlPath\vendor\drd\src\unix\private\install-opamplugin-opam-dkml.sh' -p '$DkmlHostAbi' -o '$ProgramMSYS2AbsPath' -v '$ProgramMSYS2AbsPath'"
-    }
-
-    # END opam install opam-dkml
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
-    # BEGIN install with-dkml
-    #
-    # The system switch will have already been created earlier by "opam init" section. Just with
-    # the CI flavor packages which is all that is necessary to compile the plugins.
-
-    $global:ProgressActivity = "Install DKML plugin with-dkml"
-    Write-ProgressStep
-
-    # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
-    if (!$global:SkipOpamSetup) {
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command "env $UnixPlusPrecompleteVarsOnOneLine TOPDIR=/opt/diskuv-ocaml/installtime/apps DKML_FEATUREFLAG_CMAKE_PLATFORM=ON '$DkmlPath\vendor\drd\src\unix\private\install-dkmlplugin-withdkml.sh' -p '$DkmlHostAbi' -o '$ProgramMSYS2AbsPath' -v '$ProgramMSYS2AbsPath'"
-    }
-
-    # END install with-dkml
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
-    # BEGIN compile apps and install crossplatform-functions.sh
-
-    $global:ProgressActivity = "Compile apps and install functions"
-    Write-ProgressStep
-
-    $AppsCachePath = "$TempPath\apps"
-    $AppsBinDir = "$ProgramPath\tools\apps"
     $FunctionsDir = "$ProgramPath\share\dkml\functions"
 
     # We use crossplatform-functions.sh for with-dkml.exe.
@@ -1550,31 +1505,11 @@ try {
     Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
         -Command ("set -x && install '$DkmlPath\vendor\drc\unix\crossplatform-functions.sh' '$FunctionsDir\crossplatform-functions.sh'")
 
-    # Only apps, not bootstrap-apps, are installed.
-    # And we only need dkml-findup.exe for the CI Flavor.
-    if (!(Test-Path -Path $AppsBinDir)) { New-Item -Path $AppsBinDir -ItemType Directory | Out-Null }
-    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command ("set -x && " +
-            "cd /opt/diskuv-ocaml/ && " +
-            "env $UnixPlusPrecompleteVarsOnOneLine TOPDIR=/opt/diskuv-ocaml/ DKML_FEATUREFLAG_CMAKE_PLATFORM=ON '$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh' -s -p '$DkmlHostAbi' -o '$ProgramMSYS2AbsPath' -v '$ProgramMSYS2AbsPath' exec -- dune build --build-dir '$AppsCachePath' installtime/apps/findup/findup.exe")
-    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command ("set -x && "+
-            "install '$AppsCachePath\default\installtime\apps\findup\findup.exe' '$AppsBinDir\dkml-findup.exe'")
-    if ($Flavor -eq "Full") {
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command ("set -x && " +
-            "cd /opt/diskuv-ocaml/ && " +
-            "env $UnixPlusPrecompleteVarsOnOneLine TOPDIR=/opt/diskuv-ocaml/ DKML_FEATUREFLAG_CMAKE_PLATFORM=ON '$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh' -s -p '$DkmlHostAbi' -o '$ProgramMSYS2AbsPath' -v '$ProgramMSYS2AbsPath' exec -- dune build --build-dir '$AppsCachePath' installtime/apps/fswatch_on_inotifywin/fswatch.exe")
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command ("set -x && " +
-            "install '$AppsCachePath\default\installtime\apps\fswatch_on_inotifywin\fswatch.exe'     '$AppsBinDir\fswatch.exe'")
-    }
-
-    # END compile apps
+    # END install crossplatform-functions.sh
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
-    # BEGIN install dkml switch and `with-dkml` to Programs
+    # BEGIN install `dkml` switch binaries to Programs
 
     $global:ProgressActivity = "Install dkml binaries"
     Write-ProgressStep
@@ -1625,13 +1560,7 @@ try {
         }
     }
 
-    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command ("set -x && "+
-            "OPAMVARROOT=`$('$ProgramEssentialBinDir\opam.exe' var root) && " +
-            "install `"`$OPAMVARROOT\plugins\diskuvocaml\with-dkml\$dkml_root_version\with-dkml.exe`" '$ProgramGeneralBinDir\with-dkml.exe'")
-
-
-    # END install dkml switch and `with-dkml` to Programs
+    # END install `dkml` switch binaries to Programs
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
