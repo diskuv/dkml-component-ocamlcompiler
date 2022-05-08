@@ -418,10 +418,11 @@ if ($Flavor -eq "Full") {
     $FlavorStubs = $CiFlavorStubs
     $FlavorToplevels = $CiFlavorToplevels
 }
+$AllMSYS2Packages = $DV_MSYS2Packages + (DV_MSYS2PackagesAbi -DkmlHostAbi $DkmlHostAbi)
 
 # Consolidate the magic constants into a single deployment id
 $CygwinHash = Get-Sha256Hex16OfText -Text ($CygwinPackagesArch -join ',')
-$MSYS2Hash = Get-Sha256Hex16OfText -Text ($DV_MSYS2PackagesArch -join ',')
+$MSYS2Hash = Get-Sha256Hex16OfText -Text ($AllMSYS2Packages -join ',')
 $DockerHash = Get-Sha256Hex16OfText -Text "$DV_WindowsMsvcDockerImage"
 $PkgHash = Get-Sha256Hex16OfText -Text ($FlavorPackages -join ',')
 $BinHash = Get-Sha256Hex16OfText -Text ($FlavorBinaries -join ',')
@@ -1160,7 +1161,7 @@ try {
 
         # Install new packages and/or full system if any were not installed ("--needed")
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command ("pacman -S --needed --noconfirm " + ($DV_MSYS2PackagesArch -join " "))
+            -Command ("pacman -S --needed --noconfirm " + ($AllMSYS2Packages -join " "))
     }
 
     # Create /opt/diskuv-ocaml/installtime/ which is specific to MSYS2 with common pieces from UNIX.
