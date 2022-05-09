@@ -481,7 +481,7 @@ function Import-DiskuvOCamlAsset {
         $DestinationPath
     )
     try {
-        $uri = "https://gitlab.com/api/v4/projects/diskuv%2Fdiskuv-ocaml/packages/generic/$PackageName/v$dkml_root_version/$ZipFile"
+        $uri = "https://gitlab.com/api/v4/projects/diskuv%2Fdiskuv-ocaml/packages/generic/$PackageName/$dkml_root_version/$ZipFile"
         Write-ProgressCurrentOperation -CurrentOperation "Downloading asset $uri"
         Invoke-WebRequest -Uri "$uri" -OutFile "$TmpPath\$ZipFile"
     }
