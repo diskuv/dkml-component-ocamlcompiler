@@ -1449,7 +1449,7 @@ try {
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
     if (!$global:SkipOpamSetup) {
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command ("env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath'/vendor/drc/all/emptytop DKML_FEATUREFLAG_CMAKE_PLATFORM=ON DKML_BUILD_TRACE=ON DKML_BUILD_TRACE_LEVEL=2 " +
+            -Command ("env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath'/vendor/drc/all/emptytop DKML_FEATUREFLAG_CMAKE_PLATFORM=ON " +
                 "'$DkmlPath\vendor\drd\src\unix\private\init-opam-root.sh' -p '$DkmlHostAbi' -o '$ProgramMSYS2AbsPath' -v '$ProgramMSYS2AbsPath'")
     }
 
@@ -1470,7 +1470,7 @@ try {
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
     if (!$global:SkipOpamSetup) {
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command ("env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath'/vendor/drc/all/emptytop DKML_FEATUREFLAG_CMAKE_PLATFORM=ON DKML_BUILD_TRACE=ON DKML_BUILD_TRACE_LEVEL=2 " +
+            -Command ("env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath'/vendor/drc/all/emptytop DKML_FEATUREFLAG_CMAKE_PLATFORM=ON " +
                 "'$DkmlPath\vendor\drd\src\unix\private\create-tools-switch.sh' -v '$ProgramMSYS2AbsPath' -p '$DkmlHostAbi' -f '$Flavor' -o '$ProgramMSYS2AbsPath'")
         }
 
