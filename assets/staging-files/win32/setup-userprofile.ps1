@@ -528,7 +528,7 @@ function Import-DiskuvOCamlAsset {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 15
+$ProgressTotalSteps = 14
 if ($VcpkgCompatibility) {
     $ProgressTotalSteps = $ProgressTotalSteps + 2
 }
@@ -1475,22 +1475,6 @@ try {
         }
 
     # END opam switch create <system>
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
-    # BEGIN opam switch create diskuv-boot-DO-NOT-DELETE
-
-    $global:ProgressActivity = "Create diskuv-boot-DO-NOT-DELETE Opam Switch"
-    Write-ProgressStep
-
-    # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
-    if (!$global:SkipOpamSetup) {
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command ("env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath'/vendor/drc/all/emptytop DKML_FEATUREFLAG_CMAKE_PLATFORM=ON " +
-                "'$DkmlPath\vendor\drd\src\unix\private\create-boot-switch.sh' -p '$DkmlHostAbi' -o '$ProgramMSYS2AbsPath'")
-        }
-
-    # END opam switch create diskuv-boot-DO-NOT-DELETE
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
