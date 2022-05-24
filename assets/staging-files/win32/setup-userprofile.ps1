@@ -322,8 +322,7 @@ $CiFlavorPackages = Get-Content -Path $DkmlPath\vendor\drd\src\none\ci-pkgs.txt 
 $CiFlavorBinaries = @(
     "dune.exe",
     "with-dkml.exe",
-    "dkml-findup.exe",
-    "dkml-fswatch.exe"
+    "dkml-findup.exe"
 )
 $CiFlavorStubs = @(
     # Stubs are important if the binaries need them.
@@ -1172,7 +1171,7 @@ try {
         "/usr/bin/rsync -a --delete '$DkmlMSYS2AbsPath'/vendor/drd/src/unix/ /opt/diskuv-ocaml/installtime/ && " +
         "/usr/bin/find /opt/diskuv-ocaml/installtime/ -type f | /usr/bin/xargs /usr/bin/dos2unix --quiet && " +
         "/usr/bin/find /opt/diskuv-ocaml/installtime/ -type f | /usr/bin/xargs /usr/bin/chmod +x")
-    
+
     # END MSYS2
     # ----------------------------------------------------------------
 
@@ -1502,32 +1501,39 @@ try {
     $DiskuvHostToolsDir = "$ProgramPath\dkml\_opam"
     $ProgramLibOcamlDir = "$ProgramPath\lib\ocaml"
     $ProgramStubsDir = "$ProgramPath\lib\ocaml\stublibs"
+    $FswatchToolDir = "$ProgramPath\tools\fswatch"
+
+    function Copy-DkmlFile {
+        param (
+            $OpamFile,
+            $Destination
+        )
+        # Don't copy unless the target file doesn't exist -or- the target file is different from the source file.
+        # This helps IncrementalDeployment installations, especially when a file is in use
+        # but hasn't changed (especially `dune.exe`, `ocamllsp.exe` which may be open in an IDE)
+        if (!(Test-Path "$DiskuvHostToolsDir\$OpamFile")) {
+            # no-op since the binary is not part of Opam switch (we may have been installed manually like OCaml system compiler)
+        } elseif (!(Test-Path -Path "$Destination")) {
+            Copy-Item -Path "$DiskuvHostToolsDir\$OpamFile" -Destination $Destination
+        } elseif ((Get-FileHash "$Destination").hash -ne (Get-FileHash $DiskuvHostToolsDir\$OpamFile).hash) {
+            Copy-Item -Path "$DiskuvHostToolsDir\$OpamFile" -Destination $Destination
+        }
+    }
 
     # Binaries
     if (!(Test-Path -Path $ProgramGeneralBinDir)) { New-Item -Path $ProgramGeneralBinDir -ItemType Directory | Out-Null }
     foreach ($binary in $FlavorBinaries) {
-        # Don't copy unless the target file doesn't exist -or- the target file is different from the source file.
-        # This helps IncrementalDeployment installations, especially when a file is in use
-        # but hasn't changed (especially `dune.exe`, `ocamllsp.exe` which may be open in an IDE)
-        if (!(Test-Path "$DiskuvHostToolsDir\bin\$binary")) {
-            # no-op since the binary is not part of Opam switch (we may have been installed manually like OCaml system compiler)
-        } elseif (!(Test-Path -Path "$ProgramGeneralBinDir\$binary")) {
-            Copy-Item -Path "$DiskuvHostToolsDir\bin\$binary" -Destination $ProgramGeneralBinDir
-        } elseif ((Get-FileHash "$ProgramGeneralBinDir\$binary").hash -ne (Get-FileHash $DiskuvHostToolsDir\bin\$binary).hash) {
-            Copy-Item -Path "$DiskuvHostToolsDir\bin\$binary" -Destination $ProgramGeneralBinDir
-        }
+        Copy-DkmlFile -OpamFile "bin\$binary" -Destination "$ProgramGeneralBinDir\$binary"
     }
+
+    # fswatch
+    if (!(Test-Path -Path $FswatchToolDir)) { New-Item -Path $FswatchToolDir -ItemType Directory | Out-Null }
+    Copy-DkmlFile -OpamFile "bin\dkml-fswatch.exe" -Destination "$FswatchToolDir\fswatch.exe"
 
     # Stubs for ocamlrun bytecode
     if (!(Test-Path -Path $ProgramStubsDir)) { New-Item -Path $ProgramStubsDir -ItemType Directory | Out-Null }
     foreach ($stub in $FlavorStubs) {
-        if (!(Test-Path "$DiskuvHostToolsDir\lib\stublibs\$stub")) {
-            # no-op since the stub is not part of Opam switch (we may have been installed manually like OCaml system compiler)
-        } elseif (!(Test-Path -Path "$ProgramStubsDir\$stub")) {
-            Copy-Item -Path "$DiskuvHostToolsDir\lib\stublibs\$stub" -Destination $ProgramStubsDir
-        } elseif ((Get-FileHash "$ProgramStubsDir\$stub").hash -ne (Get-FileHash $DiskuvHostToolsDir\lib\stublibs\$stub).hash) {
-            Copy-Item -Path "$DiskuvHostToolsDir\lib\stublibs\$stub" -Destination $ProgramStubsDir
-        }
+        Copy-DkmlFile -OpamFile "lib\stublibs\$stub" -Destination "$ProgramStubsDir\$stub"
     }
 
     # Toplevel files. Opam sets OCAML_TOPLEVEL_PATH=lib/toplevel, but we should place them in lib/ocaml so we don't
@@ -1536,13 +1542,8 @@ try {
     # OCaml system compiler (dkml switch, ocaml.exe binary). So place in lib/ocaml anyway.
     if (!(Test-Path -Path $ProgramLibOcamlDir)) { New-Item -Path $ProgramLibOcamlDir -ItemType Directory | Out-Null }
     foreach ($toplevel in $FlavorToplevels) {
-        if (!(Test-Path "$DiskuvHostToolsDir\lib\toplevel\$toplevel")) {
-            # no-op since the speciallib is not part of Opam switch (we may have been installed manually like OCaml system compiler)
-        } elseif (!(Test-Path -Path "$ProgramLibOcamlDir\$toplevel")) {
-            Copy-Item -Path "$DiskuvHostToolsDir\lib\toplevel\$toplevel" -Destination $ProgramLibOcamlDir
-        } elseif ((Get-FileHash "$ProgramLibOcamlDir\$toplevel").hash -ne (Get-FileHash $DiskuvHostToolsDir\lib\toplevel\$toplevel).hash) {
-            Copy-Item -Path "$DiskuvHostToolsDir\lib\toplevel\$toplevel" -Destination $ProgramLibOcamlDir
-        }
+        # no-op since the speciallib is not part of Opam switch (we may have been installed manually like OCaml system compiler)
+        Copy-DkmlFile -OpamFile "lib\toplevel\$toplevel" -Destination "$ProgramLibOcamlDir\$toplevel"
     }
 
     # END install `dkml` switch binaries to Programs
