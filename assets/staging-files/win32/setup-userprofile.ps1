@@ -320,7 +320,6 @@ $CiFlavorPackages = Get-Content -Path $DkmlPath\vendor\drd\src\none\ci-pkgs.txt 
     "" -ne $_.Trim() -and -not $_.StartsWith("#")
 } | ForEach-Object { $_.Trim() }
 $CiFlavorBinaries = @(
-    "dune.exe",
     "with-dkml.exe",
     "dkml-findup.exe"
 )
@@ -1372,10 +1371,12 @@ try {
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
-    # BEGIN Compile/install opam.exe
+    # BEGIN Compile/install opam.exe into opam-real.exe
     #
     # When compiling from scratch, opam.exe requires ocamlc.exe, so
     # ocamlc.exe must have been built previously into $ProgramPath.
+    #
+    # We'll install a opam.exe shim later that will delegate to opam-real.exe
 
     $global:ProgressActivity = "Install Native Windows OPAM.EXE"
     Write-ProgressStep
@@ -1385,11 +1386,11 @@ try {
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
     if (!$global:SkipOpamSetup) {
         # The following go into bin/ because they are required by _all_ with-dkml.exe and compiler invocations:
-        #   opam.exe
+        #   opam-real.exe
         #   opam-putenv.exe
         #   opam-installer.exe
         $MoveIntoEssentialBin = $false
-        if ((Test-Path -Path "$ProgramEssentialBinDir\opam.exe") -and `
+        if ((Test-Path -Path "$ProgramEssentialBinDir\opam-real.exe") -and `
             (Test-Path -Path "$ProgramEssentialBinDir\opam-putenv.exe") -and `
             (Test-Path -Path "$ProgramEssentialBinDir\opam-installer.exe")) {
             # okay. already installed
@@ -1402,7 +1403,8 @@ try {
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
                 -Command (
                     "install -d '$ProgramEssentialBinMSYS2AbsPath' && " +
-                    "rsync -a '$OpamBinMSYS2AbsPath'/ '$ProgramEssentialBinMSYS2AbsPath'/"
+                    "install '$OpamBinMSYS2AbsPath'/opam.exe '$ProgramEssentialBinMSYS2AbsPath'/opam-real.exe && " + 
+                    "install '$OpamBinMSYS2AbsPath'/opam-putenv.exe '$OpamBinMSYS2AbsPath'/opam-installer.exe '$ProgramEssentialBinMSYS2AbsPath'/"
                 )
         } elseif (!$global:SkipOpamImport -and (Import-DiskuvOCamlAsset `
                 -PackageName "opam-reproducible" `
@@ -1421,7 +1423,8 @@ try {
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
                 -Command (
                     "install -d '$ProgramEssentialBinMSYS2AbsPath' && " +
-                    "mv '$ProgramMSYS2AbsPath'/bin/opam.exe '$ProgramMSYS2AbsPath'/bin/opam-putenv.exe '$ProgramMSYS2AbsPath'/bin/opam-installer.exe '$ProgramEssentialBinMSYS2AbsPath'/"
+                    "mv '$ProgramMSYS2AbsPath'/bin/opam.exe '$ProgramEssentialBinMSYS2AbsPath'/opam-real.exe && " + 
+                    "mv '$ProgramMSYS2AbsPath'/bin/opam-putenv.exe '$ProgramMSYS2AbsPath'/bin/opam-installer.exe '$ProgramEssentialBinMSYS2AbsPath'/"
                 )
         }
     }
@@ -1520,11 +1523,18 @@ try {
         }
     }
 
-    # Binaries
+    # Flavor binaries
     if (!(Test-Path -Path $ProgramGeneralBinDir)) { New-Item -Path $ProgramGeneralBinDir -ItemType Directory | Out-Null }
     foreach ($binary in $FlavorBinaries) {
         Copy-DkmlFile -OpamFile "bin\$binary" -Destination "$ProgramGeneralBinDir\$binary"
     }
+
+    # opam shim
+    Copy-DkmlFile -OpamFile "bin\with-dkml.exe" -Destination "$ProgramEssentialBinDir\opam.exe"
+
+    # dune shim
+    Copy-DkmlFile -OpamFile "bin\with-dkml.exe" -Destination "$ProgramGeneralBinDir\dune.exe"
+    Copy-DkmlFile -OpamFile "bin\dune.exe" -Destination "$ProgramGeneralBinDir\dune-real.exe"
 
     # fswatch
     if (!(Test-Path -Path $FswatchToolDir)) { New-Item -Path $FswatchToolDir -ItemType Directory | Out-Null }
