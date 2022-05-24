@@ -1446,7 +1446,7 @@ try {
     # Upgrades. Possibly ask questions to delete things, so no progress indicator
     Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
         -ForceConsole `
-        -Command "env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath'/vendor/drc/all/emptytop '$DkmlPath\vendor\drd\src\unix\private\deinit-opam-root.sh'"
+        -Command "env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath'/vendor/drc/all/emptytop '$DkmlPath\vendor\drd\src\unix\private\deinit-opam-root.sh' -o '$ProgramMSYS2AbsPath'"
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
     if (!$global:SkipOpamSetup) {
