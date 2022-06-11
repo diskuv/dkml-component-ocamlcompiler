@@ -2,15 +2,23 @@ open Bos
 open Cmdliner
 
 let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~vcpkg =
+  let ( let* ) = Result.bind in
   (* We can directly call PowerShell because we have administrator rights.
      But for consistency we will call the .bat like in
-     network_ocamlcompiler.ml and setup_userprofile.ml *)
+     network_ocamlcompiler.ml and setup_userprofile.ml.
+
+     BUT BUT this is a Windows batch file that will not handle spaces
+     as it translates its command line arguments into PowerShell arguments.
+     So any path arguments should have `cygpath -ad` performed on them
+     so there are no spaces. *)
   let setup_machine_bat = Fpath.(v scripts_dir / "setup-machine.bat") in
-  let normalized_dkml_path = Fpath.(v dkml_dir |> to_string) in
+  let to83 = Ocamlcompiler_common.Os.Windows.get_dos83_short_path in
+  let* dkml_path_83 = to83 (Fpath.v dkml_dir) in
+  let* temp_dir_83 = to83 (Fpath.v temp_dir) in
   let cmd =
     Cmd.(
       v (Fpath.to_string setup_machine_bat)
-      % "-DkmlPath" % normalized_dkml_path % "-TempParentPath" % temp_dir
+      % "-DkmlPath" % dkml_path_83 % "-TempParentPath" % temp_dir_83
       % "-SkipProgress" % "-AllowRunAsAdmin")
   in
   let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in

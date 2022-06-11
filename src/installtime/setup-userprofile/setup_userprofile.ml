@@ -27,19 +27,29 @@ let setup_opam_res ~temp_dir ~opam32_bindir_opt ~opam64_bindir_opt =
 (* Call the PowerShell (legacy!) setup-userprofile.ps1 script *)
 let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
     ~msys2_dir ~opam_dir ~vcpkg =
+  let ( let* ) = Result.bind in
   (* We cannot directly call PowerShell because we likely do not have
-     administrator rights *)
+     administrator rights.
+
+     BUT BUT this is a Windows batch file that will not handle spaces
+     as it translates its command line arguments into PowerShell arguments.
+     So any path arguments should have `cygpath -ad` performed on them
+     so there are no spaces. *)
   let setup_bat = Fpath.(v scripts_dir / "setup-userprofile.bat") in
-  let normalized_dkml_path = Fpath.(dkml_dir |> to_string) in
+  let to83 = Ocamlcompiler_common.Os.Windows.get_dos83_short_path in
+  let* prefix_dir_83 = to83 prefix_dir in
+  let* msys2_dir_83 = to83 msys2_dir in
+  let* opam_dir_83 = to83 opam_dir in
+  let* dkml_path_83 = to83 dkml_dir in
+  let* temp_dir_83 = to83 temp_dir in
   let cmd =
     Cmd.(
       v (Fpath.to_string setup_bat)
-      % "-AllowRunAsAdmin" % "-InstallationPrefix" % Fpath.to_string prefix_dir
-      % "-MSYS2Dir" % Fpath.to_string msys2_dir % "-OpamBinDir"
-      % Fpath.to_string opam_dir % "-DkmlPath" % normalized_dkml_path
-      % "-DkmlHostAbi"
+      % "-AllowRunAsAdmin" % "-InstallationPrefix" % prefix_dir_83 % "-MSYS2Dir"
+      % msys2_dir_83 % "-OpamBinDir" % opam_dir_83 % "-DkmlPath"
+      % dkml_path_83 % "-DkmlHostAbi"
       % Context.Abi_v2.to_canonical_string abi
-      % "-TempParentPath" % Fpath.to_string temp_dir % "-SkipProgress")
+      % "-TempParentPath" % temp_dir_83 % "-SkipProgress")
   in
   let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
   Logs.info (fun l ->
