@@ -842,6 +842,11 @@ function Invoke-CygwinCommandWithProgress {
     $what = "[$CygwinName] $Command"
     Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
 
+    # Use our temporary directory, which will get cleaned up automatically,
+    # as the parent temp directory for DKML (so it gets cleaned up automatically).
+    $TempCygwinAbsPath = & $CygwinDir\usr\bin\cygpath.exe -au "$TempPath"
+    $Command = "export DKML_TMP_PARENTDIR='$($TempCygwinAbsPath)' && $Command"
+
     if ($SkipProgress) {
         Write-ProgressCurrentOperation -CurrentOperation "$what"
         Invoke-CygwinCommand -Command $Command -CygwinDir $CygwinDir `
@@ -872,6 +877,11 @@ function Invoke-MSYS2CommandWithProgress {
     # Add Git to path
     $GitMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$GitPath"
     $Command = "export PATH='$($GitMSYS2AbsPath)':`"`$PATH`" && $Command"
+
+    # Use our temporary directory, which will get cleaned up automatically,
+    # as the parent temp directory for DKML (so it gets cleaned up automatically).
+    $TempMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$TempPath"
+    $Command = "export DKML_TMP_PARENTDIR='$($TempMSYS2AbsPath)' && $Command"
 
     # Append what we will do into $AuditLog
     $what = "[MSYS2] $Command"
