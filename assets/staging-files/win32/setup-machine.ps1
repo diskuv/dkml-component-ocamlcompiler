@@ -68,6 +68,18 @@ param (
 
 $ErrorActionPreference = "Stop"
 
+# ----
+# Convert any DOS 8.3 paths into long paths.
+#   PowerShell (or Windows) will sometimes take DOS 8.3 paths literally.
+#   For example, if
+#   $TempDir = "C:\Users\RUNNER~1\AppData\Local\Temp\path_eval_e7bfeb"
+#   then it may use "RUNNER~1" rather than expand to "runneradmin".
+
+if ($DkmlPath)          { $DkmlPath =           (Get-Item -LiteralPath "$DkmlPath").FullName }
+if ($TempParentPath)    { $TempParentPath =     (Get-Item -LiteralPath "$TempParentPath").FullName }
+
+# ----
+
 $HereScript = $MyInvocation.MyCommand.Path
 $HereDir = (get-item $HereScript).Directory
 if (!$DkmlPath) {
