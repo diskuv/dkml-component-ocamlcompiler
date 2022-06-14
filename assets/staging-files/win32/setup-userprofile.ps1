@@ -209,6 +209,16 @@ if (!(Test-Path -Path $DkmlPath\.dkmlroot)) {
 $DkmlProps = ConvertFrom-StringData (Get-Content $DkmlPath\.dkmlroot -Raw)
 $dkml_root_version = $DkmlProps.dkml_root_version
 
+# Match set_dkmlparenthomedir() in crossplatform-functions.sh
+if ($env:LOCALAPPDATA) {
+    $DkmlParentHomeDir = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
+} elseif ($env:XDG_DATA_HOME) {
+    $DkmlParentHomeDir = "$env:XDG_DATA_HOME/diskuv-ocaml"
+} elseif ($env:HOME) {
+    $DkmlParentHomeDir = "$env:HOME/.local/share/diskuv-ocaml"
+}
+if (!(Test-Path -Path $DkmlParentHomeDir)) { New-Item -Path $DkmlParentHomeDir -ItemType Directory | Out-Null }
+
 $PSDefaultParameterValues = @{'Out-File:Encoding' = 'utf8'} # for Tee-Object. https://stackoverflow.com/a/58920518
 
 $dsc = [System.IO.Path]::DirectorySeparatorChar
@@ -574,12 +584,12 @@ Import-VSSetup -TempPath "$env:TEMP\vssetup"
 $CompatibleVisualStudios = Get-CompatibleVisualStudios -ErrorIfNotFound -VcpkgCompatibility:$VcpkgCompatibility
 $ChosenVisualStudio = ($CompatibleVisualStudios | Select-Object -First 1)
 $VisualStudioProps = Get-VisualStudioProperties -VisualStudioInstallation $ChosenVisualStudio
-$VisualStudioDirPath = "$InstallationPrefix\vsstudio.dir.txt"
-$VisualStudioJsonPath = "$InstallationPrefix\vsstudio.json"
-$VisualStudioVcVarsVerPath = "$InstallationPrefix\vsstudio.vcvars_ver.txt"
-$VisualStudioWinSdkVerPath = "$InstallationPrefix\vsstudio.winsdk.txt"
-$VisualStudioMsvsPreferencePath = "$InstallationPrefix\vsstudio.msvs_preference.txt"
-$VisualStudioCMakeGeneratorPath = "$InstallationPrefix\vsstudio.cmake_generator.txt"
+$VisualStudioDirPath = "$DkmlParentHomeDir\vsstudio.dir.txt"
+$VisualStudioJsonPath = "$DkmlParentHomeDir\vsstudio.json"
+$VisualStudioVcVarsVerPath = "$DkmlParentHomeDir\vsstudio.vcvars_ver.txt"
+$VisualStudioWinSdkVerPath = "$DkmlParentHomeDir\vsstudio.winsdk.txt"
+$VisualStudioMsvsPreferencePath = "$DkmlParentHomeDir\vsstudio.msvs_preference.txt"
+$VisualStudioCMakeGeneratorPath = "$DkmlParentHomeDir\vsstudio.cmake_generator.txt"
 [System.IO.File]::WriteAllText($VisualStudioDirPath, "$($VisualStudioProps.InstallPath)", $Utf8NoBomEncoding)
 [System.IO.File]::WriteAllText($VisualStudioJsonPath, ($CompatibleVisualStudios | ConvertTo-Json -Depth 5), $Utf8NoBomEncoding)
 [System.IO.File]::WriteAllText($VisualStudioVcVarsVerPath, "$($VisualStudioProps.VcVarsVer)", $Utf8NoBomEncoding)
@@ -1188,7 +1198,7 @@ try {
     # BEGIN Define dkmlvars
 
     # dkmlvars.* (DiskuvOCaml variables) are scripts that set variables about the deployment.
-    $ProgramParentMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$InstallationPrefix"
+    $DkmlParentHomeMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$DkmlParentHomeDir"
     $ProgramMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$ProgramPath"
     $UnixVarsArray = @(
         "DiskuvOCamlVarsVersion=2",
@@ -1355,7 +1365,6 @@ try {
             "DiskuvOCamlDeploymentId='$DeploymentId'",
             "DiskuvOCamlVersion='$dkml_root_version'"
         )
-        $CygwinVarsContents = $CygwinVarsArray -join [environment]::NewLine
         $CygwinVarsContentsOnOneLine = $CygwinVarsArray -join " "
 
         # END Define temporary dkmlvars for Cygwin only
@@ -1587,24 +1596,24 @@ try {
     # Since for Unix we should be writing BOM-less UTF-8 shell scripts, and PowerShell 5.1 (the default on Windows 10) writes
     # UTF-8 with BOM (cf. https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content?view=powershell-5.1)
     # we write to standard Windows encoding `Unicode` (UTF-16 LE with BOM) and then use dos2unix to convert it to UTF-8 with no BOM.
-    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.sh" -Value $UnixVarsContents -Encoding Unicode
-    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.cmd" -Value $CmdVarsContents -Encoding Unicode
-    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.cmake" -Value $CmakeVarsContents -Encoding Unicode
-    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.sexp" -Value $SexpVarsContents -Encoding Unicode
-    Set-Content -Path "$InstallationPrefix\dkmlvars.ps1" -Value $PowershellVarsContents -Encoding Unicode
+    Set-Content -Path "$DkmlParentHomeDir\dkmlvars.utf16le-bom.sh" -Value $UnixVarsContents -Encoding Unicode
+    Set-Content -Path "$DkmlParentHomeDir\dkmlvars.utf16le-bom.cmd" -Value $CmdVarsContents -Encoding Unicode
+    Set-Content -Path "$DkmlParentHomeDir\dkmlvars.utf16le-bom.cmake" -Value $CmakeVarsContents -Encoding Unicode
+    Set-Content -Path "$DkmlParentHomeDir\dkmlvars.utf16le-bom.sexp" -Value $SexpVarsContents -Encoding Unicode
+    Set-Content -Path "$DkmlParentHomeDir\dkmlvars.ps1" -Value $PowershellVarsContents -Encoding Unicode
 
     Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
         -Command (
             "set -x && " +
-            "dos2unix --newfile '$ProgramParentMSYS2AbsPath/dkmlvars.utf16le-bom.sh'   '$ProgramParentMSYS2AbsPath/dkmlvars.tmp.sh' && " +
-            "dos2unix --newfile '$ProgramParentMSYS2AbsPath/dkmlvars.utf16le-bom.cmd'  '$ProgramParentMSYS2AbsPath/dkmlvars.tmp.cmd' && " +
-            "dos2unix --newfile '$ProgramParentMSYS2AbsPath/dkmlvars.utf16le-bom.cmake'  '$ProgramParentMSYS2AbsPath/dkmlvars.tmp.cmake' && " +
-            "dos2unix --newfile '$ProgramParentMSYS2AbsPath/dkmlvars.utf16le-bom.sexp' '$ProgramParentMSYS2AbsPath/dkmlvars.tmp.sexp' && " +
-            "rm -f '$ProgramParentMSYS2AbsPath/dkmlvars.utf16le-bom.sh' '$ProgramParentMSYS2AbsPath/dkmlvars.utf16le-bom.cmd' '$ProgramParentMSYS2AbsPath/dkmlvars.utf16le-bom.cmake' '$ProgramParentMSYS2AbsPath/dkmlvars.utf16le-bom.sexp' && " +
-            "mv '$ProgramParentMSYS2AbsPath/dkmlvars.tmp.sh'   '$ProgramParentMSYS2AbsPath/dkmlvars.sh' && " +
-            "mv '$ProgramParentMSYS2AbsPath/dkmlvars.tmp.cmd'  '$ProgramParentMSYS2AbsPath/dkmlvars.cmd' && " +
-            "mv '$ProgramParentMSYS2AbsPath/dkmlvars.tmp.cmake'  '$ProgramParentMSYS2AbsPath/dkmlvars.cmake' && " +
-            "mv '$ProgramParentMSYS2AbsPath/dkmlvars.tmp.sexp' '$ProgramParentMSYS2AbsPath/dkmlvars-v2.sexp'"
+            "dos2unix --newfile '$DkmlParentHomeMSYS2AbsPath/dkmlvars.utf16le-bom.sh'   '$DkmlParentHomeMSYS2AbsPath/dkmlvars.tmp.sh' && " +
+            "dos2unix --newfile '$DkmlParentHomeMSYS2AbsPath/dkmlvars.utf16le-bom.cmd'  '$DkmlParentHomeMSYS2AbsPath/dkmlvars.tmp.cmd' && " +
+            "dos2unix --newfile '$DkmlParentHomeMSYS2AbsPath/dkmlvars.utf16le-bom.cmake'  '$DkmlParentHomeMSYS2AbsPath/dkmlvars.tmp.cmake' && " +
+            "dos2unix --newfile '$DkmlParentHomeMSYS2AbsPath/dkmlvars.utf16le-bom.sexp' '$DkmlParentHomeMSYS2AbsPath/dkmlvars.tmp.sexp' && " +
+            "rm -f '$DkmlParentHomeMSYS2AbsPath/dkmlvars.utf16le-bom.sh' '$DkmlParentHomeMSYS2AbsPath/dkmlvars.utf16le-bom.cmd' '$DkmlParentHomeMSYS2AbsPath/dkmlvars.utf16le-bom.cmake' '$DkmlParentHomeMSYS2AbsPath/dkmlvars.utf16le-bom.sexp' && " +
+            "mv '$DkmlParentHomeMSYS2AbsPath/dkmlvars.tmp.sh'   '$DkmlParentHomeMSYS2AbsPath/dkmlvars.sh' && " +
+            "mv '$DkmlParentHomeMSYS2AbsPath/dkmlvars.tmp.cmd'  '$DkmlParentHomeMSYS2AbsPath/dkmlvars.cmd' && " +
+            "mv '$DkmlParentHomeMSYS2AbsPath/dkmlvars.tmp.cmake'  '$DkmlParentHomeMSYS2AbsPath/dkmlvars.cmake' && " +
+            "mv '$DkmlParentHomeMSYS2AbsPath/dkmlvars.tmp.sexp' '$DkmlParentHomeMSYS2AbsPath/dkmlvars-v2.sexp'"
         )
 
 
