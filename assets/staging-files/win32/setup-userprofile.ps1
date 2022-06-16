@@ -127,29 +127,13 @@
     PS> vendor\diskuv-ocaml\installtime\windows\setup-userprofile.ps1
 
 .Example
-    PS> $global:SkipMSYS2Setup = $true ; $global:SkipCygwinSetup = $true; $global:SkipMSYS2Update = $true ; $global:SkipMobyDownload = $true ; $global:SkipMobyFixup = $true ; $global:SkipOpamSetup = $true; $global:SkipOcamlSetup = $true
+    PS> $global:SkipMSYS2Setup = $true ; $global:SkipMSYS2Update = $true ; $global:SkipMobyDownload = $true ; $global:SkipMobyFixup = $true ; $global:SkipOpamSetup = $true; $global:SkipOcamlSetup = $true
     PS> vendor\diskuv-ocaml\installtime\windows\setup-userprofile.ps1
 #>
 
-# Cygwin Rough Edges
-# ------------------
-#
-# ALWAYS ALWAYS use Cygwin to create directories if they are _ever_ read from Cygwin.
-# That is because Cygwin uses Windows ACLs attached to files and directories that
-# native Windows executables and MSYS2 do not use. (See the 'BEGIN Remove extended ACL' script block)
-#
-# ONLY USE CYGWIN WITHIN THIS SCRIPT. See the above point about file permissions. If we limit
-# the blast radius of launching Cygwin to this Powershell script, then we make auditing where
-# file permissions are going wrong to one place (here!). AND we remove any possibility
-# of Cygwin invoking MSYS which simply does not work by stipulating that Cygwin must only be used here.
-#
-# Troubleshooting: In Cygwin we can do 'setfacl -b ...' to remove extended ACL entries. (See https://cygwin.com/cygwin-ug-net/ov-new.html#ov-new2.4s)
-# So `find build/ -print0 | xargs -0 --no-run-if-empty setfacl --remove-all --remove-default` would just leave ordinary
-# POSIX permissions in the build/ directory (typically what we want!)
-
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '',
-    Justification='Conditional block based on Windows 32 vs 64-bit',
-    Target="CygwinPackagesArch")]
+# [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '',
+#     Justification='Conditional block based on Windows 32 vs 64-bit',
+#     Target="CygwinPackagesArch")]
 [CmdletBinding()]
 param (
     [ValidateSet("CI", "Full")]
@@ -291,40 +275,7 @@ $OCamlLangGitCommit = switch ($OCamlLangVersion)
 # * Immutable git
 $NinjaVersion = "1.10.2"
 $CMakeVersion = "3.21.1"
-$JqVersion = "1.6"
 $InotifyTag = "36d18f3dfe042b21d7136a1479f08f0d8e30e2f9"
-$CygwinPackages = @("curl",
-    "diff",
-    "diffutils",
-    "git",
-    "m4",
-    "make",
-    "patch",
-    "unzip",
-    "python",
-    "python3",
-    "cmake",
-    "cmake-gui",
-    "ninja",
-    "wget",
-    # needed by this script (install-world.ps1)
-    "dos2unix",
-    # needed by Moby scripted Docker downloads (download-frozen-image-v2.sh)
-    "jq")
-if ([Environment]::Is64BitOperatingSystem) {
-    $CygwinPackagesArch = $CygwinPackages + @("mingw64-x86_64-gcc-core",
-    "mingw64-x86_64-gcc-g++",
-    "mingw64-x86_64-headers",
-    "mingw64-x86_64-runtime",
-    "mingw64-x86_64-winpthreads")
-}
-else {
-    $CygwinPackagesArch = $CygwinPackages + @("mingw64-i686-gcc-core",
-        "mingw64-i686-gcc-g++",
-        "mingw64-i686-headers",
-        "mingw64-i686-runtime",
-        "mingw64-i686-winpthreads")
-}
 $CiFlavorPackages = Get-Content -Path $DkmlPath\vendor\drd\src\none\ci-pkgs.txt | Where-Object {
     # Remove blank lines and comments
     "" -ne $_.Trim() -and -not $_.StartsWith("#")
@@ -429,7 +380,6 @@ if ($Flavor -eq "Full") {
 $AllMSYS2Packages = $DV_MSYS2Packages + (DV_MSYS2PackagesAbi -DkmlHostAbi $DkmlHostAbi)
 
 # Consolidate the magic constants into a single deployment id
-$CygwinHash = Get-Sha256Hex16OfText -Text ($CygwinPackagesArch -join ',')
 $MSYS2Hash = Get-Sha256Hex16OfText -Text ($AllMSYS2Packages -join ',')
 $DockerHash = Get-Sha256Hex16OfText -Text "$DV_WindowsMsvcDockerImage"
 $PkgHash = Get-Sha256Hex16OfText -Text ($FlavorPackages -join ',')
@@ -441,7 +391,7 @@ if ($null -ne $OpamBinDir -and "" -ne $OpamBinDir) {
 } else {
     $OpamHash = $DV_AvailableOpamVersion
 }
-$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;jq-$JqVersion;inotify-$InotifyTag;cygwin-$CygwinHash;msys2-$MSYS2Hash;docker-$DockerHash;pkgs-$PkgHash;bins-$BinHash;stubs-$StubHash;toplevels-$ToplevelsHash"
+$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;inotify-$InotifyTag;msys2-$MSYS2Hash;docker-$DockerHash;pkgs-$PkgHash;bins-$BinHash;stubs-$StubHash;toplevels-$ToplevelsHash"
 if ($VcpkgCompatibility) {
     $DeploymentId += ";ninja-$NinjaVersion;cmake-$CMakeVersion"
 }
@@ -536,7 +486,7 @@ function Import-DiskuvOCamlAsset {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 14
+$ProgressTotalSteps = 13
 if ($VcpkgCompatibility) {
     $ProgressTotalSteps = $ProgressTotalSteps + 2
 }
@@ -725,7 +675,6 @@ $ProgramPath = Start-BlueGreenDeploy -ParentPath $InstallationPrefix `
     -FixedSlotIdx:$FixedSlotIdx `
     -KeepOldDeploymentWhenSameDeploymentId:$IncrementalDeployment `
     -LogFunction ${function:\Write-ProgressCurrentOperation}
-$DeploymentMark = "[$DeploymentId]"
 
 # We also use "deployments" for any temporary directory we need since the
 # deployment process handles an aborted setup and the necessary cleaning up of disk
@@ -778,7 +727,6 @@ function Invoke-Win32CommandWithProgress {
             throw "Win32 command failed! Exited with $LastExitCode. Command was: $Command."
         }
     } else {
-        $global:ProgressStatus = $what
         Write-Progress -Id $ProgressId `
             -ParentId $ParentProgressId `
             -Activity $global:ProgressActivity `
@@ -794,7 +742,11 @@ function Invoke-Win32CommandWithProgress {
                 -RedirectStandardError $RedirectStandardError `
                 -ArgumentList $ArgumentList `
                 -PassThru
-            $handle = $proc.Handle # cache proc.Handle https://stackoverflow.com/a/23797762/1479211
+
+            # cache proc.Handle https://stackoverflow.com/a/23797762/1479211
+            $handle = $proc.Handle
+            if ($handle) {} # remove warning about unused $handle
+
             while (-not $proc.HasExited) {
                 if (-not $SkipProgress) {
                     $tail = Get-Content -Path $RedirectStandardOutput -Tail $InvokerTailLines -ErrorAction Ignore
@@ -823,39 +775,6 @@ function Invoke-Win32CommandWithProgress {
                 Remove-Item $RedirectStandardError -Force -ErrorAction Continue
             }
         }
-    }
-}
-function Invoke-CygwinCommandWithProgress {
-    param (
-        [Parameter(Mandatory=$true)]
-        $Command,
-        [Parameter(Mandatory=$true)]
-        $CygwinDir,
-        $CygwinName = "cygwin"
-    )
-    # Append what we will do into $AuditLog
-    $what = "[$CygwinName] $Command"
-    Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
-
-    # Use our temporary directory, which will get cleaned up automatically,
-    # as the parent temp directory for DKML (so it gets cleaned up automatically).
-    $TempCygwinAbsPath = & $CygwinDir\usr\bin\cygpath.exe -au "$TempPath"
-    $Command = "export DKML_TMP_PARENTDIR='$($TempCygwinAbsPath)' && $Command"
-
-    if ($SkipProgress) {
-        Write-ProgressCurrentOperation -CurrentOperation "$what"
-        Invoke-CygwinCommand -Command $Command -CygwinDir $CygwinDir `
-            -AuditLog $AuditLog
-    } else {
-        $global:ProgressStatus = $what
-        Write-Progress -Id $ProgressId `
-            -ParentId $ParentProgressId `
-            -Activity $global:ProgressActivity `
-            -Status $what `
-            -PercentComplete (100 * ($global:ProgressStep / $ProgressTotalSteps))
-        Invoke-CygwinCommand -Command $Command -CygwinDir $CygwinDir `
-            -AuditLog $AuditLog `
-            -TailFunction ${function:\Write-ProgressCurrentOperation}
     }
 }
 function Invoke-MSYS2CommandWithProgress {
@@ -994,92 +913,6 @@ try {
         # END CMake
         # ----------------------------------------------------------------
     }
-
-    # ----------------------------------------------------------------
-    # BEGIN jq
-
-    $global:ProgressActivity = "Install jq"
-    Write-ProgressStep
-
-    $JqExeBasename = "jq.exe"
-    $JqToolDir = "$ProgramPath\tools\jq"
-    $JqExe = "$JqToolDir\$JqExeBasename"
-    if (!(Test-Path -Path $JqExe)) {
-        if (!(Test-Path -Path $JqToolDir)) { New-Item -Path $JqToolDir -ItemType Directory | Out-Null }
-        if ([Environment]::Is64BitOperatingSystem) {
-            $JqDistType = "win64"
-        } else {
-            $JqDistType = "win32"
-        }
-        Invoke-WebRequest -Uri "https://github.com/stedolan/jq/releases/download/jq-$JqVersion/jq-$JqDistType.exe" -OutFile "$JqExe.tmp"
-        Rename-Item -Path "$JqExe.tmp" -NewName "$JqExeBasename"
-    }
-
-    # END jq
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
-    # BEGIN Cygwin
-
-    $CygwinRootPath = "$ProgramPath\tools\cygwin"
-
-    function Invoke-CygwinSyncScript {
-        param (
-            $CygwinDir = $CygwinRootPath
-        )
-
-        # Create /opt/diskuv-ocaml/installtime/ which is specific to Cygwin with common pieces from UNIX.
-        $cygwinAbsPath = & $CygwinDir\bin\cygpath.exe -au "$DkmlPath"
-        Invoke-CygwinCommandWithProgress -CygwinDir $CygwinDir -Command "/usr/bin/install -d /opt/diskuv-ocaml/installtime && /usr/bin/rsync -a --delete '$cygwinAbsPath'/vendor/drd/src/cygwin/ '$cygwinAbsPath'/vendor/drd/src/unix/ /opt/diskuv-ocaml/installtime/ && /usr/bin/find /opt/diskuv-ocaml/installtime/ -type f | /usr/bin/xargs /usr/bin/chmod +x"
-
-        # Run through dos2unix which is only installed in $CygwinRootPath
-        $dkmlSetupCygwinAbsMixedPath = & $CygwinDir\bin\cygpath.exe -am "/opt/diskuv-ocaml/installtime/"
-        Invoke-CygwinCommandWithProgress -CygwinDir $CygwinRootPath -Command "/usr/bin/find '$dkmlSetupCygwinAbsMixedPath' -type f | /usr/bin/xargs /usr/bin/dos2unix --quiet"
-    }
-
-    function Install-Cygwin {
-        # Much of the remainder of the 'Cygwin' section is modified from
-        # https://github.com/esy/esy-bash/blob/master/build-cygwin.js
-
-        $CygwinCachePath = "$TempPath\cygwin"
-        if ([Environment]::Is64BitOperatingSystem) {
-            $CygwinSetupExeBasename = "setup-x86_64.exe"
-            $CygwinDistType = "x86_64"
-        } else {
-            $CygwinSetupExeBasename = "setup-x86.exe"
-            $CygwinDistType = "x86"
-        }
-        $CygwinSetupExe = "$CygwinCachePath\$CygwinSetupExeBasename"
-        if (!(Test-Path -Path $CygwinCachePath)) { New-Item -Path $CygwinCachePath -ItemType Directory | Out-Null }
-        if (!(Test-Path -Path $CygwinSetupExe)) {
-            Invoke-WebRequest -Uri "https://cygwin.com/$CygwinSetupExeBasename" -OutFile "$CygwinSetupExe.tmp"
-            Rename-Item -Path "$CygwinSetupExe.tmp" "$CygwinSetupExeBasename"
-        }
-
-        $CygwinSetupCachePath = "$CygwinRootPath\var\cache\setup"
-        if (!(Test-Path -Path $CygwinSetupCachePath)) { New-Item -Path $CygwinSetupCachePath -ItemType Directory | Out-Null }
-
-        $CygwinMirror = "http://cygwin.mirror.constant.com"
-
-        # Skip with ... $global:SkipCygwinSetup = $true ... remove it with ... Remove-Variable SkipCygwinSetup
-        if (!$global:SkipCygwinSetup -or (-not (Test-Path "$CygwinRootPath\bin\mintty.exe"))) {
-            # https://cygwin.com/faq/faq.html#faq.setup.cli
-            $CommonCygwinMSYSOpts = "-qWnNdOfgoB"
-            Invoke-Win32CommandWithProgress -FilePath $CygwinSetupExe `
-                -ArgumentList $CommonCygwinMSYSOpts, "-a", $CygwinDistType, "-R", $CygwinRootPath, "-s", $CygwinMirror, "-l", $CygwinSetupCachePath, "-P", ($CygwinPackagesArch -join ",")
-        }
-
-        $global:AdditionalDiagnostics += "[Advanced] DiskuvOCaml Cygwin commands can be run with: $CygwinRootPath\bin\mintty.exe -`n"
-
-        # Create home directories
-        Invoke-CygwinCommandWithProgress -CygwinDir $CygwinRootPath -Command "exit 0"
-
-        # Create /opt/diskuv-ocaml/installtime/ which is specific to Cygwin with common pieces from UNIX
-        Invoke-CygwinSyncScript
-    }
-
-    # END Cygwin
-    # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
     # BEGIN MSYS2
@@ -1350,40 +1183,7 @@ try {
             -DestinationPath "$ProgramPath\share\dkml\repro\$OCamlLangVersion") {
         # Successfully downloaded from asset
     } else {
-        Install-Cygwin
-
-        # ----------------------------------------------------------------
-        # BEGIN Define temporary dkmlvars for Cygwin only
-
-        # dkmlvars.* (DiskuvOCaml variables) are scripts that set variables about the deployment.
-        $ProgramCygwinAbsPath = & $CygwinRootPath\bin\cygpath.exe -au "$ProgramPath"
-        $CygwinVarsArray = @(
-            # Every dkml variable is defined except DiskuvOCamlMSYS2Dir
-            "DiskuvOCamlVarsVersion=2",
-            "DiskuvOCamlHome='$ProgramCygwinAbsPath'",
-            "DiskuvOCamlBinaryPaths='$ProgramCygwinAbsPath/bin'",
-            "DiskuvOCamlDeploymentId='$DeploymentId'",
-            "DiskuvOCamlVersion='$dkml_root_version'"
-        )
-        $CygwinVarsContentsOnOneLine = $CygwinVarsArray -join " "
-
-        # END Define temporary dkmlvars for Cygwin only
-        # ----------------------------------------------------------------
-
-        $DkmlCygwinAbsPath = & $CygwinRootPath\bin\cygpath.exe -au "$DkmlPath"
-
-        $OcamlOpamRootPath = "$ProgramPath\tools\ocaml-opam"
-        $MobyPath = "$TempPath\moby"
-        $OcamlOpamRootCygwinAbsPath = & $CygwinRootPath\bin\cygpath.exe -au "$OcamlOpamRootPath"
-        $MobyCygwinAbsPath = & $CygwinRootPath\bin\cygpath.exe -au "$MobyPath"
-
-        # Q: Why download with Cygwin rather than MSYS? Ans: The Moby script uses `jq` which has shell quoting failures when run with MSYS `jq`.
-        #
-        if (!$global:SkipMobyDownload) {
-            Invoke-CygwinCommandWithProgress -CygwinDir $CygwinRootPath `
-                -Command "env $CygwinVarsContentsOnOneLine TOPDIR='$DkmlCygwinAbsPath'/vendor/drc/all/emptytop /opt/diskuv-ocaml/installtime/private/install-ocaml-opam-repo.sh '$DkmlCygwinAbsPath' '$DV_WindowsMsvcDockerImage' '$ProgramCygwinAbsPath' '$ProgramCygwinAbsPath'"
-        }
-
+        throw "The Diskuv OCaml $dkml_root_version asset ocaml_opam_repo-reproducible/ocaml-opam-repo-$OCamlLangVersion.zip has not been created"
     }
 
     # END Fetch/install fdopen-based ocaml/opam repository
