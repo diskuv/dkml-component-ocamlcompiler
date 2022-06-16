@@ -2,7 +2,7 @@
 .Synopsis
     Set up all programs and data folders in $env:USERPROFILE.
 .Description
-    Installs Git for Windows 2.36.0, compiles OCaml and install several useful
+    Installs Git for Windows 2.36.1, compiles OCaml and install several useful
     OCaml programs.
 
     Interactive Terminals
@@ -78,7 +78,7 @@
     that reports its own progress.
 .Parameter SkipAutoUpgradeGitWhenOld
     Ordinarily if Git for Windows is installed on the machine but
-    it is less than version 1.7.2 then Git for Windows 2.36.0 is
+    it is less than version 1.7.2 then Git for Windows 2.36.1 is
     installed which will replace the old version.
 
     Git 1.7.2 includes supports for git submodules that are necessary
@@ -89,10 +89,10 @@
     like "git version 2.32.0.windows.2". Without this switch
     this script may detect a Git installation that is not Git for
     Windows, and you will end up installing an extra Git for Windows
-    2.36.0 installation instead of upgrading the existing Git for
-    Windows to 2.36.0.
+    2.36.1 installation instead of upgrading the existing Git for
+    Windows to 2.36.1.
 
-    Even with this switch is selected, Git 2.36.0 will be installed
+    Even with this switch is selected, Git 2.36.1 will be installed
     if there is no Git available on the PATH.
 .Parameter AllowRunAsAdmin
     When specified you will be allowed to run this script using
@@ -596,15 +596,15 @@ if (-not $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected) {
         ($GitOriginalVersion[0] -eq 1 -and $GitOriginalVersion[1] -lt 7) -or
         ($GitOriginalVersion[0] -eq 1 -and $GitOriginalVersion[1] -eq 7 -and $GitOriginalVersion[2] -lt 2))
     if ((-not $GitExists) -or ($GitTooOld -and -not $SkipAutoUpgradeGitWhenOld)) {
-        # Install Git for Windows 2.36.0
+        # Install Git for Windows 2.36.1
 
-        $GitNewVer = "2.36.0"
+        $GitNewVer = "2.36.1"
         if ([Environment]::Is64BitOperatingSystem) {
             $GitWindowsBits = "64"
-            $GitSha256 = "5196563ba07031257d972c0b3c2ebd3227d98a40587278e11930dbc2f78d4e69"
+            $GitSha256 = "08a0c20374d13d1b448d2c5713222ff55dd1f4bffa15093b85772cc0fc5f30e7"
         } else {
             $GitWindowsBits = "32"
-            $GitSha256 = "5de71f60ca0012e5efc6e991696095d3eb5a80d156fb404c3fbe8317ba690313"
+            $GitSha256 = "0a50735bd088698e6015265d9373cb0cc859f46a0689d3073f91da0dc0fe66aa"
         }
         if (!(Test-Path -Path "$GitWindowsSetupAbsPath")) { New-Item -Path "$GitWindowsSetupAbsPath" -ItemType Directory | Out-Null }
         if (!(Test-Path -Path "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe")) {
