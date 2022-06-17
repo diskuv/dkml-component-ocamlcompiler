@@ -486,7 +486,7 @@ function Import-DiskuvOCamlAsset {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 13
+$ProgressTotalSteps = 14
 if ($VcpkgCompatibility) {
     $ProgressTotalSteps = $ProgressTotalSteps + 2
 }
@@ -1285,7 +1285,7 @@ try {
         exit 0
     }
 
-    $global:ProgressActivity = "Create dkml Opam Switch"
+    $global:ProgressActivity = "Create dkml Opam Local Switch"
     Write-ProgressStep
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
@@ -1295,7 +1295,7 @@ try {
                 "'$DkmlPath\vendor\drd\src\unix\private\create-tools-switch.sh' -v '$ProgramMSYS2AbsPath' -p '$DkmlHostAbi' -f '$Flavor' -o '$ProgramMSYS2AbsPath'")
         }
 
-    # END opam switch create <system>
+    # END opam switch create <dkml>
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
@@ -1314,6 +1314,33 @@ try {
     # END install crossplatform-functions.sh
     # ----------------------------------------------------------------
 
+    # ----------------------------------------------------------------
+    # BEGIN opam switch create playground
+
+    if ($StopBeforeInstallSystemSwitch) {
+        Write-Host "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
+        exit 0
+    }
+
+    $global:ProgressActivity = "Create playground Opam Global Switch"
+    Write-ProgressStep
+
+    # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
+    if (!$global:SkipOpamSetup) {
+        # Install the playground switch
+        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
+            -Command ("env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath'/vendor/drc/all/emptytop " +
+                "'$DkmlPath\vendor\drd\src\unix\create-opam-switch.sh' -p '$DkmlHostAbi' -y -n playground -v '$ProgramMSYS2AbsPath' -o '$ProgramMSYS2AbsPath'")
+        
+        # Diagnostics: Display all the switches
+        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
+            -Command ("env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath'/vendor/drc/all/emptytop " +
+                "'$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh' -p '$DkmlHostAbi' -v '$ProgramMSYS2AbsPath' -o '$ProgramMSYS2AbsPath' switch")
+    }
+
+    # END opam switch create playground
+    # ----------------------------------------------------------------
+    
     # ----------------------------------------------------------------
     # BEGIN install `dkml` switch binaries to Programs
 
