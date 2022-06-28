@@ -284,13 +284,23 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
             Clear-Host
         }
         Write-Error (
+            ". . . `n`n"+
+            ". . . `n`n"+
             "`n`nNo compatible Visual Studio installation detected after the Visual Studio installation!`n" +
             "Often this is because a reboot is required or your system has a component that needs upgrading.`n`n" +
+            ". . . `n`n"+
+            ". . . `n`n"+
             "FIRST you should reboot and try again.`n`n"+
+            ". . . `n`n"+
+            ". . . `n`n"+
             "SECOND you can run the following (all on one line) to manually install Visual Studio Build Tools:`n`n`t$VsInstallTempPath\vs_buildtools.exe $($VsComponents.Add)`n`n"+
             "Make sure the following components are installed:`n"+
             "$($VsComponents.Describe)`n" +
-            "THIRD, if everything else failed, you can file a Bug Report at https://github.com/diskuv/dkml-installer-ocaml/issues and attach $VsInstallTempPath\vslogs.zip`n"
+            ". . .`n`n"+
+            ". . .`n`n"+
+            "THIRD, if everything else failed, you can file a Bug Report at https://github.com/diskuv/dkml-installer-ocaml/issues and attach $VsInstallTempPath\vslogs.zip`n" +
+            ". . . `n`n"+
+            ". . . `n`n"
         )
         exit 1
     }
