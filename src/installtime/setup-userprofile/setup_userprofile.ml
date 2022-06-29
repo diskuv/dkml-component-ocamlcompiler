@@ -46,19 +46,23 @@ let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
     Cmd.(
       v (Fpath.to_string setup_bat)
       % "-AllowRunAsAdmin" % "-InstallationPrefix" % prefix_dir_83 % "-MSYS2Dir"
-      % msys2_dir_83 % "-OpamBinDir" % opam_dir_83 % "-DkmlPath"
-      % dkml_path_83 % "-DkmlHostAbi"
+      % msys2_dir_83 % "-OpamBinDir" % opam_dir_83 % "-DkmlPath" % dkml_path_83
+      % "-DkmlHostAbi"
       % Context.Abi_v2.to_canonical_string abi
       % "-TempParentPath" % temp_dir_83 % "-SkipProgress")
   in
   let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
   Logs.info (fun l ->
       l "Installing Git, OCaml and other tools with@ @[%a@]" Cmd.pp cmd);
-  Result.ok (log_spawn_and_raise cmd)
+  Result.ok (log_spawn_onerror_exit cmd)
 
 let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
     ~opam32_bindir_opt ~opam64_bindir_opt ~vcpkg =
   (* Install opam *)
+  Dkml_install_api.Forward_progress.lift_result __POS__ Fmt.lines
+    Dkml_install_api.Forward_progress.stderr_fatallog
+  @@ Rresult.R.reword_error (Fmt.str "%a" Rresult.R.pp_msg)
+  @@
   let ( let* ) = Rresult.R.bind in
   let* cygpath_opt = OS.Cmd.find_tool (Cmd.v "cygpath") in
   let* () =
@@ -93,8 +97,9 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
     setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
       ~opam32_bindir_opt ~opam64_bindir_opt ~vcpkg
   with
-  | Ok () -> ()
-  | Error msg -> Logs.err (fun l -> l "%a" Rresult.R.pp_msg msg)
+  | Completed | Continue_progress _ -> ()
+  | Halted_progress ec ->
+      exit (Dkml_install_api.Forward_progress.Exit_code.to_int_exitcode ec)
 
 let scripts_dir_t =
   Arg.(required & opt (some dir) None & info [ "scripts-dir" ])

@@ -164,21 +164,25 @@ let register () =
         | true -> do_needs_install_admin_on_windows ~ctx
         | _ -> false
 
-      let install_admin_subcommand ~component_name:_ ~subcommand_name ~ctx_t =
+      let install_admin_subcommand ~component_name:_ ~subcommand_name ~fl ~ctx_t
+          =
         let doc =
           "Install Visual Studio from the network on Windows, and install \
            nothing on other operating systems"
         in
-        Result.ok
-        @@ Cmdliner.Term.
-             (const execute_install_admin $ ctx_t, info subcommand_name ~doc)
+        Dkml_install_api.Forward_progress.Continue_progress
+          ( Cmdliner.Term.
+              (const execute_install_admin $ ctx_t, info subcommand_name ~doc),
+            fl )
 
-      let install_user_subcommand ~component_name:_ ~subcommand_name ~ctx_t =
+      let install_user_subcommand ~component_name:_ ~subcommand_name ~fl ~ctx_t
+          =
         let doc =
           "Install the OCaml compiler from the network, and install nothing on \
            other operating systems"
         in
-        Result.ok
-        @@ Cmdliner.Term.
-             (const execute_install_user $ ctx_t, info subcommand_name ~doc)
+        Dkml_install_api.Forward_progress.Continue_progress
+          ( Cmdliner.Term.
+              (const execute_install_user $ ctx_t, info subcommand_name ~doc),
+            fl )
     end)

@@ -13,23 +13,28 @@ let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~vcpkg =
      so there are no spaces. *)
   let setup_machine_bat = Fpath.(v scripts_dir / "setup-machine.bat") in
   let to83 = Ocamlcompiler_common.Os.Windows.get_dos83_short_path in
-  let* dkml_path_83 = to83 (Fpath.v dkml_dir) in
-  let* temp_dir_83 = to83 (Fpath.v temp_dir) in
-  let cmd =
-    Cmd.(
-      v (Fpath.to_string setup_machine_bat)
-      % "-DkmlPath" % dkml_path_83 % "-TempParentPath" % temp_dir_83
-      % "-SkipProgress" % "-AllowRunAsAdmin")
-  in
-  let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
-  Logs.info (fun l -> l "Installing Visual Studio with@ @[%a@]" Cmd.pp cmd);
-  Result.ok (Dkml_install_api.log_spawn_and_raise cmd)
+  Dkml_install_api.Forward_progress.lift_result __POS__ Fmt.lines
+    Dkml_install_api.Forward_progress.stderr_fatallog
+  @@ Rresult.R.reword_error (Fmt.str "%a" Rresult.R.pp_msg)
+  @@ let* dkml_path_83 = to83 (Fpath.v dkml_dir) in
+     let* temp_dir_83 = to83 (Fpath.v temp_dir) in
+     let cmd =
+       Cmd.(
+         v (Fpath.to_string setup_machine_bat)
+         % "-DkmlPath" % dkml_path_83 % "-TempParentPath" % temp_dir_83
+         % "-SkipProgress" % "-AllowRunAsAdmin")
+     in
+     let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
+     Logs.info (fun l -> l "Installing Visual Studio with@ @[%a@]" Cmd.pp cmd);
+     Dkml_install_api.log_spawn_onerror_exit ~id:"118acf2a" cmd;
+     Ok ()
 
 let setup (_ : Dkml_install_api.Log_config.t) scripts_dir dkml_dir temp_dir
     vcpkg =
   match setup_res ~scripts_dir ~dkml_dir ~temp_dir ~vcpkg with
-  | Ok () -> ()
-  | Error msg -> Logs.err (fun l -> l "%a" Rresult.R.pp_msg msg)
+  | Completed | Continue_progress _ -> ()
+  | Halted_progress ec ->
+      exit (Dkml_install_api.Forward_progress.Exit_code.to_int_exitcode ec)
 
 let scripts_dir_t =
   Arg.(required & opt (some string) None & info [ "scripts-dir" ])
