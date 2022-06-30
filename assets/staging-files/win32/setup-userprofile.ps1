@@ -218,8 +218,7 @@ Import-Module DeploymentHash # for Get-Sha256Hex16OfText
 if ([System.Environment]::OSVersion.Platform -eq "Win32NT") {
     $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
     if ((-not $AllowRunAsAdmin) -and $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-        Write-Error -Category SecurityError `
-            -Message "You are in an PowerShell Run as Administrator session. Please run $HereScript from a non-Administrator PowerShell session."
+        Write-Error "You are in an PowerShell Run as Administrator session. Please run $HereScript from a non-Administrator PowerShell session."
         exit 1
     }
 }
@@ -244,8 +243,7 @@ $OcamlNonDKMLEnvKeys = @( "OCAMLLIB" )
 $OcamlNonDKMLEnvKeys | ForEach-Object {
     $x = [System.Environment]::GetEnvironmentVariable($_, "Machine")
     if (($null -ne $x) -and ("" -ne $x)) {
-        Write-Error -Category PermissionDenied `
-            -Message ("`n`nYou have a System Environment Variable named '$_' that must be removed before proceeding with the installation.`n`n" +
+        Write-Error ("`n`nYou have a System Environment Variable named '$_' that must be removed before proceeding with the installation.`n`n" +
             "1. Press the Windows Key ⊞, type `"system environment variable`" and click Open.`n" +
             "2. Click the `"Environment Variables`" button.`n" +
             "3. In the bottom section titled `"System variables`" select the Variable '$_' and then press `"Delete`".`n" +
@@ -262,8 +260,7 @@ $OCamlLangGitCommit = switch ($OCamlLangVersion)
     "4.13.1" {"ab626576eee205615a9d7c5a66c2cb2478f1169c"; Break}
     "5.00.0+dev0-2021-11-05" {"284834d31767d323aae1cee4ed719cc36aa1fb2c"; Break}
     default {
-        Write-Error -Category InvalidArgument `
-            -Message ("`n`nThe OCaml version $OCamlLangVersion is not supported")
+        Write-Error ("`n`nThe OCaml version $OCamlLangVersion is not supported")
         # exit 1
     }
 }
@@ -522,6 +519,13 @@ function Write-ProgressCurrentOperation {
             -CurrentOperation $CurrentOperation `
             -PercentComplete (100 * ($global:ProgressStep / $ProgressTotalSteps))
     }
+}
+
+function Write-Error($message) {
+    # https://stackoverflow.com/questions/38064704/how-can-i-display-a-naked-error-message-in-powershell-without-an-accompanying
+    [Console]::ForegroundColor = 'red'
+    [Console]::Error.WriteLine($message)
+    [Console]::ResetColor()
 }
 
 # ----------------------------------------------------------------

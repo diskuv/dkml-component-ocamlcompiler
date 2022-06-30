@@ -87,8 +87,7 @@ Import-Module Machine
 if ([System.Environment]::OSVersion.Platform -eq "Win32NT") {
     $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
     if ((-not $AllowRunAsAdmin) -and $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-        Write-Error -Category SecurityError `
-            -Message "You are in an PowerShell Run as Administrator session. Please run $HereScript from a non-Administrator PowerShell session."
+        Write-Error "You are in an PowerShell Run as Administrator session. Please run $HereScript from a non-Administrator PowerShell session."
         exit 1
     }
 }
@@ -127,6 +126,13 @@ function Write-ProgressCurrentOperation {
             -CurrentOperation $CurrentOperation `
             -PercentComplete (100 * ($global:ProgressStep / $ProgressTotalSteps))
     }
+}
+
+function Write-Error($message) {
+    # https://stackoverflow.com/questions/38064704/how-can-i-display-a-naked-error-message-in-powershell-without-an-accompanying
+    [Console]::ForegroundColor = 'red'
+    [Console]::Error.WriteLine($message)
+    [Console]::ResetColor()
 }
 
 # ----------------------------------------------------------------
