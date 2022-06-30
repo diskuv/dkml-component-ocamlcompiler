@@ -32,7 +32,7 @@ let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~vcpkg =
 let setup (_ : Dkml_install_api.Log_config.t) scripts_dir dkml_dir temp_dir
     vcpkg =
   match setup_res ~scripts_dir ~dkml_dir ~temp_dir ~vcpkg with
-  | Completed | Continue_progress _ -> ()
+  | Completed | Continue_progress ((), _) -> ()
   | Halted_progress ec ->
       exit (Dkml_install_api.Forward_progress.Exit_code.to_int_exitcode ec)
 

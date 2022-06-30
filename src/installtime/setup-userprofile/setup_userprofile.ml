@@ -54,7 +54,8 @@ let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
   let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
   Logs.info (fun l ->
       l "Installing Git, OCaml and other tools with@ @[%a@]" Cmd.pp cmd);
-  Result.ok (log_spawn_onerror_exit cmd)
+  log_spawn_onerror_exit ~id:"a0d16230" cmd;
+  Ok ()
 
 let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
     ~opam32_bindir_opt ~opam64_bindir_opt ~vcpkg =
@@ -97,7 +98,7 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
     setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
       ~opam32_bindir_opt ~opam64_bindir_opt ~vcpkg
   with
-  | Completed | Continue_progress _ -> ()
+  | Completed | Continue_progress ((), _) -> ()
   | Halted_progress ec ->
       exit (Dkml_install_api.Forward_progress.Exit_code.to_int_exitcode ec)
 
