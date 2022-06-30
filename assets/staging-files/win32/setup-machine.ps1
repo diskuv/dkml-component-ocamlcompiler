@@ -259,7 +259,8 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
         Write-Host ''
         Write-Host 'Press any key to exit this script... You must reboot!';
         $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
-        throw
+        # Dkml_install_api.Forward_progress.Exit_code.Exit_reboot_needed = 23
+        exit 23
     }
     elseif ($exitCode -ne 0) {
         # collect.exe has already collected troubleshooting logs
@@ -302,7 +303,8 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
             ". . . `n`n"+
             ". . . `n`n"
         )
-        exit 1
+        # Dkml_install_api.Forward_progress.Exit_code.Exit_reboot_needed = 23
+        exit 23
     }
 }
 
