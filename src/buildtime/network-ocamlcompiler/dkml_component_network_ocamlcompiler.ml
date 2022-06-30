@@ -98,7 +98,8 @@ let execute_install_admin ctx =
           % "--temp-dir"
           % Fpath.to_string important_paths.tmppath
           % "--scripts-dir"
-          % Fpath.to_string important_paths.scriptsdir)
+          % Fpath.to_string important_paths.scriptsdir
+          %% Log_config.to_args ctx.Context.log_config)
       in
       let cmd =
         if Dkml_options.option_vcpkg_available then Cmd.(cmd % "--vcpkg")
@@ -134,7 +135,8 @@ let execute_install_user ctx =
           % "--temp-dir"
           % Fpath.to_string important_paths.tmppath
           % "--scripts-dir"
-          % Fpath.to_string important_paths.scriptsdir)
+          % Fpath.to_string important_paths.scriptsdir
+          %% Log_config.to_args ctx.Context.log_config)
       in
       let cmd =
         if Dkml_options.option_vcpkg_available then Cmd.(cmd % "--vcpkg")
