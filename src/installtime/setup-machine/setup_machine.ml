@@ -1,5 +1,6 @@
 open Bos
-open Cmdliner
+module Arg = Cmdliner.Arg
+module Term = Cmdliner.Term
 
 let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~vcpkg =
   let ( let* ) = Result.bind in

@@ -9,7 +9,7 @@ module Os = struct
       let ( let* ) = Result.bind in
       let* pwsh_opt = OS.Cmd.find_tool Cmd.(v "pwsh") in
       match pwsh_opt with
-      | Some pwsh -> Result.ok pwsh
+      | Some pwsh -> Ok pwsh
       | None -> OS.Cmd.get_tool Cmd.(v "powershell")
 
     (**

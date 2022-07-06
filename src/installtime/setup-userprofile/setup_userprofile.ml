@@ -1,6 +1,7 @@
 open Bos
-open Cmdliner
 open Dkml_install_api
+module Arg = Cmdliner.Arg
+module Term = Cmdliner.Term
 
 (* Copy the 32-bit and 64-bit Opam binaries (whichever is available, with preference to
    the 64-bit binaries) to a temporary directory. It would be nice if we could
@@ -14,15 +15,15 @@ let setup_opam_res ~temp_dir ~opam32_bindir_opt ~opam64_bindir_opt =
     | Some src -> (
         match OS.Dir.exists src with
         | Ok true -> copy_dir ~src ~dst ()
-        | Ok false -> Result.ok ()
-        | Error v -> Result.error (Fmt.str "%a" Rresult.R.pp_msg v))
-    | None -> Result.ok ()
+        | Ok false -> Ok ()
+        | Error v -> Error (Fmt.str "%a" Rresult.R.pp_msg v))
+    | None -> Ok ()
   in
   Rresult.R.error_to_msg ~pp_error:Fmt.string
     (let ( let* ) = Result.bind in
      let* () = copy_if_exists opam32_bindir_opt in
      let* () = copy_if_exists opam64_bindir_opt in
-     Result.ok dst)
+     Ok dst)
 
 (* Call the PowerShell (legacy!) setup-userprofile.ps1 script *)
 let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
