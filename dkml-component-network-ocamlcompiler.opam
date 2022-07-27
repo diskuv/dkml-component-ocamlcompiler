@@ -11,7 +11,7 @@ homepage: "https://github.com/diskuv/dkml-component-ocamlcompiler"
 bug-reports: "https://github.com/diskuv/dkml-component-ocamlcompiler/issues"
 depends: [
   "dkml-component-network-unixutils"  {>= "0.1.0"}
-  "dkml-component-staging-ocamlrun"   {>= "4.12.1"}
+  "dkml-component-staging-ocamlrun"   {>= "4.12.1~" & < "4.12.2~"}
   "dkml-component-staging-opam32"     {>= "2.1.0"}
   "dkml-component-staging-opam64"     {>= "2.1.0"}
   "dkml-install"                      {>= "0.1.0"}
