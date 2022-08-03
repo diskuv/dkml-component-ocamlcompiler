@@ -201,7 +201,6 @@ if ($env:LOCALAPPDATA) {
 } elseif ($env:HOME) {
     $DkmlParentHomeDir = "$env:HOME/.local/share/diskuv-ocaml"
 }
-if (!(Test-Path -Path $DkmlParentHomeDir)) { New-Item -Path $DkmlParentHomeDir -ItemType Directory | Out-Null }
 
 $PSDefaultParameterValues = @{'Out-File:Encoding' = 'utf8'} # for Tee-Object. https://stackoverflow.com/a/58920518
 
@@ -401,8 +400,6 @@ if ($OnlyOutputCacheKey) {
 # ----------------------------------------------------------------
 # Set path to DiskuvOCaml; exit if already current version already deployed
 
-if (!(Test-Path -Path $InstallationPrefix)) { New-Item -Path $InstallationPrefix -ItemType Directory | Out-Null }
-
 # Check if already deployed
 $finished = Get-BlueGreenDeployIsFinished -ParentPath $InstallationPrefix -DeploymentId $DeploymentId
 if (!$IncrementalDeployment -and $finished) {
@@ -490,9 +487,6 @@ if ($VcpkgCompatibility) {
 $ProgressId = $ParentProgressId + 1
 $global:ProgressStatus = $null
 
-function Get-CurrentTimestamp {
-    (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffK")
-}
 function Write-ProgressStep {
     if (-not $SkipProgress) {
         Write-Progress -Id $ProgressId `
@@ -527,6 +521,12 @@ function Write-Error($message) {
     [Console]::Error.WriteLine($message)
     [Console]::ResetColor()
 }
+
+# ----------------------------------------------------------------
+# Initialize directories
+
+if (!(Test-Path -Path $DkmlParentHomeDir)) { New-Item -Path $DkmlParentHomeDir -ItemType Directory | Out-Null }
+if (!(Test-Path -Path $InstallationPrefix)) { New-Item -Path $InstallationPrefix -ItemType Directory | Out-Null }
 
 # ----------------------------------------------------------------
 # BEGIN Visual Studio Setup PowerShell Module
@@ -1478,17 +1478,17 @@ try {
     $PathModified = $false
     if ($Flavor -eq "Full") {
         # DiskuvOCamlHome
-        [Environment]::SetEnvironmentVariable("DiskuvOCamlHome", "$ProgramPath", 'User')
+        [Environment]::SetEnvironmentVariable("DiskuvOCamlHome", "$ProgramPath", "User")
 
         # DiskuvOCamlVersion
         # - used for VSCode's CMake Tools to set VCPKG_ROOT in cmake-variants.yaml
-        [Environment]::SetEnvironmentVariable("DiskuvOCamlVersion", "$dkml_root_version", 'User')
+        [Environment]::SetEnvironmentVariable("DiskuvOCamlVersion", "$dkml_root_version", "User")
 
         # ---------------------------------------------
         # Remove any non-DKML OCaml environment entries
         # ---------------------------------------------
 
-        $OcamlNonDKMLEnvKeys | ForEach-Object { [Environment]::SetEnvironmentVariable($_, "", 'User') }
+        $OcamlNonDKMLEnvKeys | ForEach-Object { [Environment]::SetEnvironmentVariable($_, "", "User") }
 
         # -----------
         # Modify PATH
@@ -1496,7 +1496,7 @@ try {
 
         $splitter = [System.IO.Path]::PathSeparator # should be ';' if we are running on Windows (yes, you can run Powershell on other operating systems)
 
-        $userpath = [Environment]::GetEnvironmentVariable('PATH', 'User')
+        $userpath = [Environment]::GetEnvironmentVariable("PATH", "User")
         $userpathentries = $userpath -split $splitter # all of the User's PATH in a collection
 
         # Prepend usr\bin\ to the User's PATH if it isn't already
@@ -1505,6 +1505,7 @@ try {
             $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelGeneralBinDir
             foreach ($possibleDir in $PossibleDirs) {
                 $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+                $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
             }
             # add new PATH entry
             $userpathentries = @( $ProgramGeneralBinDir ) + $userpathentries
@@ -1517,6 +1518,7 @@ try {
             $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelEssentialBinDir
             foreach ($possibleDir in $PossibleDirs) {
                 $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+                $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
             }
             # add new PATH entry
             $userpathentries = @( $ProgramEssentialBinDir ) + $userpathentries
@@ -1537,7 +1539,7 @@ try {
 
         if ($PathModified) {
             # modify PATH
-            [Environment]::SetEnvironmentVariable("PATH", ($userpathentries -join $splitter), 'User')
+            [Environment]::SetEnvironmentVariable("PATH", ($userpathentries -join $splitter), "User")
         }
     }
 

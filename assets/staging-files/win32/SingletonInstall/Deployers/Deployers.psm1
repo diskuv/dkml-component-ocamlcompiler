@@ -480,3 +480,26 @@ function Get-CurrentEpochMillis {
     $timestamp
 }
 Export-ModuleMember -Function Get-CurrentEpochMillis
+
+function Get-CurrentTimestamp {
+    (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffK")
+}
+Export-ModuleMember -Function Get-CurrentTimestamp
+
+$fsobject = New-Object -ComObject Scripting.FileSystemObject
+function Get-Dos83ShortName {
+    param(
+        [Parameter(Mandatory=$true)]
+        $Path
+    )
+    if (Test-Path -Path $Path -PathType Container) {
+        $output = $fsobject.GetFolder($Path)
+        $output.ShortPath
+    } elseif (Test-Path -Path $Path -PathType Leaf) {
+        $output = $fsobject.GetFile($Path)
+        $output.ShortPath
+    } else {
+        $Path
+    }
+}
+Export-ModuleMember -Function Get-Dos83ShortName
