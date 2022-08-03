@@ -99,7 +99,7 @@ let execute_install_admin ctx =
           %% Log_config.to_args ctx.Context.log_config)
       in
       let cmd =
-        if Dkml_options.option_vcpkg_available then Cmd.(cmd % "--vcpkg")
+        if Opts.option_vcpkg_available then Cmd.(cmd % "--vcpkg")
         else cmd
       in
       Staging_ocamlrun_api.spawn_ocamlrun ctx cmd
@@ -136,7 +136,7 @@ let execute_install_user ctx =
           %% Log_config.to_args ctx.Context.log_config)
       in
       let cmd =
-        if Dkml_options.option_vcpkg_available then Cmd.(cmd % "--vcpkg")
+        if Opts.option_vcpkg_available then Cmd.(cmd % "--vcpkg")
         else cmd
       in
       Staging_ocamlrun_api.spawn_ocamlrun ctx cmd

@@ -9,7 +9,7 @@
   dkml-component-network-ocamlcompiler.common))
 
 (rule
- (target dkml_options.ml)
+ (target opts.ml)
  (action
  (with-stdout-to %{target}
  (echo
