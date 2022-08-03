@@ -43,8 +43,8 @@
     After the script completes, you can launch MSYS2 directly with:
 
     & $env:DiskuvOCamlHome\tools\MSYS2\msys2_shell.cmd
-
-    `.\makeit.cmd` from a local project is way better though.
+.Parameter InstallationPrefix
+    The installation directory. Defaults to $env:LOCALAPPDATA\Programs\DiskuvOCaml.
 .Parameter Flavor
     Which type of installation to perform.
 

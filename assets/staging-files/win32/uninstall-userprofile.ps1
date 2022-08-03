@@ -3,6 +3,8 @@
     Uninstall OCaml from programs and data folders in $env:USERPROFILE.
 .Description
     Uninstalls OCaml programs.
+.Parameter InstallationPrefix
+    The installation directory. Defaults to $env:LOCALAPPDATA\Programs\DiskuvOCaml.
 .Parameter AuditOnly
     Use when you want to see what would happen, but don't actually perform
     the commands.
@@ -20,8 +22,6 @@
 param (
     [switch]
     $AuditOnly,
-    [string]
-    $DkmlPath,
     [int]
     $ParentProgressId = -1,
     # We will use the same standard established by C:\Users\<user>\AppData\Local\Programs\Microsoft VS Code
