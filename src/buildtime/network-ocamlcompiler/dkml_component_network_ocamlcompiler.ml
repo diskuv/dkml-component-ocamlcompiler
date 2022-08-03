@@ -169,13 +169,15 @@ let register () =
 
       let component_name = "network-ocamlcompiler"
 
-      let depends_on =
+      let install_depends_on =
         [
           "staging-ocamlrun";
           "network-unixutils";
           "staging-opam32";
           "staging-opam64";
         ]
+
+      let uninstall_depends_on = [ "staging-ocamlrun" ]
 
       let needs_install_admin ~ctx =
         match Context.Abi_v2.is_windows ctx.Context.target_abi_v2 with
