@@ -109,6 +109,8 @@ $AuditLog = Join-Path -Path $InstallationPrefix -ChildPath "uninstall-userprofil
 if (Test-Path -Path $AuditLog) {
     # backup the original
     Rename-Item -Path $AuditLog -NewName "uninstall-userprofile-$FixedSlotIdx.backup.$(Get-CurrentEpochMillis).log"
+} else {
+    New-Item -Path $InstallationPrefix -ItemType Directory | Out-Null
 }
 
 function Remove-ItemQuietly {

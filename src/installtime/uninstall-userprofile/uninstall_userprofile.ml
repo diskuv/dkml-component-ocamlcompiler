@@ -4,7 +4,7 @@ module Arg = Cmdliner.Arg
 module Term = Cmdliner.Term
 
 (* Call the PowerShell (legacy!) uninstall-userprofile.ps1 script *)
-let uninstall_remainder_res ~scripts_dir ~prefix_dir =
+let uninstall_start_res ~scripts_dir ~prefix_dir ~is_audit =
   let ( let* ) = Result.bind in
   (* We cannot directly call PowerShell because we likely do not have
      administrator rights.
@@ -19,23 +19,32 @@ let uninstall_remainder_res ~scripts_dir ~prefix_dir =
   let cmd =
     Cmd.(
       v (Fpath.to_string uninstall_bat)
-      % "-AuditOnly" % "-InstallationPrefix" % prefix_dir_83 % "-SkipProgress")
+      % "-InstallationPrefix" % prefix_dir_83 % "-SkipProgress")
   in
+  let cmd = if is_audit then Cmd.(cmd % "-AuditOnly") else cmd in
   Logs.info (fun l -> l "Uninstalling OCaml with@ @[%a@]" Cmd.pp cmd);
   log_spawn_onerror_exit ~id:"a0d16230" cmd;
   Ok ()
 
-let uninstall_res ~scripts_dir ~prefix_dir =
+(* Remove the "0" subdirectory of the installation directory *)
+let uninstall_programdir_res ~prefix_dir =
+  let program_dir = Fpath.(prefix_dir / "0") in
+  Dkml_install_api.uninstall_directory_onerror_exit ~id:"8ae095b1"
+    ~dir:program_dir ~wait_seconds_if_stuck:300.
+
+let uninstall_res ~scripts_dir ~prefix_dir ~is_audit =
   Dkml_install_api.Forward_progress.lift_result __POS__ Fmt.lines
     Dkml_install_api.Forward_progress.stderr_fatallog
   @@ Rresult.R.reword_error (Fmt.str "%a" Rresult.R.pp_msg)
   @@
   let ( let* ) = Rresult.R.bind in
   let* prefix_dir = Fpath.of_string prefix_dir in
-  uninstall_remainder_res ~scripts_dir ~prefix_dir
+  let* () = uninstall_start_res ~scripts_dir ~prefix_dir ~is_audit in
+  uninstall_programdir_res ~prefix_dir;
+  Ok ()
 
-let uninstall (_ : Log_config.t) scripts_dir prefix_dir =
-  match uninstall_res ~scripts_dir ~prefix_dir with
+let uninstall (_ : Log_config.t) scripts_dir prefix_dir is_audit =
+  match uninstall_res ~scripts_dir ~prefix_dir ~is_audit with
   | Completed | Continue_progress ((), _) -> ()
   | Halted_progress ec ->
       exit (Dkml_install_api.Forward_progress.Exit_code.to_int_exitcode ec)
@@ -45,6 +54,8 @@ let scripts_dir_t =
 
 let prefix_dir_t =
   Arg.(required & opt (some string) None & info [ "prefix-dir" ])
+
+let is_audit_t = Arg.(value & flag & info [ "audit-only" ])
 
 let uninstall_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
@@ -59,7 +70,8 @@ let uninstall_log_t =
 let () =
   let t =
     Term.
-      ( const uninstall $ uninstall_log_t $ scripts_dir_t $ prefix_dir_t,
+      ( const uninstall $ uninstall_log_t $ scripts_dir_t $ prefix_dir_t
+        $ is_audit_t,
         info "uninstall-userprofile.bc" ~doc:"Uninstall OCaml" )
   in
   Term.(exit @@ eval t)

@@ -52,6 +52,11 @@ with-dkml dune exec -- src/installtime/setup-userprofile/setup_userprofile.exe `
     --msys2-dir "$env:DiskuvOCamlMSYS2Dir" `
     --opam64-bindir "$op64share\staging-files\windows_x86_64\bin" `
     -v -v
+
+with-dkml dune exec -- src/installtime/uninstall-userprofile/uninstall_userprofile.exe `
+    --audit-only `
+    --scripts-dir=assets/staging-files/win32 `
+    --prefix-dir="$env:TEMP\ocamlcompiler-up" -v -v    
 ```
 
 For Unix operating systems, including macOS, run:
