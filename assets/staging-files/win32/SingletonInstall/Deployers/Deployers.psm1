@@ -486,16 +486,21 @@ function Get-CurrentTimestamp {
 }
 Export-ModuleMember -Function Get-CurrentTimestamp
 
-$fsobject = New-Object -ComObject Scripting.FileSystemObject
+if ((Get-Command New-Object).Parameters.Keys.Contains("ComObject")) {
+    # Only Windows has DOS 8.3 names
+    $fsobject = New-Object -ComObject Scripting.FileSystemObject
+} else {
+    $fsobject = $null
+}
 function Get-Dos83ShortName {
     param(
         [Parameter(Mandatory=$true)]
         $Path
     )
-    if (Test-Path -Path $Path -PathType Container) {
+    if ($null -ne $fsobject -and (Test-Path -Path $Path -PathType Container)) {
         $output = $fsobject.GetFolder($Path)
         $output.ShortPath
-    } elseif (Test-Path -Path $Path -PathType Leaf) {
+    } elseif ($null -ne $fsobject -and (Test-Path -Path $Path -PathType Leaf)) {
         $output = $fsobject.GetFile($Path)
         $output.ShortPath
     } else {
