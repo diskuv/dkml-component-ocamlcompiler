@@ -1,10 +1,15 @@
 <#
 .Synopsis
-    Uninstall OCaml from programs and data folders in $env:USERPROFILE.
+    Uninstalls OCaml.
 .Description
-    Uninstalls OCaml programs.
+    Uninstall OCaml from the installation directory, and removes
+    the installation from the User's PATH environment variable,
+    and removes the DiskuvOCaml* environment variables.
 .Parameter InstallationPrefix
-    The installation directory. Defaults to $env:LOCALAPPDATA\Programs\DiskuvOCaml.
+    The installation directory. Defaults to
+    $env:LOCALAPPDATA\Programs\DiskuvOCaml on Windows. On macOS and Unix,
+    defaults to $env:XDG_DATA_HOME/diskuv-ocaml if XDG_DATA_HOME defined,
+    otherwise $env:HOME/.local/share/diskuv-ocaml.
 .Parameter AuditOnly
     Use when you want to see what would happen, but don't actually perform
     the commands.
@@ -24,9 +29,8 @@ param (
     $AuditOnly,
     [int]
     $ParentProgressId = -1,
-    # We will use the same standard established by C:\Users\<user>\AppData\Local\Programs\Microsoft VS Code
     [string]
-    $InstallationPrefix = "$env:LOCALAPPDATA\Programs\DiskuvOCaml",
+    $InstallationPrefix,
     [switch]
     $SkipProgress
 )
@@ -37,12 +41,14 @@ $HereScript = $MyInvocation.MyCommand.Path
 $HereDir = (get-item $HereScript).Directory
 
 # Match set_dkmlparenthomedir() in crossplatform-functions.sh
-if ($env:LOCALAPPDATA) {
-    $DkmlParentHomeDir = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
-} elseif ($env:XDG_DATA_HOME) {
-    $DkmlParentHomeDir = "$env:XDG_DATA_HOME/diskuv-ocaml"
-} elseif ($env:HOME) {
-    $DkmlParentHomeDir = "$env:HOME/.local/share/diskuv-ocaml"
+if (!$InstallationPrefix) {
+    if ($env:LOCALAPPDATA) {
+        $InstallationPrefix = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
+    } elseif ($env:XDG_DATA_HOME) {
+        $InstallationPrefix = "$env:XDG_DATA_HOME/diskuv-ocaml"
+    } elseif ($env:HOME) {
+        $InstallationPrefix = "$env:HOME/.local/share/diskuv-ocaml"
+    }
 }
 
 $PSDefaultParameterValues = @{'Out-File:Encoding' = 'utf8'} # for Tee-Object. https://stackoverflow.com/a/58920518
@@ -244,11 +250,13 @@ try {
     $global:ProgressActivity = "Uninstall deployment variables"
     Write-ProgressStep
 
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\dkmlvars-v2.sexp"
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\dkmlvars.cmake"
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\dkmlvars.cmd"
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\dkmlvars.sh"
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\dkmlvars.ps1"
+    Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars-v2.sexp"
+    Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.cmake"
+    Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.cmd"
+    Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.sh"
+    Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.ps1"
+    
+    Remove-ItemQuietly -Path "$InstallationPrefix\deploy-state-v1.json"
 
     # END Uninstall deployment vars.
     # ----------------------------------------------------------------
@@ -259,12 +267,12 @@ try {
     $global:ProgressActivity = "Uninstall Visual Studio Setup PowerShell Module"
     Write-ProgressStep
 
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.cmake_generator.txt"
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.dir.txt"
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.json"
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.msvs_preference.txt"
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.vcvars_ver.txt"
-    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.winsdk.txt"
+    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.cmake_generator.txt"
+    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.dir.txt"
+    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.json"
+    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.msvs_preference.txt"
+    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.vcvars_ver.txt"
+    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.winsdk.txt"
 
     # END Visual Studio Setup PowerShell Module
     # ----------------------------------------------------------------
