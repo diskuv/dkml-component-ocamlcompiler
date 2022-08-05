@@ -109,7 +109,13 @@ $AuditLog = Join-Path -Path $InstallationPrefix -ChildPath "uninstall-userprofil
 if (Test-Path -Path $AuditLog) {
     # backup the original
     Rename-Item -Path $AuditLog -NewName "uninstall-userprofile-$FixedSlotIdx.backup.$(Get-CurrentEpochMillis).log"
-} else {
+} elseif (!(Test-Path -Path $InstallationPrefix)) {
+    # Create the installation directory because that is where the audit log
+    # will go.
+    #
+    # Why not exit immediately if there is no installation directory?
+    # Because there are non-directory resources that may need to be uninstalled
+    # like Windows registry items (ex. PATH environment variable edits).
     New-Item -Path $InstallationPrefix -ItemType Directory | Out-Null
 }
 
