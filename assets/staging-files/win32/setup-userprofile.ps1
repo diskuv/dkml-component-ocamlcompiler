@@ -409,7 +409,7 @@ if ($OnlyOutputCacheKey) {
 $finished = Get-BlueGreenDeployIsFinished -ParentPath $InstallationPrefix -DeploymentId $DeploymentId
 if (!$IncrementalDeployment -and $finished) {
     Write-Host "$DeploymentId already deployed."
-    Write-Host "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/"
+    Write-Host "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/#introduction"
     return
 }
 
@@ -1569,7 +1569,7 @@ Write-Host ""
 Write-Host ""
 Write-Host ""
 Write-Host "Setup is complete. Congratulations!"
-Write-Host "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/. Announcements will be available at https://twitter.com/diskuv"
+Write-Host "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/#introduction. Announcements will be available at https://twitter.com/diskuv"
 Write-Host ""
 Write-Host ""
 Write-Host ""
