@@ -44,3 +44,46 @@ Describe 'StopBlueGreenDeploy' {
         Stop-BlueGreenDeploy -ParentPath $TestDir -DeploymentId "testdeploymentid" -Success:$False -Debug
     }
 }
+
+Describe 'UninstallBlueGreenDeploy' {
+    It "Given no existing state, when uninstall, it does not error" {
+        $TestDir = "$TestDrive${dsc}UninstallBlueGreenDeploy1"
+        New-CleanDirectory -Path $TestDir
+        Uninstall-BlueGreenDeploy -ParentPath $TestDir -Debug
+
+        if (!(Test-Path "$TestDir/deploy-state-v1.json")) {
+            throw "Expected deploy-state-v1.json to be created"
+        }
+    }
+
+    It "Given program running, when uninstall, it waits for program to stop running" {
+        if ($env:COMSPEC) {
+            $TestDir = "$TestDrive${dsc}UninstallBlueGreenDeploy2"
+            New-CleanDirectory -Path $TestDir
+
+            # Start and finish a deployment successfully. During the deployment
+            # we'll copy cmd.exe (something present on all Windows machines, including
+            # CI) to mimic a real deployment that would contain ocamlrun.exe,
+            # ocamllsp.exe, dune.exe, etc.
+            $DeploymentId = "testdeploymentid"
+            $DeployPath = Start-BlueGreenDeploy -ParentPath $TestDir -DeploymentId $DeploymentId -Debug
+            $DeployedCmdExe = Join-Path -Path $DeployPath -ChildPath "cmd.exe"
+            Copy-Item -Path "$env:COMSPEC" -Destination $DeployedCmdExe
+            Stop-BlueGreenDeploy -ParentPath $TestDir -DeploymentId $DeploymentId -Success -Debug
+
+            # Use our deployed cmd.exe to run for 15 seconds. Ideally we would use
+            # 'timeout' but that will not work in a CI scenario where there is no
+            # standard input. Instead we use ping. Inspired by
+            # https://stackoverflow.com/questions/1672338/how-to-sleep-for-five-seconds-in-a-batch-file-cmd
+            Start-Process -FilePath $DeployedCmdExe -ArgumentList @("/c", "ping 127.0.0.1 -n 15")
+
+            # Wait 1 second to ensure that the background "ping" job is running
+            Start-Sleep -Seconds 1
+            
+            Uninstall-BlueGreenDeploy -ParentPath $TestDir -Debug
+            Write-Host "Finished uninstall with no error thrown"
+        } else {
+            Write-Host "Can't do anything on a non-Windows host"
+        }
+    }
+}

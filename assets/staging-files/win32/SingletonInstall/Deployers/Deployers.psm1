@@ -99,13 +99,13 @@ function Start-BlueGreenDeploy {
         $FixedSlotIdx,
         $LogFunction
     )
-    
+
     # init state if not done already
     Initialize-BlueGreenDeploy -ParentPath $ParentPath
 
     # move to the next deploy slot
     $state = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
-    if (-not ($state -is [array])) { $state = @( $state ) } # fix ConvertFrom-Json flattening single element in PWSH 7    
+    if (-not ($state -is [array])) { $state = @( $state ) } # fix ConvertFrom-Json flattening single element in PWSH 7
     if ($null -eq $FixedSlotIdx) {
         $slotIdx = Step-BlueGreenDeploySlot -ParentPath $ParentPath -DeploymentId $DeploymentId -DeployState $state
     } else {
@@ -212,6 +212,48 @@ function Stop-BlueGreenDeploy {
 }
 Export-ModuleMember -Function Stop-BlueGreenDeploy
 
+# Uninstall-BlueGreenDeploy
+#
+# The last deployment's directory will be cleaned.
+#
+# If a file cannot be deleted because it is in use, you (the user)
+# will be prompted to close the program.
+function Uninstall-BlueGreenDeploy {
+    param (
+        [Parameter(Mandatory = $true)]
+        $ParentPath,
+        [switch]$Success
+    )
+    $state = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
+    if (-not ($state -is [array])) { $state = @( $state ) } # fix ConvertFrom-Json flattening single element in PWSH 7
+    if (-not ($state -is [array])) {
+        throw "The uninstallation was stopped because the state was in an incorrect format; it was supposed to be an array but was instead $($state.GetType())"
+    }
+    # use only valid slot
+    $matchSlotIdx = 0
+
+    # is it still taking a slot?
+    if ($matchSlotIdx -ge 0) {
+        # remove the directory completely
+        $DeployPath = Join-Path -Path $ParentPath -ChildPath $matchSlotIdx
+        Remove-DirectoryFully `
+            -Path $DeployPath `
+            -WaitSecondsIfStuck 300 `
+            -StuckMessageFormatInfo "Stuck during uninstallation of $DeployPath.`nWaited already {0,5:N1} seconds; will wait at most 300 seconds (5 minutes).`n" `
+            -StuckMessageFormatCritical "Please stop using the program:`t{1}`n"
+
+        # free the slot, but protect against race condition where an external
+        # package manager takes over the slot
+        $state2 = ConvertFrom-Json (Get-BlueGreenDeployState -ParentPath $ParentPath)
+        if (-not ($state2 -is [array])) { $state2 = @( $state2 ) } # fix ConvertFrom-Json flattening single element in PWSH 7
+        $reserved = $state2[$matchSlotIdx].reserved
+        $state[$matchSlotIdx] = Copy-BlueGreenDeploySlot $DeploySlotInitValue
+        $state[$matchSlotIdx].reserved = $reserved # restore 'reserved'
+        Set-BlueGreenDeployState -ParentPath $ParentPath -DeployState $state
+    }
+}
+Export-ModuleMember -Function Uninstall-BlueGreenDeploy
+
 # Get-BlueGreenDeployIsFinished
 #
 # True if and only if the deployment id exists and is in success state.
@@ -287,18 +329,30 @@ function Copy-BlueGreenDeploySlot {
 
 # Get-BlueGreenDeployState
 # ------------------------
+#
+# Get the slot for the existing deployment (partial or complete).
+#
+# If there is no previous deployment then an initial slot will be returned.
 function Get-BlueGreenDeployState {
     param (
         [Parameter(Mandatory = $true)]
         $ParentPath
     )
     $absDeployStateJson = Join-Path $ParentPath -ChildPath $DeployStateJson
-    $jsState = [System.IO.File]::ReadAllText("$absDeployStateJson", $Utf8NoBomEncoding)
-    $jsState = ConvertFrom-Json ($jsState)
-    if (-not ($jsState -is [array])) { $jsState = @( $jsState ) } # fix ConvertFrom-Json flattening single element in PWSH 7
+    if (Test-Path "$absDeployStateJson") {
+        # We have the file deploy-state-v1.json; use it ...
 
-    # fill in only valid state
-    $slot = Copy-BlueGreenDeploySlot $jsState[0]
+        $jsState = [System.IO.File]::ReadAllText($absDeployStateJson, $Utf8NoBomEncoding)
+        $jsState = ConvertFrom-Json ($jsState)
+        if (-not ($jsState -is [array])) { $jsState = @( $jsState ) } # fix ConvertFrom-Json flattening single element in PWSH 7
+
+        # fill in only valid state
+        $slot = Copy-BlueGreenDeploySlot $jsState[0]
+    } else {
+        # We have no prior deploy-state; use initial value instead
+
+        $slot = $DeploySlotInitValue
+    }
 
     ConvertTo-Json -Depth 5 -Compress (@( $slot ))
 }
@@ -434,8 +488,16 @@ function Step-BlueGreenDeploySlot {
 # Remove a directory and all of its contents. Unlike Remove-Item -Recurse this will work in
 # all versions of Windows.
 # Will not fail if the path does not already exist.
+#
+# This behaves like the DKML Install API's [uninstall_directory] function that
+# tells you and waits for you to close any open files.
 function Remove-DirectoryFully {
-    param( [Parameter(Mandatory = $true)] $Path )
+    param(
+        [Parameter(Mandatory = $true)] $Path,
+        [int] $WaitSecondsIfStuck = -1,
+        [string] $StuckMessageFormatInfo = "Stuck during removal of directory after {0} seconds.`n`t{1}",
+        [string] $StuckMessageFormatCritical = "`t{1}"
+    )
 
     if (Test-Path -Path $Path) {
         # On Windows 11 Build 22478.1012 with Powershell 5.1, even though `Remove-Item -Force`
@@ -453,13 +515,63 @@ function Remove-DirectoryFully {
         # > ! Note
         # > This behavior was fixed in Windows versions 1909 and newer.
         # So we use the Command Prompt instead (with COMSPEC so that MSYS2 "cmd" does not get run).
+        $timer = [Diagnostics.Stopwatch]::StartNew()
         if ("$env:COMSPEC" -eq "") {
             # not Windows
+
+            # TODO: We have no "STUCK" logic to check if process needs to be stopped!
+            # On Linux systems we can remove the file while it is being
+            # used... the inode lives on.
+            # Don't know if the same goes for macOS.
+
             Remove-Item -Path $Path -Recurse -Force
+            $success = $true
         } else {
             # Windows
-            & "$env:COMSPEC" /c "rd /s /q `"$Path`""
-        }        
+
+            # We have "STUCK" logic where ... if a file can't be deleted
+            # because it was in use by another porcess ... we say so and
+            # wait. This logic only occurs when $WaitSecondsIfStuck >= 0.
+
+            # Sigh ... we won't get any error codes from `rd`. But we will get:
+            #   C:\Users\beckf\AppData\Local\Temp\f46f0508-df03-40e8-8661-728f1be41647\UninstallBlueGreenDeploy2\0\cmd.exe - Access is denied.
+            # So any output on the error console indicates a problem
+            $success = $false
+            $stderr = New-TemporaryFile
+            do {
+                Start-Process `
+                    -Wait `
+                    -NoNewWindow `
+                    -RedirectStandardError $stderr `
+                    -FilePath "$env:COMSPEC" `
+                    -ArgumentList @("/c", "rd /s /q `"$Path`"")
+                $errlen = (Get-Item -Path $stderr).Length
+                if ($errlen -eq 0) {
+                    # no errors means success
+                    $success = $true
+                    break
+                }
+
+                # If not explicit that we want to wait, immediately exit
+                # and say what the problem was.
+                if ($WaitSecondsIfStuck -lt 0) {
+                    Write-Error "$(Get-Content $stderr)"
+                    throw
+                }
+
+                # We are waiting until unstuck!
+                $sofar = $timer.elapsed.totalseconds
+                $errcontent = Get-Content $stderr
+                Write-Host ($StuckMessageFormatInfo -f $sofar, $errcontent) -NoNewline
+                Write-Host ($StuckMessageFormatCritical -f $sofar, $errcontent) -ForegroundColor Red -BackgroundColor Black
+                Start-Sleep -Seconds 5
+            } while ($timer.elapsed.totalseconds -lt $WaitSecondsIfStuck)
+            Remove-Item $stderr
+        }
+        if (!$success -and ($WaitSecondsIfStuck -ge 0)) {
+            Write-Error "Could not remove the directory $Path after waiting $WaitSecondsIfStuck seconds"
+            throw
+        }
     }
 }
 Export-ModuleMember -Function Remove-DirectoryFully
@@ -470,7 +582,10 @@ Export-ModuleMember -Function Remove-DirectoryFully
 function New-CleanDirectory {
     param( [Parameter(Mandatory = $true)] $Path )
 
-    Remove-DirectoryFully -Path $Path
+    Remove-DirectoryFully -Path $Path `
+        -WaitSecondsIfStuck 300 `
+        -StuckMessageFormatInfo "Stuck during uninstallation of $DeployPath.`nWaited already {0,5:N1} seconds; will wait at most 300 seconds (5 minutes).`n" `
+        -StuckMessageFormatCritical "Please stop using the program:`t{1}`n"
     New-Item -Path $Path -ItemType Directory | Out-Null
 }
 Export-ModuleMember -Function New-CleanDirectory
