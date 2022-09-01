@@ -282,8 +282,7 @@ $CiFlavorPackages = Get-Content -Path $DkmlPath\vendor\drd\src\none\ci-pkgs.txt 
     "" -ne $_.Trim() -and -not $_.StartsWith("#")
 } | ForEach-Object { $_.Trim() }
 $CiFlavorBinaries = @(
-    "with-dkml.exe",
-    "dkml-findup.exe"
+    "with-dkml.exe"
 )
 $CiFlavorStubs = @(
     # Stubs are important if the binaries need them.
