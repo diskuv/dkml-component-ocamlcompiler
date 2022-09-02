@@ -1285,7 +1285,24 @@ try {
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
+    # BEGIN install crossplatform-functions.sh
+
+    $global:ProgressActivity = "Install functions"
+    Write-ProgressStep
+
+    $FunctionsDir = "$ProgramPath\share\dkml\functions"
+
+    # We use crossplatform-functions.sh for with-dkml.exe.
+    if (!(Test-Path -Path $FunctionsDir)) { New-Item -Path $FunctionsDir -ItemType Directory | Out-Null }
+    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
+        -Command ("set -x && install '$DkmlPath\vendor\drc\unix\crossplatform-functions.sh' '$FunctionsDir\crossplatform-functions.sh'")
+
+    # END install crossplatform-functions.sh
+    # ----------------------------------------------------------------
+
+    # ----------------------------------------------------------------
     # BEGIN opam switch create <dkml>
+    #   The dune.X.Y.Z+shim.M.N.O package requires crossplatform-functions.sh to exist.
 
     if ($StopBeforeInstallSystemSwitch) {
         Write-Host "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
@@ -1303,22 +1320,6 @@ try {
         }
 
     # END opam switch create <dkml>
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
-    # BEGIN install crossplatform-functions.sh
-
-    $global:ProgressActivity = "Install functions"
-    Write-ProgressStep
-
-    $FunctionsDir = "$ProgramPath\share\dkml\functions"
-
-    # We use crossplatform-functions.sh for with-dkml.exe.
-    if (!(Test-Path -Path $FunctionsDir)) { New-Item -Path $FunctionsDir -ItemType Directory | Out-Null }
-    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command ("set -x && install '$DkmlPath\vendor\drc\unix\crossplatform-functions.sh' '$FunctionsDir\crossplatform-functions.sh'")
-
-    # END install crossplatform-functions.sh
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
