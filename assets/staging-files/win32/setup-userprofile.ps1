@@ -306,6 +306,10 @@ $FullFlavorPackagesExtra = Get-Content -Path @(
 } | ForEach-Object { $_.Trim() }
 $FullFlavorPackages = $CiFlavorPackages + $FullFlavorPackagesExtra
 $FullFlavorBinaries = $CiFlavorBinaries + @(
+    # dune
+    "dune.exe",
+    "dune-real.exe",
+    # ocaml
     "flexlink.exe",
     "ocaml.exe",
     "ocamlc.byte.exe",
@@ -350,6 +354,7 @@ $FullFlavorBinaries = $CiFlavorBinaries + @(
     "ocamlrund.exe",
     "ocamlruni.exe",
     "ocamlyacc.exe",
+    # dev tools
     "ocp-indent.exe",
     "utop.exe",
     "utop-full.exe")
@@ -1419,10 +1424,6 @@ try {
 
     # opam shim
     Copy-DkmlFile -OpamFile "bin\with-dkml.exe" -Destination "$ProgramEssentialBinDir\opam.exe"
-
-    # dune shim
-    Copy-DkmlFile -OpamFile "bin\with-dkml.exe" -Destination "$ProgramGeneralBinDir\dune.exe"
-    Copy-DkmlFile -OpamFile "bin\dune.exe" -Destination "$ProgramGeneralBinDir\dune-real.exe"
 
     # fswatch
     if (!(Test-Path -Path $FswatchToolDir)) { New-Item -Path $FswatchToolDir -ItemType Directory | Out-Null }
