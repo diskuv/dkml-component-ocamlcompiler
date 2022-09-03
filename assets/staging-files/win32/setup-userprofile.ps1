@@ -1229,7 +1229,7 @@ try {
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
                 -Command (
                     "install -d '$ProgramEssentialBinMSYS2AbsPath' && " +
-                    "install '$OpamBinMSYS2AbsPath'/opam.exe '$ProgramEssentialBinMSYS2AbsPath'/opam-real.exe && " + 
+                    "install '$OpamBinMSYS2AbsPath'/opam.exe '$ProgramEssentialBinMSYS2AbsPath'/opam-real.exe && " +
                     "install '$OpamBinMSYS2AbsPath'/opam-putenv.exe '$OpamBinMSYS2AbsPath'/opam-installer.exe '$ProgramEssentialBinMSYS2AbsPath'/"
                 )
         } elseif (!$global:SkipOpamImport -and (Import-DiskuvOCamlAsset `
@@ -1249,7 +1249,7 @@ try {
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
                 -Command (
                     "install -d '$ProgramEssentialBinMSYS2AbsPath' && " +
-                    "mv '$ProgramMSYS2AbsPath'/bin/opam.exe '$ProgramEssentialBinMSYS2AbsPath'/opam-real.exe && " + 
+                    "mv '$ProgramMSYS2AbsPath'/bin/opam.exe '$ProgramEssentialBinMSYS2AbsPath'/opam-real.exe && " +
                     "mv '$ProgramMSYS2AbsPath'/bin/opam-putenv.exe '$ProgramMSYS2AbsPath'/bin/opam-installer.exe '$ProgramEssentialBinMSYS2AbsPath'/"
                 )
         }
@@ -1339,7 +1339,7 @@ try {
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
             -Command ("env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath/vendor/drc/all/emptytop' " +
                 "'$DkmlPath\vendor\drd\src\unix\create-opam-switch.sh' -p '$DkmlHostAbi' -y -n playground -v '$ProgramMSYS2AbsPath' -o '$ProgramMSYS2AbsPath'")
-        
+
         # Diagnostics: Display all the switches
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
             -Command ("env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath/vendor/drc/all/emptytop' " +
@@ -1366,7 +1366,7 @@ try {
 
     # END opam switch create playground and opam dkml plugin
     # ----------------------------------------------------------------
-    
+
     # ----------------------------------------------------------------
     # BEGIN install `dkml` switch binaries to Programs
 
@@ -1388,9 +1388,20 @@ try {
         # but hasn't changed (especially `dune.exe`, `ocamllsp.exe` which may be open in an IDE)
         if (!(Test-Path "$DiskuvHostToolsDir\$OpamFile")) {
             # no-op since the binary is not part of Opam switch (we may have been installed manually like OCaml system compiler)
+            $what = "[Copy-DkmlFile] $DiskuvHostToolsDir\$OpamFile -not-present->-x $Destination"
+            Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
+            Write-Host "$what"
         } elseif (!(Test-Path -Path "$Destination")) {
+            $what = "[Copy-DkmlFile] $DiskuvHostToolsDir\$OpamFile -> $Destination"
+            Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
+            Write-Host "$what"
+
             Copy-Item -Path "$DiskuvHostToolsDir\$OpamFile" -Destination $Destination
         } elseif ((Get-FileHash "$Destination").hash -ne (Get-FileHash $DiskuvHostToolsDir\$OpamFile).hash) {
+            $what = "[Copy-DkmlFile] $DiskuvHostToolsDir\$OpamFile -changed-> $Destination"
+            Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
+            Write-Host "$what"
+
             Copy-Item -Path "$DiskuvHostToolsDir\$OpamFile" -Destination $Destination
         }
     }
