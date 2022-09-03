@@ -1388,17 +1388,22 @@ try {
         # but hasn't changed (especially `dune.exe`, `ocamllsp.exe` which may be open in an IDE)
         if (!(Test-Path "$DiskuvHostToolsDir\$OpamFile")) {
             # no-op since the binary is not part of Opam switch (we may have been installed manually like OCaml system compiler)
-            $what = "[Copy-DkmlFile] $DiskuvHostToolsDir\$OpamFile -not-present->-x $Destination"
+            $what = "[Copy-DkmlFile] {missing} $DiskuvHostToolsDir\$OpamFile -> $Destination"
             Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
             Write-Host "$what"
         } elseif (!(Test-Path -Path "$Destination")) {
-            $what = "[Copy-DkmlFile] $DiskuvHostToolsDir\$OpamFile -> $Destination"
+            $what = "[Copy-DkmlFile] {create}  $DiskuvHostToolsDir\$OpamFile -> $Destination"
             Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
             Write-Host "$what"
 
             Copy-Item -Path "$DiskuvHostToolsDir\$OpamFile" -Destination $Destination
-        } elseif ((Get-FileHash "$Destination").hash -ne (Get-FileHash $DiskuvHostToolsDir\$OpamFile).hash) {
-            $what = "[Copy-DkmlFile] $DiskuvHostToolsDir\$OpamFile -changed-> $Destination"
+        } elseif ((Get-FileHash "$Destination").hash -eq (Get-FileHash $DiskuvHostToolsDir\$OpamFile).hash) {
+            $what = "[Copy-DkmlFile] {present} $DiskuvHostToolsDir\$OpamFile -> $Destination"
+            Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
+            Write-Host "$what"
+        } else {
+            # hashes are not equal
+            $what = "[Copy-DkmlFile] {modify}  $DiskuvHostToolsDir\$OpamFile -> $Destination"
             Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
             Write-Host "$what"
 
