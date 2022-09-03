@@ -282,33 +282,7 @@ $CiFlavorPackages = Get-Content -Path $DkmlPath\vendor\drd\src\none\ci-pkgs.txt 
     "" -ne $_.Trim() -and -not $_.StartsWith("#")
 } | ForEach-Object { $_.Trim() }
 $CiFlavorBinaries = @(
-    "with-dkml.exe"
-)
-$CiFlavorStubs = @(
-    # Stubs are important if the binaries need them.
-    #   C:\Users\you>utop
-    #   Fatal error: cannot load shared library dlllambda_term_stubs
-    #   Reason: The specified module could not be found.
-)
-$CiFlavorToplevels = @(
-    # Special libs are important if the binaries need them.
-    # For example, lib/ocaml/topfind has hardcoded paths and will be auto-installed if not present (so auto-install
-    # can happen from a local project switch which hardcodes the system lib/ocaml/topfind to a local project
-    # switch that may be deleted later).
-    "topfind"
-)
-$FullFlavorPackagesExtra = Get-Content -Path @(
-    "$DkmlPath\vendor\drd\src\none\full-anyver-no-ci-pkgs.txt"
-    "$DkmlPath\vendor\drd\src\none\full-$OCamlLangVersion-no-ci-pkgs.txt"
-) | Where-Object {
-    # Remove blank lines and comments
-    "" -ne $_.Trim() -and -not $_.StartsWith("#")
-} | ForEach-Object { $_.Trim() }
-$FullFlavorPackages = $CiFlavorPackages + $FullFlavorPackagesExtra
-$FullFlavorBinaries = $CiFlavorBinaries + @(
-    # dune
-    "dune.exe",
-    "dune-real.exe",
+    "with-dkml.exe",
     # ocaml
     "flexlink.exe",
     "ocaml.exe",
@@ -354,7 +328,32 @@ $FullFlavorBinaries = $CiFlavorBinaries + @(
     "ocamlrund.exe",
     "ocamlruni.exe",
     "ocamlyacc.exe",
-    # dev tools
+    # dune
+    "dune.exe",
+    "dune-real.exe"
+)
+$CiFlavorStubs = @(
+    # Stubs are important if the binaries need them.
+    #   C:\Users\you>utop
+    #   Fatal error: cannot load shared library dlllambda_term_stubs
+    #   Reason: The specified module could not be found.
+)
+$CiFlavorToplevels = @(
+    # Special libs are important if the binaries need them.
+    # For example, lib/ocaml/topfind has hardcoded paths and will be auto-installed if not present (so auto-install
+    # can happen from a local project switch which hardcodes the system lib/ocaml/topfind to a local project
+    # switch that may be deleted later).
+    "topfind"
+)
+$FullFlavorPackagesExtra = Get-Content -Path @(
+    "$DkmlPath\vendor\drd\src\none\full-anyver-no-ci-pkgs.txt"
+    "$DkmlPath\vendor\drd\src\none\full-$OCamlLangVersion-no-ci-pkgs.txt"
+) | Where-Object {
+    # Remove blank lines and comments
+    "" -ne $_.Trim() -and -not $_.StartsWith("#")
+} | ForEach-Object { $_.Trim() }
+$FullFlavorPackages = $CiFlavorPackages + $FullFlavorPackagesExtra
+$FullFlavorBinaries = $CiFlavorBinaries + @(
     "ocp-indent.exe",
     "utop.exe",
     "utop-full.exe")
