@@ -295,7 +295,7 @@ if (-not $SkipProgress) {
 Write-Host ""
 Write-Host ""
 Write-Host ""
-Write-Host "Uninstallation is complete! Thanks for using Diskuv OCaml."
+Write-Host "Thanks for using Diskuv OCaml!"
 Write-Host ""
 Write-Host ""
 Write-Host ""
