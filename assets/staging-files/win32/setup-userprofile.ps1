@@ -277,12 +277,9 @@ $OCamlLangGitCommit = switch ($OCamlLangVersion)
 $NinjaVersion = "1.10.2"
 $CMakeVersion = "3.21.1"
 $InotifyTag = "36d18f3dfe042b21d7136a1479f08f0d8e30e2f9"
-$CiFlavorPackages = Get-Content -Path $DkmlPath\vendor\drd\src\none\ci-pkgs.txt | Where-Object {
-    # Remove blank lines and comments
-    "" -ne $_.Trim() -and -not $_.StartsWith("#")
-} | ForEach-Object { $_.Trim() }
 $CiFlavorBinaries = @(
-    "with-dkml.exe",
+    # ocamlfind
+    "ocamlfind.exe",
     # ocaml
     "flexlink.exe",
     "ocaml.exe",
@@ -299,13 +296,9 @@ $CiFlavorBinaries = @(
     "ocamldep.opt.exe",
     "ocamldoc.exe",
     "ocamldoc.opt.exe",
-    "ocamlfind.exe",
-    "ocamlformat.exe",
-    "ocamlformat-rpc.exe",
     "ocamllex.byte.exe",
     "ocamllex.exe",
     "ocamllex.opt.exe",
-    "ocamllsp.exe",
     "ocamlmklib.byte.exe",
     "ocamlmklib.exe",
     "ocamlmklib.opt.exe",
@@ -327,10 +320,7 @@ $CiFlavorBinaries = @(
     "ocamlrun.exe",
     "ocamlrund.exe",
     "ocamlruni.exe",
-    "ocamlyacc.exe",
-    # dune
-    "dune.exe",
-    "dune-real.exe"
+    "ocamlyacc.exe"
 )
 $CiFlavorStubs = @(
     # Stubs are important if the binaries need them.
@@ -345,16 +335,7 @@ $CiFlavorToplevels = @(
     # switch that may be deleted later).
     "topfind"
 )
-$FullFlavorPackagesExtra = Get-Content -Path @(
-    "$DkmlPath\vendor\drd\src\none\full-anyver-no-ci-pkgs.txt"
-    "$DkmlPath\vendor\drd\src\none\full-$OCamlLangVersion-no-ci-pkgs.txt"
-) | Where-Object {
-    # Remove blank lines and comments
-    "" -ne $_.Trim() -and -not $_.StartsWith("#")
-} | ForEach-Object { $_.Trim() }
-$FullFlavorPackages = $CiFlavorPackages + $FullFlavorPackagesExtra
 $FullFlavorBinaries = $CiFlavorBinaries + @(
-    "ocp-indent.exe",
     "utop.exe",
     "utop-full.exe")
 $FullFlavorStubs = $CiFlavorStubs + @(
@@ -371,12 +352,10 @@ $FullFlavorToplevels = $CiFlavorToplevels + @(
     # Toplevels are important if the binaries need them.
 )
 if ($Flavor -eq "Full") {
-    $FlavorPackages = $FullFlavorPackages
     $FlavorBinaries = $FullFlavorBinaries
     $FlavorStubs = $FullFlavorStubs
     $FlavorToplevels = $FullFlavorToplevels
 } elseif ($Flavor -eq "CI") {
-    $FlavorPackages = $CiFlavorPackages
     $FlavorBinaries = $CiFlavorBinaries
     $FlavorStubs = $CiFlavorStubs
     $FlavorToplevels = $CiFlavorToplevels
@@ -386,7 +365,6 @@ $AllMSYS2Packages = $DV_MSYS2Packages + (DV_MSYS2PackagesAbi -DkmlHostAbi $DkmlH
 # Consolidate the magic constants into a single deployment id
 $MSYS2Hash = Get-Sha256Hex16OfText -Text ($AllMSYS2Packages -join ',')
 $DockerHash = Get-Sha256Hex16OfText -Text "$DV_WindowsMsvcDockerImage"
-$PkgHash = Get-Sha256Hex16OfText -Text ($FlavorPackages -join ',')
 $BinHash = Get-Sha256Hex16OfText -Text ($FlavorBinaries -join ',')
 $StubHash = Get-Sha256Hex16OfText -Text ($FlavorStubs -join ',')
 $ToplevelsHash = Get-Sha256Hex16OfText -Text ($FlavorToplevels -join ',')
@@ -395,7 +373,7 @@ if ($null -ne $OpamBinDir -and "" -ne $OpamBinDir) {
 } else {
     $OpamHash = $DV_AvailableOpamVersion
 }
-$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;inotify-$InotifyTag;msys2-$MSYS2Hash;docker-$DockerHash;pkgs-$PkgHash;bins-$BinHash;stubs-$StubHash;toplevels-$ToplevelsHash"
+$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;inotify-$InotifyTag;msys2-$MSYS2Hash;docker-$DockerHash;bins-$BinHash;stubs-$StubHash;toplevels-$ToplevelsHash"
 if ($VcpkgCompatibility) {
     $DeploymentId += ";ninja-$NinjaVersion;cmake-$CMakeVersion"
 }
