@@ -275,50 +275,53 @@ $OCamlLangGitCommit = switch ($OCamlLangVersion)
 $NinjaVersion = "1.10.2"
 $CMakeVersion = "3.21.1"
 $InotifyTag = "36d18f3dfe042b21d7136a1479f08f0d8e30e2f9"
+$OCamlBinaries = @(
+    "flexlink.exe"
+    "ocaml.exe"
+    "ocamlc.byte.exe"
+    "ocamlc.exe"
+    "ocamlc.opt.exe"
+    "ocamlcmt.exe"
+    "ocamlcp.byte.exe"
+    "ocamlcp.exe"
+    "ocamlcp.opt.exe"
+    "ocamldebug.exe"
+    "ocamldep.byte.exe"
+    "ocamldep.exe"
+    "ocamldep.opt.exe"
+    "ocamldoc.exe"
+    "ocamldoc.opt.exe"
+    "ocamllex.byte.exe"
+    "ocamllex.exe"
+    "ocamllex.opt.exe"
+    "ocamlmklib.byte.exe"
+    "ocamlmklib.exe"
+    "ocamlmklib.opt.exe"
+    "ocamlmktop.byte.exe"
+    "ocamlmktop.exe"
+    "ocamlmktop.opt.exe"
+    "ocamlobjinfo.byte.exe"
+    "ocamlobjinfo.exe"
+    "ocamlobjinfo.opt.exe"
+    "ocamlopt.byte.exe"
+    "ocamlopt.exe"
+    "ocamlopt.opt.exe"
+    "ocamloptp.byte.exe"
+    "ocamloptp.exe"
+    "ocamloptp.opt.exe"
+    "ocamlprof.byte.exe"
+    "ocamlprof.exe"
+    "ocamlprof.opt.exe"
+    "ocamlrun.exe"
+    "ocamlrund.exe"
+    "ocamlruni.exe"
+    "ocamlyacc.exe"
+)
 $CiFlavorBinaries = @(
     # ocamlfind
-    "ocamlfind.exe",
+    "ocamlfind.exe"
     # ocaml
-    "flexlink.exe",
-    "ocaml.exe",
-    "ocamlc.byte.exe",
-    "ocamlc.exe",
-    "ocamlc.opt.exe",
-    "ocamlcmt.exe",
-    "ocamlcp.byte.exe",
-    "ocamlcp.exe",
-    "ocamlcp.opt.exe",
-    "ocamldebug.exe",
-    "ocamldep.byte.exe",
-    "ocamldep.exe",
-    "ocamldep.opt.exe",
-    "ocamldoc.exe",
-    "ocamldoc.opt.exe",
-    "ocamllex.byte.exe",
-    "ocamllex.exe",
-    "ocamllex.opt.exe",
-    "ocamlmklib.byte.exe",
-    "ocamlmklib.exe",
-    "ocamlmklib.opt.exe",
-    "ocamlmktop.byte.exe",
-    "ocamlmktop.exe",
-    "ocamlmktop.opt.exe",
-    "ocamlobjinfo.byte.exe",
-    "ocamlobjinfo.exe",
-    "ocamlobjinfo.opt.exe",
-    "ocamlopt.byte.exe",
-    "ocamlopt.exe",
-    "ocamlopt.opt.exe",
-    "ocamloptp.byte.exe",
-    "ocamloptp.exe",
-    "ocamloptp.opt.exe",
-    "ocamlprof.byte.exe",
-    "ocamlprof.exe",
-    "ocamlprof.opt.exe",
-    "ocamlrun.exe",
-    "ocamlrund.exe",
-    "ocamlruni.exe",
-    "ocamlyacc.exe"
+    $OCamlBinaries
 )
 $CiFlavorStubs = @(
     # Stubs are important if the binaries need them.
@@ -333,21 +336,31 @@ $CiFlavorToplevels = @(
     # switch that may be deleted later).
     "topfind"
 )
-$FullFlavorBinaries = $CiFlavorBinaries + @(
-    "utop.exe",
+$FullFlavorBinaries = @(
+    # ci
+    $CiFlavorBinaries
+    # full
+    "utop.exe"
     "utop-full.exe")
-$FullFlavorStubs = $CiFlavorStubs + @(
+$FullFlavorStubs = @(
     # Stubs are important if the binaries need them.
     #   C:\Users\you>utop
     #   Fatal error: cannot load shared library dlllambda_term_stubs
     #   Reason: The specified module could not be found.
 
+    # ci
+    $CiFlavorStubs
+
     # `utop` stubs
     "dlllambda_term_stubs.dll"
     "dlllwt_unix_stubs.dll"
 )
-$FullFlavorToplevels = $CiFlavorToplevels + @(
+$FullFlavorToplevels = @(
     # Toplevels are important if the binaries need them.
+
+    # ci
+    $CiFlavorToplevels
+    # full
 )
 if ($Flavor -eq "Full") {
     $FlavorBinaries = $FullFlavorBinaries
@@ -1083,54 +1096,11 @@ try {
 
     $ProgramGeneralBinMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$ProgramGeneralBinDir"
 
-    $OcamlBinaries = @(
-        "ocaml"
-        "ocamlc"
-        "ocamlc.byte"
-        "ocamlc.opt"
-        "ocamlcmt"
-        "ocamlcp"
-        "ocamlcp.byte"
-        "ocamlcp.opt"
-        "ocamldebug"
-        "ocamldep"
-        "ocamldep.byte"
-        "ocamldep.opt"
-        "ocamldoc"
-        "ocamldoc.opt"
-        "ocamllex"
-        "ocamllex.byte"
-        "ocamllex.opt"
-        "ocamlmklib"
-        "ocamlmklib.byte"
-        "ocamlmklib.opt"
-        "ocamlmktop"
-        "ocamlmktop.byte"
-        "ocamlmktop.opt"
-        "ocamlobjinfo"
-        "ocamlobjinfo.byte"
-        "ocamlobjinfo.opt"
-        "ocamlopt"
-        "ocamlopt.byte"
-        "ocamlopt.opt"
-        "ocamloptp"
-        "ocamloptp.byte"
-        "ocamloptp.opt"
-        "ocamlprof"
-        "ocamlprof.byte"
-        "ocamlprof.opt"
-        "ocamlrun"
-        "ocamlrund"
-        "ocamlruni"
-        "ocamlyacc"
-        "flexlink"
-    )
-
     # Skip with ... $global:SkipOcamlSetup = $true ... remove it with ... Remove-Variable SkipOcamlSetup
     if (!$global:SkipOcamlSetup) {
         $OcamlInstalled = $true
-        foreach ($OcamlBinary in $OcamlBinaries) {
-            if (!(Test-Path -Path "$ProgramGeneralBinDir\$OcamlBinary.exe")) {
+        foreach ($OcamlBinary in $OCamlBinaries) {
+            if (!(Test-Path -Path "$ProgramGeneralBinDir\$OcamlBinary")) {
                 $OcamlInstalled = $false
                 break
             }
@@ -1146,7 +1116,7 @@ try {
                 Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
                     -Command (
                         "install -d '$ProgramGeneralBinMSYS2AbsPath' && " +
-                        "for b in $OcamlBinaries; do mv -v '$ProgramMSYS2AbsPath'/bin/`$b.exe '$ProgramGeneralBinMSYS2AbsPath'/; done"
+                        "for b in $OCamlBinaries; do mv -v '$ProgramMSYS2AbsPath'/bin/`$b '$ProgramGeneralBinMSYS2AbsPath'/; done"
                     )
             }
         }
