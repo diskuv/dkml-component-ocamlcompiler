@@ -178,8 +178,6 @@ param (
     [switch]
     $StopBeforeInitOpam,
     [switch]
-    $StopBeforeCreateSystemSwitch,
-    [switch]
     $StopBeforeInstallSystemSwitch
 )
 
