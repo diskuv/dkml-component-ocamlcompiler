@@ -19,11 +19,11 @@
 
     OCaml package directories, C header "include" directories and other critical locations are hardcoded
     into essential OCaml executables like `ocamlc.exe` during `opam switch create` and `opam install`.
-    We are forced to create the Opam switch in its final resting place. But now we have a problem since
-    we can never install a new Opam switch; it would have to be on top of the existing "final" Opam switch, right?
-    Wrong, as long as we have two locations ... one to compile any new Opam switch and another to run
-    user software; once the compilation is done we can change the PATH, OPAMSWITCH, etc. to use the new Opam switch.
-    That old Opam switch can still be used; in fact OCaml applications like the OCaml Language Server may still
+    We are forced to create the opam switch in its final resting place. But now we have a problem since
+    we can never install a new opam switch; it would have to be on top of the existing "final" opam switch, right?
+    Wrong, as long as we have two locations ... one to compile any new opam switch and another to run
+    user software; once the compilation is done we can change the PATH, OPAMSWITCH, etc. to use the new opam switch.
+    That old opam switch can still be used; in fact OCaml applications like the OCaml Language Server may still
     be running. But once you logout all new OCaml applications will be launched using the new PATH environment
     variables, and it is safe to use that old location for the next compile.
     The technique above where we swap locations is called Blue Green deployments.
@@ -34,9 +34,9 @@
     A side benefit is that the new system can be compiled while you are still working. Since
     new systems can take hours to build this is an important benefit.
 
-    One last complication. Opam global switches are subdirectories of the Opam root; we cannot change their location
-    use the swapping Blue Green deployment technique. So we _do not_ use an Opam global switch for `dkml`.
-    We use external (aka local) Opam switches instead.
+    One last complication. opam global switches are subdirectories of the opam root; we cannot change their location
+    use the swapping Blue Green deployment technique. So we _do not_ use an opam global switch for `dkml`.
+    We use external (aka local) opam switches instead.
 
     MSYS2
     -----
@@ -117,7 +117,7 @@
     When specified the specified MSYS2 installation directory will be used.
     Useful in CI situations.
 .Parameter OpamBinDir
-    When specified the specified Opam binaries directory will be used that
+    When specified the specified opam binaries directory will be used that
     contains opam.exe, opam-installer.exe and opam-putenv.exe. The entire
     OpamBinDir, including subdirectories, will be copied to the installation
     so that any DLLs (if any) are available alongside opam.exe.
@@ -1091,7 +1091,7 @@ try {
     # ----------------------------------------------------------------
     # BEGIN Compile/install system ocaml.exe
 
-    $global:ProgressActivity = "Install Native Windows OCAML.EXE and related binaries"
+    $global:ProgressActivity = "Install native Windows ocaml.exe and related binaries"
     Write-ProgressStep
 
     $ProgramGeneralBinMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$ProgramGeneralBinDir"
@@ -1154,7 +1154,7 @@ try {
     #
     # We'll install a opam.exe shim later that will delegate to opam-real.exe
 
-    $global:ProgressActivity = "Install Native Windows OPAM.EXE"
+    $global:ProgressActivity = "Install native Windows opam.exe"
     Write-ProgressStep
 
     $ProgramEssentialBinMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$ProgramEssentialBinDir"
@@ -1216,7 +1216,7 @@ try {
         exit 0
     }
 
-    $global:ProgressActivity = "Initialize Opam Package Manager"
+    $global:ProgressActivity = "Initialize opam package manager"
     Write-ProgressStep
 
     # Upgrades. Possibly ask questions to delete things, so no progress indicator
@@ -1243,7 +1243,7 @@ try {
         exit 0
     }
 
-    $global:ProgressActivity = "Create dkml Opam Local Switch"
+    $global:ProgressActivity = "Create 'dkml' opam local switch"
     Write-ProgressStep
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
@@ -1264,7 +1264,7 @@ try {
         exit 0
     }
 
-    $global:ProgressActivity = "Create playground Opam Global Switch and opam dkml plugin"
+    $global:ProgressActivity = "Create 'playground' opam global switch and opam dkml plugin"
     Write-ProgressStep
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
@@ -1280,13 +1280,13 @@ try {
                 "'$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh' -p '$DkmlHostAbi' -v '$ProgramMSYS2AbsPath' -o '$ProgramMSYS2AbsPath' switch")
 
         # Make sure `opam dkml` plugin installed by running any opam dkml subcommand.
-        #   Technically not necessary since Opam automatically will download and build it. But
+        #   Technically not necessary since opam automatically will download and build it. But
         #   this makes sure the installation fails if this most basic command does not work.
         #   Additionally, someone will inevitably measure how long it takes to create a
         #   local switch with `opam dkml init`; it should be quick!
         #
-        #   Weirdly if this is the first time the plugin is ever installed in the Opam root, `-y` will work
-        #   because it is interpreted as a normal Opam command. But when the plugin is installed
+        #   Weirdly if this is the first time the plugin is ever installed in the opam root, `-y` will work
+        #   because it is interpreted as a normal opam command. But when the plugin is installed
         #   `-y` will choke in some or all versions of opam dkml since `-y` is not a DKML option.
         #   Mitigation: OPAMYES=1.
         #
@@ -1321,7 +1321,7 @@ try {
         # This helps IncrementalDeployment installations, especially when a file is in use
         # but hasn't changed (especially `dune.exe`, `ocamllsp.exe` which may be open in an IDE)
         if (!(Test-Path "$DiskuvHostToolsDir\$OpamFile")) {
-            # no-op since the binary is not part of Opam switch (we may have been installed manually like OCaml system compiler)
+            # no-op since the binary is not part of opam switch (we may have been installed manually like OCaml system compiler)
             $what = "[Copy-DkmlFile] {missing} $DiskuvHostToolsDir\$OpamFile -> $Destination"
             Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
             Write-Host "$what"
@@ -1364,13 +1364,13 @@ try {
         Copy-DkmlFile -OpamFile "lib\stublibs\$stub" -Destination "$ProgramStubsDir\$stub"
     }
 
-    # Toplevel files. Opam sets OCAML_TOPLEVEL_PATH=lib/toplevel, but we should place them in lib/ocaml so we don't
-    # have to define our own system OCAML_TOPLEVEL_PATH which would interfere with Opam. Besides, installing a toplevel
+    # Toplevel files. opam sets OCAML_TOPLEVEL_PATH=lib/toplevel, but we should place them in lib/ocaml so we don't
+    # have to define our own system OCAML_TOPLEVEL_PATH which would interfere with opam. Besides, installing a toplevel
     # containing package like "ocamlfind" in a local switch can autopopulate lib/ocaml anyway if we are using the
     # OCaml system compiler (dkml switch, ocaml.exe binary). So place in lib/ocaml anyway.
     if (!(Test-Path -Path $ProgramLibOcamlDir)) { New-Item -Path $ProgramLibOcamlDir -ItemType Directory | Out-Null }
     foreach ($toplevel in $FlavorToplevels) {
-        # no-op since the speciallib is not part of Opam switch (we may have been installed manually like OCaml system compiler)
+        # no-op since the speciallib is not part of opam switch (we may have been installed manually like OCaml system compiler)
         Copy-DkmlFile -OpamFile "lib\toplevel\$toplevel" -Destination "$ProgramLibOcamlDir\$toplevel"
     }
 
