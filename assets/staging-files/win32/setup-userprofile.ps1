@@ -688,9 +688,9 @@ $TempPath = Start-BlueGreenDeploy -ParentPath $TempParentPath `
     -LogFunction ${function:\Write-ProgressCurrentOperation}
 
 $ProgramRelGeneralBinDir = "usr\bin"
-$ProgramGeneralBinDir = "$ProgramPath\$ProgramRelGeneralBinDir"
+$ProgramGeneralBinDir = Join-Path $ProgramPath -ChildPath $ProgramRelGeneralBinDir
 $ProgramRelEssentialBinDir = "bin"
-$ProgramEssentialBinDir = "$ProgramPath\$ProgramRelEssentialBinDir"
+$ProgramEssentialBinDir = Join-Path $ProgramPath -ChildPath $ProgramRelEssentialBinDir
 
 # END Start deployment
 # ----------------------------------------------------------------
