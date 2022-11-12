@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "dkml-component-network-ocamlcompiler"
-version: "4.12.1~v0.4.1~prerel6"
+version: "4.12.1~v1.0.2~prerel2"
 synopsis: "DKML component for ocamlcompiler"
 description:
   "Network installed component for OCaml bytecode and native compiler"
@@ -68,7 +68,10 @@ build: [
   ["dune" "install" "-p" name "--create-install-files" name]
 ]
 install: [
-  #   Run r-c-ocaml-1-setup.sh
+  #   Run r-c-ocaml-1-setup.sh ... just the OCaml runtime since not yet relocatable!
+  #   With an OCaml runtime that is the same version as the full OCaml system we want
+  #   to compile, the OCaml system should be compiled quicker (no bootstrap necessary).
+  #
   #   ** It may seem redundant to recreate the same reproducible directory that
   #   ** is available in ocamlrun. BUT ... it is a bad idea to couple the
   #   ** bytecode interpreter that runs the installer plugins to the same
@@ -123,9 +126,11 @@ extra-source "dl/flexdll.tar.gz" {
   checksum: "sha256=51a6ef2e67ff475c33a76b3dc86401a0f286c9a3339ee8145053ea02d2fb5974"
 }
 extra-source "dl/dkml-compiler.tar.gz" {
-  src: "https://github.com/diskuv/dkml-compiler/archive/refs/tags/4.12.1-v0.4.1-prerel6.tar.gz"
+  # TODO: We need a release process for this, or better yet use a normal Opam dependency that
+  # has all the content in a share: or lib: folder.
+  src: "https://github.com/diskuv/dkml-compiler/archive/refs/tags/4.12.1-v1.0.2-prerel2.tar.gz"
   checksum: [
-    "sha256=dab79ee3d2880995c73899cea8a5873e49a3f67e54fa336ce2e0c937e0f3b8c4"
+    "sha256=a275978698d05f29be6569b3c24fe0ac6551802489bc2840bc6fecbf9496f9f8"
   ]
 }
 extra-source "dl/dkml-runtime-common.tar.gz" {
