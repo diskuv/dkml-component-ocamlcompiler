@@ -1,3 +1,8 @@
+(* Cmdliner 1.0 -> 1.1 deprecated a lot of things. But until Cmdliner 1.1
+   is in common use in Opam packages we should provide backwards compatibility.
+   In fact, Diskuv OCaml is not even using Cmdliner 1.1. *)
+[@@@alert "-deprecated"]
+
 open Dkml_install_api
 open Dkml_install_register
 open Bos
@@ -99,8 +104,7 @@ let execute_install_admin ctx =
           %% Log_config.to_args ctx.Context.log_config)
       in
       let cmd =
-        if Opts.option_vcpkg_available then Cmd.(cmd % "--vcpkg")
-        else cmd
+        if Opts.option_vcpkg_available then Cmd.(cmd % "--vcpkg") else cmd
       in
       Staging_ocamlrun_api.spawn_ocamlrun ctx cmd
   | false -> ()
@@ -136,8 +140,7 @@ let execute_install_user ctx =
           %% Log_config.to_args ctx.Context.log_config)
       in
       let cmd =
-        if Opts.option_vcpkg_available then Cmd.(cmd % "--vcpkg")
-        else cmd
+        if Opts.option_vcpkg_available then Cmd.(cmd % "--vcpkg") else cmd
       in
       Staging_ocamlrun_api.spawn_ocamlrun ctx cmd
   | false -> ()
