@@ -19,18 +19,23 @@ let uninstall_start_res ~scripts_dir ~prefix_dir ~is_audit =
   let cmd =
     Cmd.(
       v (Fpath.to_string uninstall_bat)
-      % "-InstallationPrefix" % prefix_dir_83 % "-SkipProgress")
+      % "-InstallationPrefix" % prefix_dir_83 % "-NoDeploymentSlot"
+      % "-SkipProgress")
   in
   let cmd = if is_audit then Cmd.(cmd % "-AuditOnly") else cmd in
   Logs.info (fun l -> l "Uninstalling OCaml with@ @[%a@]" Cmd.pp cmd);
   log_spawn_onerror_exit ~id:"a0d16230" cmd;
   Ok ()
 
-(* Remove the "0" subdirectory of the installation directory *)
+(* Remove the subdirectories of the installation directory, including
+   legacy slot 0 *)
 let uninstall_programdir_res ~prefix_dir =
-  let program_dir = Fpath.(prefix_dir / "0") in
-  Dkml_install_api.uninstall_directory_onerror_exit ~id:"8ae095b1"
-    ~dir:program_dir ~wait_seconds_if_stuck:300.
+  List.iter
+    (fun i ->
+      let program_dir = Fpath.(prefix_dir / i) in
+      Dkml_install_api.uninstall_directory_onerror_exit ~id:"8ae095b1"
+        ~dir:program_dir ~wait_seconds_if_stuck:300.)
+    [ "0"; "man"; "lib"; "bin"; "tools"; "usr"; "src"; "share" ]
 
 let uninstall_res ~scripts_dir ~prefix_dir ~is_audit =
   Dkml_install_api.Forward_progress.lift_result __POS__ Fmt.lines

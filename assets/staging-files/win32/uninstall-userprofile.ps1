@@ -10,6 +10,10 @@
     $env:LOCALAPPDATA\Programs\DiskuvOCaml on Windows. On macOS and Unix,
     defaults to $env:XDG_DATA_HOME/diskuv-ocaml if XDG_DATA_HOME defined,
     otherwise $env:HOME/.local/share/diskuv-ocaml.
+.Parameter NoDeploymentSlot
+    Do not use deployment slot subdirectories. Instead assume the install was
+    done with -NoDeploymentSlot which directly installs into the installation
+    prefix.
 .Parameter AuditOnly
     Use when you want to see what would happen, but don't actually perform
     the commands.
@@ -31,6 +35,8 @@ param (
     $ParentProgressId = -1,
     [string]
     $InstallationPrefix,
+    [switch]
+    $NoDeploymentSlot,
     [switch]
     $SkipProgress
 )
@@ -97,8 +103,12 @@ function Write-Error($message) {
 
 $global:ProgressStatus = "Starting uninstall"
 
-$FixedSlotIdx = 0
-$ProgramPath = Join-Path -Path $InstallationPrefix -ChildPath $FixedSlotIdx
+if ($NoDeploymentSlot) {
+    $ProgramPath = $InstallationPrefix
+} else {
+    $FixedSlotIdx = 0
+    $ProgramPath = Join-Path -Path $InstallationPrefix -ChildPath $FixedSlotIdx
+}
 
 $ProgramRelGeneralBinDir = "usr\bin"
 $ProgramGeneralBinDir = "$ProgramPath\$ProgramRelGeneralBinDir"
@@ -212,34 +222,30 @@ try {
     $userpath = [Environment]::GetEnvironmentVariable("PATH", "User")
     $userpathentries = $userpath -split $splitter # all of the User's PATH in a collection
 
-    $PathModified = $false
-
-    # Remove usr\bin\ entries in the User's PATH
-    if ($userpathentries -contains $ProgramGeneralBinDir) {
-        # remove any old deployments
-        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelGeneralBinDir
-        foreach ($possibleDir in $PossibleDirs) {
-            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
-            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
-        }
-        $PathModified = $true
+    # Remove usr\bin\ slots in the User's PATH
+    $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelGeneralBinDir
+    foreach ($possibleDir in $PossibleDirs) {
+        $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+        $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
     }
 
-    # Remove bin\ entries in the User's PATH
-    if ($userpathentries -contains $ProgramEssentialBinDir) {
-        # remove any old deployments
-        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelEssentialBinDir
-        foreach ($possibleDir in $PossibleDirs) {
-            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
-            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
-        }
-        $PathModified = $true
+    # Remove bin\ slots in the User's PATH
+    $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelEssentialBinDir
+    foreach ($possibleDir in $PossibleDirs) {
+        $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+        $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
     }
 
-    if ($PathModified) {
-        # modify PATH
-        Set-UserEnvironmentVariable -Name "PATH" -Value ($userpathentries -join $splitter)
-    }
+    # Remove exact usr\bin dirs
+    $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramGeneralBinDir}
+    $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramGeneralBinDir)}
+
+    # Remove exact bin dirs
+    $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramEssentialBinDir}
+    $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramEssentialBinDir)}
+
+    # modify PATH
+    Set-UserEnvironmentVariable -Name "PATH" -Value ($userpathentries -join $splitter)
 
     # END Modify User's environment variables
     # ----------------------------------------------------------------
@@ -255,7 +261,7 @@ try {
     Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.cmd"
     Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.sh"
     Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.ps1"
-    
+
     Remove-ItemQuietly -Path "$InstallationPrefix\deploy-state-v1.json"
 
     # END Uninstall deployment vars.

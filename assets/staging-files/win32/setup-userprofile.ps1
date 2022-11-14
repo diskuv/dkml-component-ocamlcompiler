@@ -111,8 +111,9 @@
 .Parameter OnlyOutputCacheKey
     Only output the userprofile cache key. The cache key is 1-to-1 with
     the version of the Diskuv OCaml distribution.
-.Parameter ForceDeploymentSlot0
-    Forces the blue-green deployer to use slot 0. Useful in CI situations.
+.Parameter NoDeploymentSlot
+    Do not use deployment slot subdirectories. Instead the install will
+    go directly into the installation prefix. Useful in CI situations
 .Parameter MSYS2Dir
     When specified the specified MSYS2 installation directory will be used.
     Useful in CI situations.
@@ -172,7 +173,7 @@ param (
     [switch]
     $OnlyOutputCacheKey,
     [switch]
-    $ForceDeploymentSlot0,
+    $NoDeploymentSlot,
     [switch]
     $IncrementalDeployment,
     [switch]
@@ -669,14 +670,17 @@ $GitPath = (get-item "$GitExe").Directory.FullName
 # BEGIN Start deployment
 
 $global:ProgressStatus = "Starting Deployment"
-if ($ForceDeploymentSlot0) { $FixedSlotIdx = 0 } else { $FixedSlotIdx = $null }
-$ProgramPath = Start-BlueGreenDeploy -ParentPath $InstallationPrefix `
-    -DeploymentId $DeploymentId `
-    -FixedSlotIdx:$FixedSlotIdx `
-    -KeepOldDeploymentWhenSameDeploymentId:$IncrementalDeployment `
-    -LogFunction ${function:\Write-ProgressCurrentOperation}
+if ($NoDeploymentSlot) {
+    $ProgramPath = $InstallationPrefix
+} else {
+    $ProgramPath = Start-BlueGreenDeploy -ParentPath $InstallationPrefix `
+        -DeploymentId $DeploymentId `
+        -FixedSlotIdx:$null `
+        -KeepOldDeploymentWhenSameDeploymentId:$IncrementalDeployment `
+        -LogFunction ${function:\Write-ProgressCurrentOperation}
+}
 
-# We also use "deployments" for any temporary directory we need since the
+# We use "deployments" for any temporary directory we need since the
 # deployment process handles an aborted setup and the necessary cleaning up of disk
 # space (eventually).
 if (!$TempParentPath) {
@@ -1383,7 +1387,9 @@ try {
     $global:ProgressActivity = "Finalize deployment"
     Write-ProgressStep
 
-    Stop-BlueGreenDeploy -ParentPath $InstallationPrefix -DeploymentId $DeploymentId -Success
+    if (-not $NoDeploymentSlot) {
+        Stop-BlueGreenDeploy -ParentPath $InstallationPrefix -DeploymentId $DeploymentId -Success
+    }
     if ($IncrementalDeployment) {
         Stop-BlueGreenDeploy -ParentPath $TempParentPath -DeploymentId $DeploymentId -Success # don't delete the temp directory
     } else {

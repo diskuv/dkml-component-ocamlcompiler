@@ -48,7 +48,7 @@ let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
       v (Fpath.to_string setup_bat)
       % "-AllowRunAsAdmin" % "-InstallationPrefix" % prefix_dir_83 % "-MSYS2Dir"
       % msys2_dir_83 % "-OpamBinDir" % opam_dir_83 % "-DkmlPath" % dkml_path_83
-      % "-DkmlHostAbi"
+      % "-NoDeploymentSlot" % "-DkmlHostAbi"
       % Context.Abi_v2.to_canonical_string abi
       % "-TempParentPath" % temp_dir_83 % "-SkipProgress")
   in
