@@ -1476,7 +1476,6 @@ try {
         }
     }
     
-    $PathModified = $false
     if ($Flavor -eq "Full") {
         # DiskuvOCamlHome
         Set-UserEnvironmentVariable -Name "DiskuvOCamlHome" -Value "$ProgramPath"
@@ -1517,48 +1516,39 @@ try {
         $userpath = [Environment]::GetEnvironmentVariable("PATH", "User")
         $userpathentries = $userpath -split $splitter # all of the User's PATH in a collection
 
-        # Prepend usr\bin\ to the User's PATH if it isn't already
-        if (!($userpathentries -contains $ProgramGeneralBinDir)) {
-            # remove any old deployments
-            $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelGeneralBinDir
-            foreach ($possibleDir in $PossibleDirs) {
-                $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
-                $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
-            }
-            # add new PATH entry
-            $userpathentries = @( $ProgramGeneralBinDir ) + $userpathentries
-            $PathModified = $true
+        # Prepend usr\bin\ to the User's PATH
+        #   remove any old deployments
+        $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramGeneralBinDir}
+        $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramGeneralBinDir)}
+        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelGeneralBinDir
+        foreach ($possibleDir in $PossibleDirs) {
+            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
         }
+        #   add new PATH entry
+        $userpathentries = @( $ProgramGeneralBinDir ) + $userpathentries
 
-        # Prepend bin\ to the User's PATH if it isn't already
-        if (!($userpathentries -contains $ProgramEssentialBinDir)) {
-            # remove any old deployments
-            $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelEssentialBinDir
-            foreach ($possibleDir in $PossibleDirs) {
-                $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
-                $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
-            }
-            # add new PATH entry
-            $userpathentries = @( $ProgramEssentialBinDir ) + $userpathentries
-            $PathModified = $true
+        # Prepend bin\ to the User's PATH
+        #   remove any old deployments
+        $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramEssentialBinDir}
+        $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramEssentialBinDir)}
+        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelEssentialBinDir
+        foreach ($possibleDir in $PossibleDirs) {
+            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
         }
+        #   add new PATH entry
+        $userpathentries = @( $ProgramEssentialBinDir ) + $userpathentries
 
         # Remove non-DKML OCaml installs "...\OCaml\bin" like C:\OCaml\bin from the User's PATH
         # Confer: https://gitlab.com/diskuv/diskuv-ocaml/-/issues/4
         $NonDKMLWildcards = @( "*\OCaml\bin" )
-        $c_old = $userpathentries.Count
         foreach ($nonDkmlWildcard in $NonDKMLWildcards) {
             $userpathentries = $userpathentries | Where-Object {$_ -notlike $nonDkmlWildcard}
         }
-        $c_new = $userpathentries.Count
-        if ($c_old -ne $c_new) {
-            $PathModified = $true
-        }
 
-        if ($PathModified) {
-            # modify PATH
-            [Environment]::SetEnvironmentVariable("PATH", ($userpathentries -join $splitter), "User")
-        }
+        # modify PATH
+        Set-UserEnvironmentVariable -Name "PATH" -Value ($userpathentries -join $splitter)
     }
 
     # END Modify User's environment variables
@@ -1585,11 +1575,8 @@ Write-Host ""
 Write-Host "Setup is complete. Congratulations!"
 Write-Host "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/#introduction. Announcements will be available at https://twitter.com/diskuv"
 Write-Host ""
+Write-Host "You will need to log out and log back in"
+Write-Host "-OR- (for advanced users) exit all of your Command Prompts, Windows Terminals,"
+Write-Host "PowerShells and IDEs like Visual Studio Code"
 Write-Host ""
 Write-Host ""
-if ($PathModified) {
-    Write-Host "Your User PATH was modified."
-    Write-Host "You will need to log out and log back in"
-    Write-Host "-OR- (for advanced users) exit all of your Command Prompts, Windows Terminals,"
-    Write-Host "PowerShells and IDEs like Visual Studio Code"
-}

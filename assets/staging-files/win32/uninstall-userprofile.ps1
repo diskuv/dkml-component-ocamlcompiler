@@ -222,27 +222,23 @@ try {
     $userpath = [Environment]::GetEnvironmentVariable("PATH", "User")
     $userpathentries = $userpath -split $splitter # all of the User's PATH in a collection
 
-    # Remove usr\bin\ slots in the User's PATH
+    # Remove usr\bin\ entries in the User's PATH
+    $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramGeneralBinDir}
+    $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramGeneralBinDir)}
     $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelGeneralBinDir
     foreach ($possibleDir in $PossibleDirs) {
         $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
         $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
     }
 
-    # Remove bin\ slots in the User's PATH
+    # Remove bin\ entries in the User's PATH
+    $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramEssentialBinDir}
+    $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramEssentialBinDir)}
     $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelEssentialBinDir
     foreach ($possibleDir in $PossibleDirs) {
         $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
         $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
     }
-
-    # Remove exact usr\bin dirs
-    $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramGeneralBinDir}
-    $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramGeneralBinDir)}
-
-    # Remove exact bin dirs
-    $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramEssentialBinDir}
-    $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramEssentialBinDir)}
 
     # modify PATH
     Set-UserEnvironmentVariable -Name "PATH" -Value ($userpathentries -join $splitter)
