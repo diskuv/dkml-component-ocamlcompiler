@@ -182,6 +182,10 @@ param (
     $StopBeforeInstallSystemSwitch
 )
 
+# For symmetry with uninstall we have $AuditOnly. If and when this is
+# fully implemented this can be added as a [switch] parameter.
+$AuditOnly = $false
+
 $ErrorActionPreference = "Stop"
 
 $HereScript = $MyInvocation.MyCommand.Path
@@ -241,8 +245,8 @@ if (!$global:Skip64BitCheck -and ![Environment]::Is64BitOperatingSystem) {
 }
 
 # B. Make sure OCaml variables not in Machine environment variables, which require Administrator access
-# Confer https://gitlab.com/diskuv/diskuv-ocaml/-/issues/4
-$OcamlNonDKMLEnvKeys = @( "OCAMLLIB" )
+# Confer https://gitlab.com/diskuv/diskuv-ocaml/-/issues/4 and https://github.com/diskuv/dkml-installer-ocaml/issues/13
+$OcamlNonDKMLEnvKeys = @( "OCAMLLIB", "CAMLLIB" )
 $OcamlNonDKMLEnvKeys | ForEach-Object {
     $x = [System.Environment]::GetEnvironmentVariable($_, "Machine")
     if (($null -ne $x) -and ("" -ne $x)) {
@@ -1431,20 +1435,78 @@ try {
     $global:ProgressActivity = "Modify environment variables"
     Write-ProgressStep
 
+    function Remove-UserEnvironmentVariable {
+        param(
+            [Parameter(Mandatory=$true)]
+            $Name
+        )
+        if ($null -ne [Environment]::GetEnvironmentVariable($Name)) {
+            # Append what we will do into $AuditLog
+            $Command = "[Environment]::SetEnvironmentVariable(`"$Name`", `"`", `"User`")"
+            $what = "[pwsh]$ $Command"
+            Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
+    
+            if (!$AuditOnly) {
+                [Environment]::SetEnvironmentVariable($Name, "", "User")
+            }
+        }
+    }
+    function Set-UserEnvironmentVariable {
+        param(
+            [Parameter(Mandatory=$true)]
+            $Name,
+            [Parameter(Mandatory=$true)]
+            $Value
+        )
+        $PreviousValue = [Environment]::GetEnvironmentVariable($Name, "User")
+        if ($Value -ne $PreviousValue) {
+            # Append what we will do into $AuditLog
+            $now = Get-CurrentTimestamp
+            $Command = "# Previous entry: [Environment]::SetEnvironmentVariable(`"$Name`", `"$PreviousValue`", `"User`")"
+            $what = "[pwsh]$ $Command"
+            Add-Content -Path $AuditLog -Value "$now $what" -Encoding UTF8
+    
+            $Command = "[Environment]::SetEnvironmentVariable(`"$Name`", `"$Value`", `"User`")"
+            $what = "[pwsh]$ $Command"
+            Add-Content -Path $AuditLog -Value "$now $what" -Encoding UTF8
+    
+            if (!$AuditOnly) {
+                [Environment]::SetEnvironmentVariable($Name, $Value, "User")
+            }
+        }
+    }
+    
     $PathModified = $false
     if ($Flavor -eq "Full") {
         # DiskuvOCamlHome
-        [Environment]::SetEnvironmentVariable("DiskuvOCamlHome", "$ProgramPath", "User")
+        Set-UserEnvironmentVariable -Name "DiskuvOCamlHome" -Value "$ProgramPath"
 
         # DiskuvOCamlVersion
         # - used for VSCode's CMake Tools to set VCPKG_ROOT in cmake-variants.yaml
-        [Environment]::SetEnvironmentVariable("DiskuvOCamlVersion", "$dkml_root_version", "User")
+        Set-UserEnvironmentVariable -Name "DiskuvOCamlVersion" -Value "$dkml_root_version"
 
         # ---------------------------------------------
         # Remove any non-DKML OCaml environment entries
         # ---------------------------------------------
 
-        $OcamlNonDKMLEnvKeys | ForEach-Object { [Environment]::SetEnvironmentVariable($_, "", "User") }
+        $OcamlNonDKMLEnvKeys | ForEach-Object {
+            $keytodelete = $_
+            $uservalue = [Environment]::GetEnvironmentVariable($keytodelete, "User")
+            if ($uservalue) {
+                # TODO: It would be better to have a warning pop up. But most
+                # modern installations are silent (ex. a silent option is required
+                # by winget). So a warning during installation will be missed.
+                # Perhaps we can have a first-run warning when the user first
+                # runs either opam.exe or dune.exe.
+
+                # Backup old User value
+                $backupkey = $keytodelete + "_ORIG"
+                Set-UserEnvironmentVariable -Name $backupkey -Value $uservalue
+
+                # Erase User value
+                Remove-UserEnvironmentVariable -Name $keytodelete
+            }
+        }
 
         # -----------
         # Modify PATH
@@ -1526,8 +1588,8 @@ Write-Host ""
 Write-Host ""
 Write-Host ""
 if ($PathModified) {
-    Write-Warning "Your User PATH was modified."
-    Write-Warning "You will need to log out and log back in"
-    Write-Warning "-OR- (for advanced users) exit all of your Command Prompts, Windows Terminals,"
-    Write-Warning "PowerShells and IDEs like Visual Studio Code"
+    Write-Host "Your User PATH was modified."
+    Write-Host "You will need to log out and log back in"
+    Write-Host "-OR- (for advanced users) exit all of your Command Prompts, Windows Terminals,"
+    Write-Host "PowerShells and IDEs like Visual Studio Code"
 }
