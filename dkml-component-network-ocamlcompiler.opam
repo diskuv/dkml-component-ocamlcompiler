@@ -145,3 +145,37 @@ extra-source "dl/dkml-runtime-distribution.tar.gz" {
     "sha256=547f5cfd31de69326cb86e6a5124066f26e98bc972674be1d34a7d145bdd157d"
   ]
 }
+pin-depends: [
+  [
+    "dkml-component-staging-opam32.2.2.0~alpha0~20221104"
+    "git+https://github.com/diskuv/dkml-component-opam.git"
+  ]
+  [
+    "dkml-component-staging-opam64.2.2.0~alpha0~20221104"
+    "git+https://github.com/diskuv/dkml-component-opam.git"
+  ]
+  [
+    "dkml-component-staging-ocamlrun.4.12.1~v1.0.2"
+    "git+https://github.com/diskuv/dkml-component-ocamlrun.git"
+  ]
+  [
+    "dkml-component-staging-curl.0.2.0"
+    "git+https://github.com/diskuv/dkml-component-curl.git"
+  ]
+  [
+    "dkml-component-common-unixutils.0.2.0"
+    "git+https://github.com/diskuv/dkml-component-unixutils.git"
+  ]
+  [
+    "dkml-component-staging-unixutils.0.2.0"
+    "git+https://github.com/diskuv/dkml-component-unixutils.git"
+  ]
+  [
+    "dkml-component-network-unixutils.0.2.0"
+    "git+https://github.com/diskuv/dkml-component-unixutils.git"
+  ]
+  [
+    "dkml-option-vcpkg.0.1.0"
+    "git+https://github.com/diskuv/dkml-option-vcpkg.git"
+  ]
+]
