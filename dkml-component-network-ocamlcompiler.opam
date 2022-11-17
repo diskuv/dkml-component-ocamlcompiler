@@ -136,18 +136,6 @@ extra-source "dl/dkml-compiler.tar.gz" {
     "sha256=a275978698d05f29be6569b3c24fe0ac6551802489bc2840bc6fecbf9496f9f8"
   ]
 }
-extra-source "dl/dkml-runtime-common.tar.gz" {
-  src: "https://github.com/diskuv/dkml-runtime-common/archive/refs/tags/1.0.2-prerel8.tar.gz"
-  checksum: [
-    "sha256=9cec6ec3bc064644e8979d3f589d0b10e2a71edd13449cd53bb6a1d0e6d00299"
-  ]
-}
-extra-source "dl/dkml-runtime-distribution.tar.gz" {
-  src: "https://github.com/diskuv/dkml-runtime-distribution/archive/refs/tags/1.0.2-prerel8.tar.gz"
-  checksum: [
-    "sha256=547f5cfd31de69326cb86e6a5124066f26e98bc972674be1d34a7d145bdd157d"
-  ]
-}
 pin-depends: [
   [
     "dkml-component-staging-curl.0.2.0"
@@ -166,3 +154,15 @@ pin-depends: [
     "git+https://github.com/diskuv/dkml-component-unixutils.git"
   ]
 ]
+extra-source "dl/dkml-runtime-common.tar.gz" {
+  src: "https://github.com/diskuv/dkml-runtime-common/archive/refs/tags/1.0.2-prerel9.tar.gz"
+  checksum: [
+    "sha256=fe9d2c9617b5ff4c8fa7d6b666160beedac6e1121fdf66a748d6b37541d6ce0c"
+  ]
+}
+extra-source "dl/dkml-runtime-distribution.tar.gz" {
+  src: "https://github.com/diskuv/dkml-runtime-distribution/archive/refs/tags/1.0.2-prerel9.tar.gz"
+  checksum: [
+    "sha256=8581644c60a77022546521e247d49d9ad9722c76fee89bdca42a6044fc240369"
+  ]
+}
