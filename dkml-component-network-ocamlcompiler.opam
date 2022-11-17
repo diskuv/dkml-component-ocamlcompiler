@@ -12,8 +12,11 @@ bug-reports: "https://github.com/diskuv/dkml-component-ocamlcompiler/issues"
 depends: [
   "dkml-component-network-unixutils"  {>= "0.1.0"}
   "dkml-component-staging-ocamlrun"   {>= "4.12.1~" & < "4.12.2~"}
-  "dkml-component-staging-opam32"     {>= "2.1.0"}
-  "dkml-component-staging-opam64"     {>= "2.1.0"}
+  # The hole carved to exclude ~dkml is so that we use the unmodified, compiled-from-master-branch
+  # of opam with versions that aligns both the semver (needed for winget among others) and the
+  # Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
+  "dkml-component-staging-opam32"     {>= "2.2.0~" & !(>= "2.2.0~dkml20220000" & <= "2.2.0~dkml99999999" )}
+  "dkml-component-staging-opam64"     {>= "2.2.0~" & !(>= "2.2.0~dkml20220000" & <= "2.2.0~dkml99999999" )}
   "dkml-install"                      {>= "0.2.0"}
   "dune"                              {>= "2.9"}
   "base64"                            {>= "3.5.0"}
@@ -147,18 +150,6 @@ extra-source "dl/dkml-runtime-distribution.tar.gz" {
 }
 pin-depends: [
   [
-    "dkml-component-staging-opam32.2.2.0~alpha0~20221104"
-    "git+https://github.com/diskuv/dkml-component-opam.git"
-  ]
-  [
-    "dkml-component-staging-opam64.2.2.0~alpha0~20221104"
-    "git+https://github.com/diskuv/dkml-component-opam.git"
-  ]
-  [
-    "dkml-component-staging-ocamlrun.4.12.1~v1.0.2"
-    "git+https://github.com/diskuv/dkml-component-ocamlrun.git"
-  ]
-  [
     "dkml-component-staging-curl.0.2.0"
     "git+https://github.com/diskuv/dkml-component-curl.git"
   ]
@@ -173,9 +164,5 @@ pin-depends: [
   [
     "dkml-component-network-unixutils.0.2.0"
     "git+https://github.com/diskuv/dkml-component-unixutils.git"
-  ]
-  [
-    "dkml-option-vcpkg.0.1.0"
-    "git+https://github.com/diskuv/dkml-option-vcpkg.git"
   ]
 ]
