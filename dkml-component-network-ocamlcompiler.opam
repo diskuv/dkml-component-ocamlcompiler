@@ -21,6 +21,8 @@ depends: [
   "dune"                              {>= "2.9"}
   "base64"                            {>= "3.5.0"}
   "diskuvbox"                         {>= "0.1.0"}
+  "dkml-runtime-common"               {>= "1.0.2~prerel9"}
+  "dkml-runtime-distribution"         {>= "1.0.2~prerel9"}
 ]
 depopts: [
   "dkml-option-vcpkg"
@@ -46,10 +48,10 @@ build: [
   #   git submodule setup.
   #
   #   <dkmldir>/vendor/drc/
-  ["install" "-d" "dkmldir/vendor/drc"]
-  ["tar" "xCfz" "dkmldir/vendor/drc" "dl/dkml-runtime-common.tar.gz" "--strip-components=1"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-common:lib}%/all" "dkmldir/vendor/drc/all"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-common:lib}%/unix" "dkmldir/vendor/drc/unix"]
   #   <dkmldir>/.dkmlroot
-  ["install" "dkmldir/vendor/drc/.template.dkmlroot" "dkmldir/.dkmlroot"]
+  ["diskuvbox" "copy-file" "%{dkml-runtime-common:lib}%/template.dkmlroot" "dkmldir/.dkmlroot"]
 
   #   <dkmldir>/vendor/dkml-compiler/
   ["install" "-d" "dkmldir/vendor/dkml-compiler/src"]
@@ -110,15 +112,11 @@ install: [
   #    PowerShell scripts and other Unix scripts needed by setup-userprofile.ps1
 
   #   Clone minimal dkmldir
-  ["rm" "-rf" "%{_:share}%/staging-files/windows_x86/dkmldir"]
-  ["rm" "-rf" "%{_:share}%/staging-files/windows_x86_64/dkmldir"]
-  ["cp" "-rp" "dkmldir" "%{_:share}%/staging-files/windows_x86"]
-  ["cp" "-rp" "dkmldir" "%{_:share}%/staging-files/windows_x86_64"]
-  #   Untar runtime-distribution
-  ["install" "-d" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd"]
-  ["install" "-d" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd"]
-  ["tar" "xCfz" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd"    "dl/dkml-runtime-distribution.tar.gz" "--strip-components=1"]
-  ["tar" "xCfz" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd" "dl/dkml-runtime-distribution.tar.gz" "--strip-components=1"]
+  ["diskuvbox" "copy-dir" "dkmldir" "%{_:share}%/staging-files/windows_x86/dkmldir"]
+  ["diskuvbox" "copy-dir" "dkmldir" "%{_:share}%/staging-files/windows_x86_64/dkmldir"]
+  #   Unpack runtime-distribution
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/windows" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/windows"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/windows" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/windows"]
 ]
 dev-repo: "git+https://github.com/diskuv/dkml-component-ocamlcompiler.git"
 extra-source "dl/ocaml.tar.gz" {
@@ -138,6 +136,14 @@ extra-source "dl/dkml-compiler.tar.gz" {
   ]
 }
 pin-depends: [
+  [
+    "dkml-runtime-common.1.0.2~prerel9"
+    "git+https://github.com/diskuv/dkml-runtime-common.git"
+  ]
+  [
+    "dkml-runtime-distribution.1.0.2~prerel9"
+    "git+https://github.com/diskuv/dkml-runtime-distribution.git"
+  ]
   [
     "dkml-component-staging-curl.0.2.0"
     "git+https://github.com/diskuv/dkml-component-curl.git"
@@ -167,15 +173,3 @@ pin-depends: [
     "git+https://github.com/diskuv/dkml-component-opam.git"
   ]
 ]
-extra-source "dl/dkml-runtime-common.tar.gz" {
-  src: "https://github.com/diskuv/dkml-runtime-common/archive/refs/tags/1.0.2-prerel9.tar.gz"
-  checksum: [
-    "sha256=fe9d2c9617b5ff4c8fa7d6b666160beedac6e1121fdf66a748d6b37541d6ce0c"
-  ]
-}
-extra-source "dl/dkml-runtime-distribution.tar.gz" {
-  src: "https://github.com/diskuv/dkml-runtime-distribution/archive/refs/tags/1.0.2-prerel9.tar.gz"
-  checksum: [
-    "sha256=8581644c60a77022546521e247d49d9ad9722c76fee89bdca42a6044fc240369"
-  ]
-}
