@@ -154,6 +154,18 @@ pin-depends: [
     "dkml-component-network-unixutils.0.2.0"
     "git+https://github.com/diskuv/dkml-component-unixutils.git"
   ]
+  [
+    "dkml-component-common-opam.2.2.0~alpha0~20221104"
+    "git+https://github.com/diskuv/dkml-component-opam.git"
+  ]
+  [
+    "dkml-component-staging-opam32.2.2.0~alpha0~20221104"
+    "git+https://github.com/diskuv/dkml-component-opam.git"
+  ]
+  [
+    "dkml-component-staging-opam64.2.2.0~alpha0~20221104"
+    "git+https://github.com/diskuv/dkml-component-opam.git"
+  ]
 ]
 extra-source "dl/dkml-runtime-common.tar.gz" {
   src: "https://github.com/diskuv/dkml-runtime-common/archive/refs/tags/1.0.2-prerel9.tar.gz"
