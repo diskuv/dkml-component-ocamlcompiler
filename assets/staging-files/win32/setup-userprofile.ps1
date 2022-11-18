@@ -1023,15 +1023,6 @@ try {
             -Command ("pacman -S --needed --noconfirm " + ($AllMSYS2Packages -join " "))
     }
 
-    # Create /opt/diskuv-ocaml/installtime/ which is specific to MSYS2 with common pieces from UNIX.
-    # Run through dos2unix.
-    $DkmlMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$DkmlPath"
-    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command ("/usr/bin/install -d /opt/diskuv-ocaml/installtime && " +
-        "/usr/bin/rsync -a --delete '$DkmlMSYS2AbsPath'/vendor/drd/src/unix/ /opt/diskuv-ocaml/installtime/ && " +
-        "/usr/bin/find /opt/diskuv-ocaml/installtime/ -type f | /usr/bin/xargs /usr/bin/dos2unix --quiet && " +
-        "/usr/bin/find /opt/diskuv-ocaml/installtime/ -type f | /usr/bin/xargs /usr/bin/chmod +x")
-
     # END MSYS2
     # ----------------------------------------------------------------
 
@@ -1103,6 +1094,7 @@ try {
     Write-ProgressStep
 
     $ProgramGeneralBinMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$ProgramGeneralBinDir"
+    $HereDirMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$HereDir"
 
     # Skip with ... $global:SkipOcamlSetup = $true ... remove it with ... Remove-Variable SkipOcamlSetup
     if (!$global:SkipOcamlSetup) {
@@ -1118,7 +1110,7 @@ try {
         } else {
             # build into bin/
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command "env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath/vendor/drc/all/emptytop' /opt/diskuv-ocaml/installtime/private/install-ocaml.sh '$DkmlMSYS2AbsPath' $OCamlLangGitCommit $DkmlHostAbi '$ProgramMSYS2AbsPath'"
+                -Command "env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath/vendor/drc/all/emptytop' sh '$HereDirMSYS2AbsPath/install-ocaml.sh' '$DkmlMSYS2AbsPath' $OCamlLangGitCommit $DkmlHostAbi '$ProgramMSYS2AbsPath'"
             # and move into usr/bin/
             if ("$ProgramRelGeneralBinDir" -ne "bin") {
                 Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
