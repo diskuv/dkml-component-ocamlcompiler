@@ -91,7 +91,7 @@ install: [
       -v dl/ocaml \
       -r \
       -z \
-      -k vendor/dkml-compiler/src/standard-compiler-env-to-ocaml-configure-env.sh
+      -k vendor/dkml-compiler/env/standard-compiler-env-to-ocaml-configure-env.sh
     """
   ]
 
