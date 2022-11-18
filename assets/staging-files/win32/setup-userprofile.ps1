@@ -482,7 +482,7 @@ function Import-DiskuvOCamlAsset {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 13
+$ProgressTotalSteps = 12
 if ($VcpkgCompatibility) {
     $ProgressTotalSteps = $ProgressTotalSteps + 2
 }
@@ -1155,68 +1155,6 @@ try {
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
-    # BEGIN Compile/install opam.exe into opam-real.exe
-    #
-    # When compiling from scratch, opam.exe requires ocamlc.exe, so
-    # ocamlc.exe must have been built previously into $ProgramPath.
-    #
-    # We'll install a opam.exe shim later that will delegate to opam-real.exe
-
-    $global:ProgressActivity = "Install native Windows opam.exe"
-    Write-ProgressStep
-
-    $ProgramEssentialBinMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$ProgramEssentialBinDir"
-
-    # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
-    if (!$global:SkipOpamSetup) {
-        # The following go into bin/ because they are required by _all_ with-dkml.exe and compiler invocations:
-        #   opam-real.exe
-        #   opam-putenv.exe
-        #   opam-installer.exe
-        $MoveIntoEssentialBin = $false
-        if ((Test-Path -Path "$ProgramEssentialBinDir\opam-real.exe") -and `
-            (Test-Path -Path "$ProgramEssentialBinDir\opam-putenv.exe") -and `
-            (Test-Path -Path "$ProgramEssentialBinDir\opam-installer.exe")) {
-            # okay. already installed
-        } elseif ($null -ne $OpamBinDir -and "" -ne $OpamBinDir -and `
-            (Test-Path -Path "$OpamBinDir\opam.exe") -and `
-            (Test-Path -Path "$OpamBinDir\opam-putenv.exe") -and `
-            (Test-Path -Path "$OpamBinDir\opam-installer.exe")) {
-            # install them
-            $OpamBinMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$OpamBinDir"
-            Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command (
-                    "install -d '$ProgramEssentialBinMSYS2AbsPath' && " +
-                    "install '$OpamBinMSYS2AbsPath'/opam.exe '$ProgramEssentialBinMSYS2AbsPath'/opam-real.exe && " +
-                    "install '$OpamBinMSYS2AbsPath'/opam-putenv.exe '$OpamBinMSYS2AbsPath'/opam-installer.exe '$ProgramEssentialBinMSYS2AbsPath'/"
-                )
-        } elseif (!$global:SkipOpamImport -and (Import-DiskuvOCamlAsset `
-                -PackageName "opam-reproducible" `
-                -ZipFile "opam-$DkmlHostAbi.zip" `
-                -TmpPath "$TempPath" `
-                -DestinationPath "$ProgramPath")) {
-            # okay. just imported into bin/
-            $MoveIntoEssentialBin = $true
-        } else {
-            # build into bin/
-            Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command "env $UnixPlusPrecompleteVarsOnOneLine TOPDIR='$DkmlMSYS2AbsPath/vendor/drc/all/emptytop' /opt/diskuv-ocaml/installtime/private/install-opam.sh '$DkmlMSYS2AbsPath' $DV_AvailableOpamVersion '$ProgramMSYS2AbsPath'"
-            $MoveIntoEssentialBin = $true
-        }
-        if ($MoveIntoEssentialBin -and "$ProgramRelEssentialBinDir" -ne "bin") {
-            Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command (
-                    "install -d '$ProgramEssentialBinMSYS2AbsPath' && " +
-                    "mv '$ProgramMSYS2AbsPath'/bin/opam.exe '$ProgramEssentialBinMSYS2AbsPath'/opam-real.exe && " +
-                    "mv '$ProgramMSYS2AbsPath'/bin/opam-putenv.exe '$ProgramMSYS2AbsPath'/bin/opam-installer.exe '$ProgramEssentialBinMSYS2AbsPath'/"
-                )
-        }
-    }
-
-    # END Compile/install opam.exe
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
     # BEGIN opam init
 
     if ($StopBeforeInitOpam) {
@@ -1358,9 +1296,6 @@ try {
     foreach ($binary in $FlavorBinaries) {
         Copy-DkmlFile -OpamFile "bin\$binary" -Destination "$ProgramGeneralBinDir\$binary"
     }
-
-    # opam shim
-    Copy-DkmlFile -OpamFile "bin\with-dkml.exe" -Destination "$ProgramEssentialBinDir\opam.exe"
 
     # fswatch
     if (!(Test-Path -Path $FswatchToolDir)) { New-Item -Path $FswatchToolDir -ItemType Directory | Out-Null }
