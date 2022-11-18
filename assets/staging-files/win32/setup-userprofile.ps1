@@ -1256,7 +1256,6 @@ try {
     $DiskuvHostToolsDir = "$ProgramPath\dkml\_opam"
     $ProgramLibOcamlDir = "$ProgramPath\lib\ocaml"
     $ProgramStubsDir = "$ProgramPath\lib\ocaml\stublibs"
-    $FswatchToolDir = "$ProgramPath\tools\fswatch"
 
     function Copy-DkmlFile {
         param (
@@ -1296,10 +1295,6 @@ try {
     foreach ($binary in $FlavorBinaries) {
         Copy-DkmlFile -OpamFile "bin\$binary" -Destination "$ProgramGeneralBinDir\$binary"
     }
-
-    # fswatch
-    if (!(Test-Path -Path $FswatchToolDir)) { New-Item -Path $FswatchToolDir -ItemType Directory | Out-Null }
-    Copy-DkmlFile -OpamFile "bin\dkml-fswatch.exe" -Destination "$FswatchToolDir\fswatch.exe"
 
     # Stubs for ocamlrun bytecode
     if (!(Test-Path -Path $ProgramStubsDir)) { New-Item -Path $ProgramStubsDir -ItemType Directory | Out-Null }
@@ -1380,7 +1375,7 @@ try {
             $Command = "[Environment]::SetEnvironmentVariable(`"$Name`", `"`", `"User`")"
             $what = "[pwsh]$ $Command"
             Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
-    
+
             if (!$AuditOnly) {
                 [Environment]::SetEnvironmentVariable($Name, "", "User")
             }
@@ -1400,17 +1395,17 @@ try {
             $Command = "# Previous entry: [Environment]::SetEnvironmentVariable(`"$Name`", `"$PreviousValue`", `"User`")"
             $what = "[pwsh]$ $Command"
             Add-Content -Path $AuditLog -Value "$now $what" -Encoding UTF8
-    
+
             $Command = "[Environment]::SetEnvironmentVariable(`"$Name`", `"$Value`", `"User`")"
             $what = "[pwsh]$ $Command"
             Add-Content -Path $AuditLog -Value "$now $what" -Encoding UTF8
-    
+
             if (!$AuditOnly) {
                 [Environment]::SetEnvironmentVariable($Name, $Value, "User")
             }
         }
     }
-    
+
     if ($Flavor -eq "Full") {
         # DiskuvOCamlHome
         Set-UserEnvironmentVariable -Name "DiskuvOCamlHome" -Value "$ProgramPath"
