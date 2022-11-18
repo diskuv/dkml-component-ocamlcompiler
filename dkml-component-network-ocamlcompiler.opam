@@ -96,17 +96,8 @@ install: [
   ]
 
   # 2. Copy assets
-  [
-    "sh" "-eufcx"
-    """
-    install -d '%{_:share}%/staging-files/windows_x86'
-    install -d '%{_:share}%/staging-files/windows_x86_64'
-    rm -rf '%{_:share}%/staging-files/windows_x86'
-    rm -rf '%{_:share}%/staging-files/windows_x86_64'
-    cp -rp assets/staging-files/win32 '%{_:share}%/staging-files/windows_x86'
-    cp -rp assets/staging-files/win32 '%{_:share}%/staging-files/windows_x86_64'
-    """
-  ]
+  ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86"]
+  ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86_64"]
 
   # 3. Copy minimal dkmldir into staging, adding distribution which has
   #    PowerShell scripts and other Unix scripts needed by setup-userprofile.ps1
