@@ -88,6 +88,7 @@ install: [
       -t '%{_:share}%/staging-files/generic' \
       -v dl/ocaml \
       -r \
+      -z \
       -k vendor/dkml-compiler/src/standard-compiler-env-to-ocaml-configure-env.sh
     """
   ]
