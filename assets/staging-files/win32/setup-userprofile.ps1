@@ -789,7 +789,6 @@ function Invoke-MSYS2CommandWithProgress {
     param (
         [Parameter(Mandatory=$true)]
         $Command,
-        [Parameter(Mandatory=$true)]
         [string[]]
         $ArgumentList,
         [Parameter(Mandatory=$true)]
@@ -799,17 +798,22 @@ function Invoke-MSYS2CommandWithProgress {
         [switch]
         $IgnoreErrors
     )
-    # Add Git to path
-    $GitMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$GitPath"
-    $Command = "export PATH='$($GitMSYS2AbsPath)':`"`$PATH`" && $Command"
+    $OrigCommand = $Command
+    $OrigArgumentList = $ArgumentList
 
-    # Use our temporary directory, which will get cleaned up automatically,
-    # as the parent temp directory for DKML (so it gets cleaned up automatically).
+    # 1. Add Git to path
+    # 2. Use our temporary directory, which will get cleaned up automatically,
+    #    as the parent temp directory for DKML (so it gets cleaned up automatically).
+    $GitMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$GitPath"
     $TempMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$TempPath"
-    $Command = "export DKML_TMP_PARENTDIR='$($TempMSYS2AbsPath)' && $Command"
+    $Command = "env"
+    $ArgumentList = @(
+        "PATH=${GitMSYS2AbsPath}:/usr/bin:/bin"
+        "DKML_TMP_PARENTDIR=$TempMSYS2AbsPath"
+        ) + @( $OrigCommand ) + $OrigArgumentList
 
     # Append what we will do into $AuditLog
-    $what = "[MSYS2] $Command"
+    $what = "[MSYS2] $OrigCommand $($OrigArgumentList -join ' ')"
     Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
 
     if ($ForceConsole) {
@@ -999,10 +1003,10 @@ try {
     # A: Use patches from https://patchew.org/QEMU/20210709075218.1796207-1-thuth@redhat.com/
     ((Get-Content -path $MSYS2Dir\etc\post-install\07-pacman-key.post -Raw) -replace '--refresh-keys', '--version') |
         Set-Content -Path $MSYS2Dir\etc\post-install\07-pacman-key.post # A
-    #   the first time will exit with `mkdir: cannot change permissions of /dev/shm`
+    #   the first time with a login will setup gpg keys but will exit with `mkdir: cannot change permissions of /dev/shm`
     #   so we do -IgnoreErrors but will otherwise set all the directories correctly
     Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
-        -Command "true" -ArgumentList @()
+        -Command "bash" -ArgumentList @("-lc", "true")
     Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
         -Command "sed" -ArgumentList @("-i", "s/^CheckSpace/#CheckSpace/g", "/etc/pacman.conf") # A
 
