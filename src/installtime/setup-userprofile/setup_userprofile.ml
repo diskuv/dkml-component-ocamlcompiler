@@ -8,31 +8,9 @@ open Dkml_install_api
 module Arg = Cmdliner.Arg
 module Term = Cmdliner.Term
 
-(* Copy the 32-bit and 64-bit Opam binaries (whichever is available, with preference to
-   the 64-bit binaries) to a temporary directory. It would be nice if we could
-   directly install into the installation prefix, but the legacy PowerShell scripts
-   will delete the contents of the installation prefix. *)
-let setup_opam_res ~temp_dir ~opam32_bindir_opt ~opam64_bindir_opt =
-  let open Diskuvbox in
-  let dst = Fpath.(temp_dir / "opam") in
-  let copy_if_exists dir_opt =
-    match dir_opt with
-    | Some src -> (
-        match OS.Dir.exists src with
-        | Ok true -> copy_dir ~src ~dst ()
-        | Ok false -> Ok ()
-        | Error v -> Error (Fmt.str "%a" Rresult.R.pp_msg v))
-    | None -> Ok ()
-  in
-  Rresult.R.error_to_msg ~pp_error:Fmt.string
-    (let ( let* ) = Result.bind in
-     let* () = copy_if_exists opam32_bindir_opt in
-     let* () = copy_if_exists opam64_bindir_opt in
-     Ok dst)
-
 (* Call the PowerShell (legacy!) setup-userprofile.ps1 script *)
 let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
-    ~msys2_dir ~opam_dir ~vcpkg =
+    ~msys2_dir ~opam_exe ~vcpkg =
   let ( let* ) = Result.bind in
   (* We cannot directly call PowerShell because we likely do not have
      administrator rights.
@@ -45,14 +23,14 @@ let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
   let to83 = Ocamlcompiler_common.Os.Windows.get_dos83_short_path in
   let* prefix_dir_83 = to83 prefix_dir in
   let* msys2_dir_83 = to83 msys2_dir in
-  let* opam_dir_83 = to83 opam_dir in
+  let* opam_exe_83 = to83 opam_exe in
   let* dkml_path_83 = to83 dkml_dir in
   let* temp_dir_83 = to83 temp_dir in
   let cmd =
     Cmd.(
       v (Fpath.to_string setup_bat)
       % "-AllowRunAsAdmin" % "-InstallationPrefix" % prefix_dir_83 % "-MSYS2Dir"
-      % msys2_dir_83 % "-OpamBinDir" % opam_dir_83 % "-DkmlPath" % dkml_path_83
+      % msys2_dir_83 % "-OpamExe" % opam_exe_83 % "-DkmlPath" % dkml_path_83
       % "-NoDeploymentSlot" % "-DkmlHostAbi"
       % Context.Abi_v2.to_canonical_string abi
       % "-TempParentPath" % temp_dir_83 % "-SkipProgress")
@@ -64,7 +42,7 @@ let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
   Ok ()
 
 let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
-    ~opam32_bindir_opt ~opam64_bindir_opt ~vcpkg =
+    ~opam_exe ~vcpkg =
   (* Install opam *)
   Dkml_install_api.Forward_progress.lift_result __POS__ Fmt.lines
     Dkml_install_api.Forward_progress.stderr_fatallog
@@ -92,17 +70,14 @@ let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
   let* temp_dir = Fpath.of_string temp_dir in
   let* dkml_dir = Fpath.of_string dkml_dir in
   let* msys2_dir = Fpath.of_string msys2_dir in
-  let* opam_dir =
-    setup_opam_res ~temp_dir ~opam32_bindir_opt ~opam64_bindir_opt
-  in
   setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
-    ~msys2_dir ~opam_dir ~vcpkg
+    ~msys2_dir ~opam_exe ~vcpkg
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
-    msys2_dir opam32_bindir_opt opam64_bindir_opt vcpkg =
+    msys2_dir opam_exe vcpkg =
   match
     setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
-      ~opam32_bindir_opt ~opam64_bindir_opt ~vcpkg
+      ~opam_exe ~vcpkg
   with
   | Completed | Continue_progress ((), _) -> ()
   | Halted_progress ec ->
@@ -120,15 +95,9 @@ let prefix_dir_t =
 
 let msys2_dir_t = Arg.(required & opt (some dir) None & info [ "msys2-dir" ])
 
-let opam32_bindir_opt_t =
-  let v = Arg.(value & opt (some string) None & info [ "opam32-bindir" ]) in
-  let u = function None -> None | Some x -> Some (Fpath.v x) in
-  Term.(const u $ v)
-
-let opam64_bindir_opt_t =
-  let v = Arg.(value & opt (some string) None & info [ "opam64-bindir" ]) in
-  let u = function None -> None | Some x -> Some (Fpath.v x) in
-  Term.(const u $ v)
+let opam_exe_t =
+  let u = Arg.(required & opt (some file) None & info [ "opam-exe" ]) in
+  Term.(const Fpath.v $ u)
 
 let abi_t =
   let open Context.Abi_v2 in
@@ -153,8 +122,7 @@ let () =
   let t =
     Term.
       ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-        $ abi_t $ prefix_dir_t $ msys2_dir_t $ opam32_bindir_opt_t
-        $ opam64_bindir_opt_t $ vcpkg_t,
+        $ abi_t $ prefix_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t,
         info "setup-userprofile.bc"
           ~doc:
             "Install Git for Windows and Opam, compiles OCaml and install \

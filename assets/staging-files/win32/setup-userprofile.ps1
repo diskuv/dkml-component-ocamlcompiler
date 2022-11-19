@@ -67,6 +67,8 @@
     Either `4.12.1` or `4.13.1`.
 
     Defaults to 4.12.1
+.Parameter OpamExe
+    The location of a pre-existing opam.exe.
 .Parameter DkmlHostAbi
     Install a `windows_x86` or `windows_x86_64` distribution.
 
@@ -117,11 +119,6 @@
 .Parameter MSYS2Dir
     When specified the specified MSYS2 installation directory will be used.
     Useful in CI situations.
-.Parameter OpamBinDir
-    When specified the specified opam binaries directory will be used that
-    contains opam.exe, opam-installer.exe and opam-putenv.exe. The entire
-    OpamBinDir, including subdirectories, will be copied to the installation
-    so that any DLLs (if any) are available alongside opam.exe.
 .Parameter IncrementalDeployment
     Advanced.
 
@@ -157,6 +154,9 @@ param (
     [ValidateSet("windows_x86", "windows_x86_64")]
     [string]
     $DkmlHostAbi,
+    [Parameter(Mandatory)]
+    [string]
+    $OpamExe,
     [string]
     $DkmlPath,
     [string]
@@ -165,8 +165,6 @@ param (
     $ParentProgressId = -1,
     [string]
     $MSYS2Dir,
-    [string]
-    $OpamBinDir,
     [string]
     $InstallationPrefix,
     [switch]
@@ -389,11 +387,7 @@ $DockerHash = Get-Sha256Hex16OfText -Text "$DV_WindowsMsvcDockerImage"
 $BinHash = Get-Sha256Hex16OfText -Text ($FlavorBinaries -join ',')
 $StubHash = Get-Sha256Hex16OfText -Text ($FlavorStubs -join ',')
 $ToplevelsHash = Get-Sha256Hex16OfText -Text ($FlavorToplevels -join ',')
-if ($null -ne $OpamBinDir -and "" -ne $OpamBinDir) {
-    $OpamHash = (& "$OpamBinDir\opam.exe" --version)
-} else {
-    $OpamHash = $DV_AvailableOpamVersion
-}
+$OpamHash = (& "$OpamExe" --version)
 $DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;inotify-$InotifyTag;msys2-$MSYS2Hash;docker-$DockerHash;bins-$BinHash;stubs-$StubHash;toplevels-$ToplevelsHash"
 if ($VcpkgCompatibility) {
     $DeploymentId += ";ninja-$NinjaVersion;cmake-$CMakeVersion"
@@ -813,7 +807,7 @@ function Invoke-MSYS2CommandWithProgress {
     $TempMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$TempPath"
     $Command = "env"
     $ArgumentList = @(
-        "PATH=${GitMSYS2AbsPath}:/usr/bin:/bin"
+        "PATH=${GitMSYS2AbsPath}:$INVOKER_MSYSTEM_PREFIX/bin:/usr/bin:/bin"
         "DKML_TMP_PARENTDIR=$TempMSYS2AbsPath"
         ) + @( $OrigCommand ) + $OrigArgumentList
 
@@ -1193,8 +1187,10 @@ try {
         -Command "env" `
         -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
             "$HereDirMSYS2AbsPath/deinit-opam-root.sh"
+            "-d"
+            "$DkmlMSYS2AbsPath"
             "-o"
-            "$ProgramMSYS2AbsPath"))
+            "$OpamExe"))
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
     if (!$global:SkipOpamSetup) {
@@ -1205,7 +1201,7 @@ try {
                 "-p"
                 "$DkmlHostAbi"
                 "-o"
-                "$ProgramMSYS2AbsPath"
+                "$OpamExe"
                 "-v"
                 "$ProgramMSYS2AbsPath"))
     }
@@ -1238,7 +1234,7 @@ try {
                 "-f"
                 "$Flavor"
                 "-o"
-                "$ProgramMSYS2AbsPath"))
+                "$OpamExe"))
         }
 
     # END opam switch create <dkml>
@@ -1270,7 +1266,7 @@ try {
                 "-v"
                 "$ProgramMSYS2AbsPath"
                 "-o"
-                "$ProgramMSYS2AbsPath"))
+                "$OpamExe"))
 
         # Diagnostics: Display all the switches
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
@@ -1282,7 +1278,7 @@ try {
                 "-v"
                 "$ProgramMSYS2AbsPath"
                 "-o"
-                "$ProgramMSYS2AbsPath"
+                "$OpamExe"
                 "switch"))
 
         # Make sure `opam dkml` plugin installed by running any opam dkml subcommand.
@@ -1308,7 +1304,7 @@ try {
                 "-v"
                 "$ProgramMSYS2AbsPath"
                 "-o"
-                "$ProgramMSYS2AbsPath"
+                "$OpamExe"
                 "-b"
                 "dkml"
                 "version"))

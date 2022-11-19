@@ -123,12 +123,9 @@ let execute_install_user ctx =
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%")
           % "--msys2-dir"
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%/tools/MSYS2")
-          % "--opam32-bindir"
+          % "--opam-exe"
           % Fpath.to_string
-              (ctx.Context.path_eval "%{staging-opam32:share-abi}%/bin")
-          % "--opam64-bindir"
-          % Fpath.to_string
-              (ctx.Context.path_eval "%{staging-opam64:share-abi}%/bin")
+              (ctx.Context.path_eval "%{prefix}%/bin/opam-real.exe")
           % "--abi"
           % Context.Abi_v2.to_canonical_string ctx.Context.target_abi_v2
           % "--dkml-dir"
@@ -176,8 +173,7 @@ let register () =
         [
           "staging-ocamlrun";
           "network-unixutils";
-          "staging-opam32";
-          "staging-opam64";
+          "offline-opamshim"
         ]
 
       let uninstall_depends_on = [ "staging-ocamlrun" ]

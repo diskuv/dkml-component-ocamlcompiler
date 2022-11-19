@@ -15,15 +15,17 @@ usage() {
     printf "%s\n" "Usage:" >&2
     printf "%s\n" "    deinit-opam-root.sh -h                   Display this help message" >&2
     printf "%s\n" "Options:" >&2
-    printf "%s\n" "    -o OPAMHOME: Optional. Home directory for Opam containing bin/opam-real or bin/opam" >&2
+    printf "%s\n" "    -d DKMLDIR: Location of directory with .dkmlroot" >&2
+    printf "%s\n" "    -o OPAMEXE: The opam to use. If there is an opam shim the opam-real can be used" >&2
 }
 
 # shellcheck disable=SC2034
 USERMODE=ON
 # shellcheck disable=SC2034
 STATEDIR=
-OPAMHOME=
-while getopts ":ho:" opt; do
+OPAMEXE=
+DKMLDIR=
+while getopts ":ho:d:" opt; do
     case ${opt} in
         h )
             usage
@@ -31,7 +33,10 @@ while getopts ":ho:" opt; do
         ;;
         o )
             # shellcheck disable=SC2034
-            OPAMHOME=$OPTARG
+            OPAMEXE=$OPTARG
+            ;;
+        d )
+            DKMLDIR=$OPTARG
             ;;
         \? )
             printf "%s\n" "This is not an option: -$OPTARG" >&2
@@ -44,9 +49,6 @@ shift $((OPTIND -1))
 
 # END Command line processing
 # ------------------
-
-DKMLDIR=$(dirname "$0")
-DKMLDIR=$(cd "$DKMLDIR/../../../../.." && pwd)
 
 # shellcheck disable=SC1091
 . "$DKMLDIR"/vendor/drc/unix/_common_tool.sh
@@ -61,9 +63,6 @@ cd "$TOPDIR"
 
 # ---------------------
 # BEGIN Version Cleanup
-
-# Set OPAMEXE which uses OPAMHOME
-set_opamexe
 
 uninstall_opam_root() {
     uninstall_opam_root_OLDOPAMROOT="$1"

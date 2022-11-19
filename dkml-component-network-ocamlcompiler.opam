@@ -15,8 +15,7 @@ depends: [
   # The hole carved to exclude ~dkml is so that we use the unmodified, compiled-from-master-branch
   # of opam with versions that aligns both the semver (needed for winget among others) and the
   # Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
-  "dkml-component-staging-opam32"     {>= "2.2.0~" & !(>= "2.2.0~dkml20220000" & <= "2.2.0~dkml99999999" )}
-  "dkml-component-staging-opam64"     {>= "2.2.0~" & !(>= "2.2.0~dkml20220000" & <= "2.2.0~dkml99999999" )}
+  "dkml-component-offline-opamshim"   {>= "2.2.0~" & !(>= "2.2.0~dkml20220000" & <= "2.2.0~dkml99999999" )}
   "dkml-install"                      {>= "0.2.0"}
   "dune"                              {>= "2.9"}
   "base64"                            {>= "3.5.0"}
