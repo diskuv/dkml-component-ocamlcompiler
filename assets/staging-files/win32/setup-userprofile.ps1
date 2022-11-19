@@ -1192,7 +1192,7 @@ try {
         -ForceConsole `
         -Command "env" `
         -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
-            "$DkmlPath\vendor\drd\src\unix\private\deinit-opam-root.sh"
+            "$HereDirMSYS2AbsPath/deinit-opam-root.sh"
             "-o"
             "$ProgramMSYS2AbsPath"))
 
