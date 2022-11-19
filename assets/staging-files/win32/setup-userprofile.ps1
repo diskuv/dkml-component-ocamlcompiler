@@ -128,6 +128,13 @@
     Tries to continue from where the last deployment finished. Never continues
     when the version number that was last deployed differs from the version
     number of the current installation script.
+.Parameter AuditOnly
+    Advanced.
+
+    When specified the PATH and any other environment variables are not set.
+    The installation prefix is still removed or modified (depending on
+    -IncrementalDeployment), so this is best
+    used in combination with a unique -InstallationPrefix.
 .Example
     PS> vendor\diskuv-ocaml\installtime\windows\setup-userprofile.ps1
 
@@ -179,12 +186,10 @@ param (
     [switch]
     $StopBeforeInitOpam,
     [switch]
-    $StopBeforeInstallSystemSwitch
+    $StopBeforeInstallSystemSwitch,
+    [switch]
+    $AuditOnly
 )
-
-# For symmetry with uninstall we have $AuditOnly. If and when this is
-# fully implemented this can be added as a [switch] parameter.
-$AuditOnly = $false
 
 $ErrorActionPreference = "Stop"
 
@@ -1034,7 +1039,9 @@ try {
 
         # Install new packages and/or full system if any were not installed ("--needed")
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command "pacman" -ArgumentList @("-S", "--needed", "--noconfirm", $AllMSYS2Packages)
+            -Command "pacman" -ArgumentList (
+                @("-S", "--needed", "--noconfirm") +
+                $AllMSYS2Packages)
     }
 
     # END MSYS2
@@ -1043,9 +1050,11 @@ try {
     # ----------------------------------------------------------------
     # BEGIN Define dkmlvars
 
-    # dkmlvars.* (DiskuvOCaml variables) are scripts that set variables about the deployment.
+    $DkmlMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$DkmlPath"
     $InstallationPrefixMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$InstallationPrefix"
     $ProgramMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$ProgramPath"
+
+    # dkmlvars.* (DiskuvOCaml variables) are scripts that set variables about the deployment.
     $UnixVarsArray = @(
         "DiskuvOCamlVarsVersion=2",
         "DiskuvOCamlHome='$ProgramMSYS2AbsPath'",
@@ -1124,21 +1133,20 @@ try {
             # build into bin/
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
                 -Command "env" `
-                -ArgumentList @(
-                    $UnixPlusPrecompleteVarsArray,
-                    "TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
+                -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
                     "sh"
                     "$HereDirMSYS2AbsPath/install-ocaml.sh"
                     "$DkmlMSYS2AbsPath"
                     "$OCamlLangGitCommit"
                     "$DkmlHostAbi"
-                    "$ProgramMSYS2AbsPath")
+                    "$ProgramMSYS2AbsPath"))
             # and move into usr/bin/
             if ("$ProgramRelGeneralBinDir" -ne "bin") {
                 Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                    -Command "sh" -ArgumentList @("-c",
-                        "install -d '$ProgramGeneralBinMSYS2AbsPath' && " +
-                        "for b in $OCamlBinaries; do mv -v '$ProgramMSYS2AbsPath'/bin/`$b '$ProgramGeneralBinMSYS2AbsPath'/; done"
+                    -Command "sh" -ArgumentList @(
+                        "-c",
+                        ("install -d '$ProgramGeneralBinMSYS2AbsPath' && " +
+                         "for b in $OCamlBinaries; do mv -v '$ProgramMSYS2AbsPath'/bin/`$b '$ProgramGeneralBinMSYS2AbsPath'/; done")
                     )
             }
         }
@@ -1183,27 +1191,23 @@ try {
     Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
         -ForceConsole `
         -Command "env" `
-        -ArgumentList @(
-            $UnixPlusPrecompleteVarsArray,
-            "TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
+        -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
             "$DkmlPath\vendor\drd\src\unix\private\deinit-opam-root.sh"
             "-o"
-            "$ProgramMSYS2AbsPath")
+            "$ProgramMSYS2AbsPath"))
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
     if (!$global:SkipOpamSetup) {
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
             -Command "env" `
-            -ArgumentList @(
-                $UnixPlusPrecompleteVarsArray,
-                "TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
+            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
                 "$DkmlPath\vendor\drd\src\unix\private\init-opam-root.sh"
                 "-p"
                 "$DkmlHostAbi"
                 "-o"
                 "$ProgramMSYS2AbsPath"
                 "-v"
-                "$ProgramMSYS2AbsPath")
+                "$ProgramMSYS2AbsPath"))
     }
 
     # END opam init
@@ -1225,9 +1229,7 @@ try {
     if (!$global:SkipOpamSetup) {
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
             -Command "env" `
-            -ArgumentList @(
-                $UnixPlusPrecompleteVarsArray,
-                "TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
+            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
                 "$DkmlPath\vendor\drd\src\unix\private\create-tools-switch.sh"
                 "-v"
                 "$ProgramMSYS2AbsPath"
@@ -1236,7 +1238,7 @@ try {
                 "-f"
                 "$Flavor"
                 "-o"
-                "$ProgramMSYS2AbsPath")
+                "$ProgramMSYS2AbsPath"))
         }
 
     # END opam switch create <dkml>
@@ -1258,9 +1260,7 @@ try {
         # Install the playground switch
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
             -Command "env" `
-            -ArgumentList @(
-                $UnixPlusPrecompleteVarsArray,
-                "TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
+            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
                 "$DkmlPath\vendor\drd\src\unix\create-opam-switch.sh"
                 "-p"
                 "$DkmlHostAbi"
@@ -1270,14 +1270,12 @@ try {
                 "-v"
                 "$ProgramMSYS2AbsPath"
                 "-o"
-                "$ProgramMSYS2AbsPath")
+                "$ProgramMSYS2AbsPath"))
 
         # Diagnostics: Display all the switches
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
             -Command "env" `
-            -ArgumentList @(
-                $UnixPlusPrecompleteVarsArray,
-                "TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
+            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
                 "$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh"
                 "-p"
                 "$DkmlHostAbi"
@@ -1285,7 +1283,7 @@ try {
                 "$ProgramMSYS2AbsPath"
                 "-o"
                 "$ProgramMSYS2AbsPath"
-                "switch")
+                "switch"))
 
         # Make sure `opam dkml` plugin installed by running any opam dkml subcommand.
         #   Technically not necessary since opam automatically will download and build it. But
@@ -1302,9 +1300,7 @@ try {
         #   Mitigation: Use -b option which removes --root.
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
             -Command "env" `
-            -ArgumentList @(
-                $UnixPlusPrecompleteVarsArray,
-                "TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
+            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
                 "OPAMYES=1"
                 "$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh"
                 "-p"
@@ -1315,7 +1311,7 @@ try {
                 "$ProgramMSYS2AbsPath"
                 "-b"
                 "dkml"
-                "version")
+                "version"))
     }
 
     # END opam switch create playground and opam dkml plugin
