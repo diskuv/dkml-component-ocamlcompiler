@@ -106,6 +106,8 @@ install: [
   ["diskuvbox" "copy-dir" "dkmldir" "%{_:share}%/staging-files/windows_x86/dkmldir"]
   ["diskuvbox" "copy-dir" "dkmldir" "%{_:share}%/staging-files/windows_x86_64/dkmldir"]
   #   Unpack runtime-distribution
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/unix" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/unix"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/unix" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/unix"]
   ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/windows" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/windows"]
   ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/windows" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/windows"]
 ]
