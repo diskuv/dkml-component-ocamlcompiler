@@ -10,7 +10,7 @@ module Term = Cmdliner.Term
 
 (* Call the PowerShell (legacy!) setup-userprofile.ps1 script *)
 let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
-    ~msys2_dir ~opam_exe ~vcpkg =
+    ~msys2_dir ~opam_exe ~vcpkg ~global_compile_dir =
   let ( let* ) = Result.bind in
   (* We cannot directly call PowerShell because we likely do not have
      administrator rights.
@@ -26,11 +26,13 @@ let setup_remainder_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir
   let* opam_exe_83 = to83 opam_exe in
   let* dkml_path_83 = to83 dkml_dir in
   let* temp_dir_83 = to83 temp_dir in
+  let* global_compile_dir_83 = to83 global_compile_dir in
   let cmd =
     Cmd.(
       v (Fpath.to_string setup_bat)
       % "-AllowRunAsAdmin" % "-InstallationPrefix" % prefix_dir_83 % "-MSYS2Dir"
       % msys2_dir_83 % "-OpamExe" % opam_exe_83 % "-DkmlPath" % dkml_path_83
+      % "-GlobalCompileDir" % global_compile_dir_83
       % "-NoDeploymentSlot" % "-DkmlHostAbi"
       % Context.Abi_v2.to_canonical_string abi
       % "-TempParentPath" % temp_dir_83 % "-SkipProgress")
@@ -74,10 +76,10 @@ let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
     ~msys2_dir ~opam_exe ~vcpkg
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
-    msys2_dir opam_exe vcpkg =
+    msys2_dir opam_exe vcpkg global_compile_dir =
   match
     setup_res ~scripts_dir ~dkml_dir ~temp_dir ~abi ~prefix_dir ~msys2_dir
-      ~opam_exe ~vcpkg
+      ~opam_exe ~vcpkg ~global_compile_dir
   with
   | Completed | Continue_progress ((), _) -> ()
   | Halted_progress ec ->
@@ -94,6 +96,8 @@ let prefix_dir_t =
   Arg.(required & opt (some string) None & info [ "prefix-dir" ])
 
 let msys2_dir_t = Arg.(required & opt (some dir) None & info [ "msys2-dir" ])
+
+let global_compile_dir_t = Arg.(required & opt (some dir) None & info ["global-compile-dir"])
 
 let opam_exe_t =
   let u = Arg.(required & opt (some file) None & info [ "opam-exe" ]) in
@@ -122,7 +126,7 @@ let () =
   let t =
     Term.
       ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-        $ abi_t $ prefix_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t,
+        $ abi_t $ prefix_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t $ global_compile_dir_t,
         info "setup-userprofile.bc"
           ~doc:
             "Install Git for Windows and Opam, compiles OCaml and install \

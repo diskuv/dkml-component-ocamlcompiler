@@ -69,6 +69,9 @@
     Defaults to 4.12.1
 .Parameter OpamExe
     The location of a pre-existing opam.exe.
+.Parameter GlobalCompileDir
+    The directory containing global-compile.ci.txt and global-compile.full.txt.
+    They contain the opam package versions for each flavor (lowercase).
 .Parameter DkmlHostAbi
     Install a `windows_x86` or `windows_x86_64` distribution.
 
@@ -157,6 +160,9 @@ param (
     [Parameter(Mandatory)]
     [string]
     $OpamExe,
+    [Parameter(Mandatory)]
+    [string]
+    $GlobalCompileDir,
     [string]
     $DkmlPath,
     [string]
@@ -1211,7 +1217,6 @@ try {
 
     # ----------------------------------------------------------------
     # BEGIN opam switch create <dkml>
-    #   The dune.X.Y.Z+shim.M.N.O package requires crossplatform-functions.sh to exist.
 
     if ($StopBeforeInstallSystemSwitch) {
         Write-Host "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
@@ -1223,18 +1228,23 @@ try {
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
     if (!$global:SkipOpamSetup) {
+        # Parse global-compile.<flavor>.txt
+        [string[]]$GlobalCompileArray = Get-Content -Path "$GlobalCompileDir/global-compile.$($Flavor.ToLower()).txt"
+        [string[]]$GlobalCompileArgs = $GlobalCompileArray | ForEach-Object { @("-a", $_) }
+
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
             -Command "env" `
-            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
-                "$DkmlPath\vendor\drd\src\unix\private\create-tools-switch.sh"
-                "-v"
-                "$ProgramMSYS2AbsPath"
-                "-p"
-                "$DkmlHostAbi"
-                "-f"
-                "$Flavor"
-                "-o"
-                "$OpamExe"))
+            -ArgumentList (
+                $UnixPlusPrecompleteVarsArray +
+                @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
+                  "$DkmlPath\vendor\drd\src\unix\private\create-tools-switch.sh"
+                  "-v"
+                  "$ProgramMSYS2AbsPath"
+                  "-p"
+                  "$DkmlHostAbi"
+                  "-o"
+                  "$OpamExe") +
+                $GlobalCompileArgs)
         }
 
     # END opam switch create <dkml>
