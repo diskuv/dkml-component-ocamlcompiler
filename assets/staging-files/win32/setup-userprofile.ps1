@@ -1422,17 +1422,16 @@ try {
     Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
         -Command "sh" `
         -ArgumentList @(
-            "-cx",
-            "set -x && " +
-            "dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sh'   '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sh' && " +
-            "dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmd'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmd' && " +
-            "dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmake'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmake' && " +
-            "dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sexp' '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sexp' && " +
-            "rm -f '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sh' '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmd' '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmake' '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sexp' && " +
-            "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sh'   '$InstallationPrefixMSYS2AbsPath/dkmlvars.sh' && " +
-            "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmd'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.cmd' && " +
-            "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmake'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.cmake' && " +
-            "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sexp' '$InstallationPrefixMSYS2AbsPath/dkmlvars-v2.sexp'"
+            "-eufcx",
+            ("dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sh'   '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sh' && " +
+             "dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmd'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmd' && " +
+             "dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmake'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmake' && " +
+             "dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sexp' '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sexp' && " +
+             "rm -f '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sh' '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmd' '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmake' '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sexp' && " +
+             "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sh'   '$InstallationPrefixMSYS2AbsPath/dkmlvars.sh' && " +
+             "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmd'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.cmd' && " +
+             "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmake'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.cmake' && " +
+             "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sexp' '$InstallationPrefixMSYS2AbsPath/dkmlvars-v2.sexp'")
         )
 
     # END Stop deployment. Write deployment vars.
