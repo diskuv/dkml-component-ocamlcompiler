@@ -1264,6 +1264,7 @@ try {
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
     if (!$global:SkipOpamSetup) {
+        $WithDkmlDos83 = Get-Dos83ShortName "$ProgramEssentialBinDir\with-dkml.exe"
         # Install the playground switch
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
             -Command "env" `
@@ -1273,6 +1274,8 @@ try {
                 "$DkmlHostAbi"
                 "-y"
                 "-w"
+                "-x"
+                "$WithDkmlDos83"
                 "-n"
                 "playground"
                 "-v"
