@@ -1238,6 +1238,7 @@ try {
                 $UnixPlusPrecompleteVarsArray +
                 @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
                   "$DkmlPath\vendor\drd\src\unix\private\create-tools-switch.sh"
+                  "-w"
                   "-v"
                   "$ProgramMSYS2AbsPath"
                   "-p"
@@ -1271,6 +1272,7 @@ try {
                 "-p"
                 "$DkmlHostAbi"
                 "-y"
+                "-w"
                 "-n"
                 "playground"
                 "-v"
