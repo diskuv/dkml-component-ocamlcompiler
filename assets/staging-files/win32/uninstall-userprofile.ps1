@@ -294,10 +294,10 @@ if (-not $SkipProgress) {
     Clear-Host
 }
 
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host "Thanks for using Diskuv OCaml!"
-Write-Host ""
-Write-Host ""
-Write-Host ""
+Write-Output ""
+Write-Output ""
+Write-Output ""
+Write-Output "Thanks for using Diskuv OCaml!"
+Write-Output ""
+Write-Output ""
+Write-Output ""
