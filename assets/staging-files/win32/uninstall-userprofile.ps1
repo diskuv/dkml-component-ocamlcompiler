@@ -42,6 +42,7 @@ param (
 )
 
 $ErrorActionPreference = "Stop"
+$InformationPreference = "Continue"
 
 $HereScript = $MyInvocation.MyCommand.Path
 $HereDir = (get-item $HereScript).Directory
@@ -294,10 +295,10 @@ if (-not $SkipProgress) {
     Clear-Host
 }
 
-Write-Output ""
-Write-Output ""
-Write-Output ""
-Write-Output "Thanks for using Diskuv OCaml!"
-Write-Output ""
-Write-Output ""
-Write-Output ""
+Write-Information ""
+Write-Information ""
+Write-Information ""
+Write-Information "Thanks for using Diskuv OCaml!"
+Write-Information ""
+Write-Information ""
+Write-Information ""

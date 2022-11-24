@@ -196,6 +196,7 @@ param (
 )
 
 $ErrorActionPreference = "Stop"
+$InformationPreference = "Continue"
 
 $HereScript = $MyInvocation.MyCommand.Path
 $HereDir = (get-item $HereScript).Directory
@@ -410,8 +411,8 @@ if ($OnlyOutputCacheKey) {
 # Check if already deployed
 $finished = Get-BlueGreenDeployIsFinished -ParentPath $InstallationPrefix -DeploymentId $DeploymentId
 if (!$IncrementalDeployment -and $finished) {
-    Write-Output "$DeploymentId already deployed."
-    Write-Output "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/#introduction"
+    Write-Information "$DeploymentId already deployed."
+    Write-Information "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/#introduction"
     return
 }
 
@@ -511,7 +512,7 @@ function Write-ProgressCurrentOperation {
         $CurrentOperation
     )
     if ($SkipProgress) {
-        Write-Output "$(Get-CurrentTimestamp) $CurrentOperation"
+        Write-Information "$(Get-CurrentTimestamp) $CurrentOperation"
     } else {
         Write-Progress -Id $ProgressId `
             -ParentId $ParentProgressId `
@@ -647,12 +648,12 @@ if (-not $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected) {
             Write-Error "Git installer failed"
             Remove-DirectoryFully -Path "$GitWindowsSetupAbsPath"
             Start-Sleep 5
-            Write-Output ''
-            Write-Output 'One reason why the Git installer will fail is because you did not'
-            Write-Output 'click "Yes" when it asks you to allow the installation.'
-            Write-Output 'You can try to rerun the script.'
-            Write-Output ''
-            Write-Output 'Press any key to exit this script...';
+            Write-Information ''
+            Write-Information 'One reason why the Git installer will fail is because you did not'
+            Write-Information 'click "Yes" when it asks you to allow the installation.'
+            Write-Information 'You can try to rerun the script.'
+            Write-Information ''
+            Write-Information 'Press any key to exit this script...';
             $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
             throw
         }
@@ -1180,7 +1181,7 @@ try {
     # BEGIN opam init
 
     if ($StopBeforeInitOpam) {
-        Write-Output "Stopping before being completed finished due to -StopBeforeInitOpam switch"
+        Write-Information "Stopping before being completed finished due to -StopBeforeInitOpam switch"
         exit 0
     }
 
@@ -1219,7 +1220,7 @@ try {
     # BEGIN opam switch create <dkml>
 
     if ($StopBeforeInstallSystemSwitch) {
-        Write-Output "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
+        Write-Information "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
         exit 0
     }
 
@@ -1255,7 +1256,7 @@ try {
     # BEGIN opam switch create playground and opam dkml plugin
 
     if ($StopBeforeInstallSystemSwitch) {
-        Write-Output "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
+        Write-Information "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
         exit 0
     }
 
@@ -1347,22 +1348,22 @@ try {
             # no-op since the binary is not part of opam switch (we may have been installed manually like OCaml system compiler)
             $what = "[Copy-DkmlFile] {missing} $DiskuvHostToolsDir\$OpamFile -> $Destination"
             Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
-            Write-Output "$what"
+            Write-Information "$what"
         } elseif (!(Test-Path -Path "$Destination")) {
             $what = "[Copy-DkmlFile] {create}  $DiskuvHostToolsDir\$OpamFile -> $Destination"
             Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
-            Write-Output "$what"
+            Write-Information "$what"
 
             Copy-Item -Path "$DiskuvHostToolsDir\$OpamFile" -Destination $Destination
         } elseif ((Get-FileHash "$Destination").hash -eq (Get-FileHash $DiskuvHostToolsDir\$OpamFile).hash) {
             $what = "[Copy-DkmlFile] {present} $DiskuvHostToolsDir\$OpamFile -> $Destination"
             Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
-            Write-Output "$what"
+            Write-Information "$what"
         } else {
             # hashes are not equal
             $what = "[Copy-DkmlFile] {modify}  $DiskuvHostToolsDir\$OpamFile -> $Destination"
             Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
-            Write-Output "$what"
+            Write-Information "$what"
 
             Copy-Item -Path "$DiskuvHostToolsDir\$OpamFile" -Destination $Destination
         }
@@ -1577,14 +1578,14 @@ if (-not $SkipProgress) {
     Clear-Host
 }
 
-Write-Output ""
-Write-Output ""
-Write-Output ""
-Write-Output "Setup is complete. Congratulations!"
-Write-Output "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/#introduction. Announcements will be available at https://twitter.com/diskuv"
-Write-Output ""
-Write-Output "You will need to log out and log back in"
-Write-Output "-OR- (for advanced users) exit all of your Command Prompts, Windows Terminals,"
-Write-Output "PowerShells and IDEs like Visual Studio Code"
-Write-Output ""
-Write-Output ""
+Write-Information ""
+Write-Information ""
+Write-Information ""
+Write-Information "Setup is complete. Congratulations!"
+Write-Information "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/#introduction. Announcements will be available at https://twitter.com/diskuv"
+Write-Information ""
+Write-Information "You will need to log out and log back in"
+Write-Information "-OR- (for advanced users) exit all of your Command Prompts, Windows Terminals,"
+Write-Information "PowerShells and IDEs like Visual Studio Code"
+Write-Information ""
+Write-Information ""

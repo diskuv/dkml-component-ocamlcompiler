@@ -67,6 +67,7 @@ param (
 )
 
 $ErrorActionPreference = "Stop"
+$InformationPreference = "Continue"
 
 $HereScript = $MyInvocation.MyCommand.Path
 $HereDir = (get-item $HereScript).Directory
@@ -262,8 +263,8 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
     if ($exitCode -eq 3010) {
         Write-Warning "Microsoft Visual Studio Build Tools installation succeeded but a reboot is required!"
         Start-Sleep 5
-        Write-Output ''
-        Write-Output 'Press any key to exit this script... You must reboot!';
+        Write-Information ''
+        Write-Information 'Press any key to exit this script... You must reboot!';
         $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
         # Dkml_install_api.Forward_progress.Exit_code.Exit_reboot_needed = 23
         exit 23
@@ -315,13 +316,13 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
 }
 
 if ($SkipProgress) {
-    Write-Output "`n`nBEGIN Visual Studio(s) compatible with Diskuv OCaml"
+    Write-Information "`n`nBEGIN Visual Studio(s) compatible with Diskuv OCaml"
 } else {
     Write-Host -ForegroundColor White -BackgroundColor DarkGreen "`n`nBEGIN Visual Studio(s) compatible with Diskuv OCaml"
 }
-Write-Output ($CompatibleVisualStudios | ConvertTo-Json -Depth 1) # It is fine if we truncate at level 1 ... this is just meant to be a summary
+Write-Information ($CompatibleVisualStudios | ConvertTo-Json -Depth 1) # It is fine if we truncate at level 1 ... this is just meant to be a summary
 if ($SkipProgress) {
-    Write-Output "END Visual Studio(s) compatible with Diskuv OCaml`n`n"
+    Write-Information "END Visual Studio(s) compatible with Diskuv OCaml`n`n"
 } else {
     Write-Host -ForegroundColor White -BackgroundColor DarkGreen "END Visual Studio(s) compatible with Diskuv OCaml`n`n"
 }

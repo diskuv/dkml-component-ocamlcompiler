@@ -136,13 +136,13 @@ function Start-BlueGreenDeploy {
         if ($PSBoundParameters.ContainsKey('LogFunction')) {
             Invoke-Command $LogFunction -ArgumentList @("Cleaning directory $DeployPath ...")
         } else {
-            Write-Output "Cleaning directory $DeployPath ..."
+            Write-Information "Cleaning directory $DeployPath ..." -InformationAction Continue
         }
         New-CleanDirectory -Path $DeployPath
         if ($LogFunction) {
             Invoke-Command $LogFunction -ArgumentList @("Cleaned directory $DeployPath.")
         } else {
-            Write-Output "Cleaned directory $DeployPath."
+            Write-Information "Cleaned directory $DeployPath." -InformationAction Continue
         }
     }
 
