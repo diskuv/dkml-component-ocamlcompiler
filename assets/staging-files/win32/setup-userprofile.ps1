@@ -1253,14 +1253,14 @@ try {
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
-    # BEGIN opam switch create playground and opam dkml plugin
+    # BEGIN opam switch create playground
 
     if ($StopBeforeInstallSystemSwitch) {
         Write-Information "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
         exit 0
     }
 
-    $global:ProgressActivity = "Create 'playground' opam global switch and opam dkml plugin"
+    $global:ProgressActivity = "Create 'playground' opam global switch"
     Write-ProgressStep
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
@@ -1293,37 +1293,9 @@ try {
                 "-o"
                 "$OpamExe"
                 "switch"))
-
-        # Make sure `opam dkml` plugin installed by running any opam dkml subcommand.
-        #   Technically not necessary since opam automatically will download and build it. But
-        #   this makes sure the installation fails if this most basic command does not work.
-        #   Additionally, someone will inevitably measure how long it takes to create a
-        #   local switch with `opam dkml init`; it should be quick!
-        #
-        #   Weirdly if this is the first time the plugin is ever installed in the opam root, `-y` will work
-        #   because it is interpreted as a normal opam command. But when the plugin is installed
-        #   `-y` will choke in some or all versions of opam dkml since `-y` is not a DKML option.
-        #   Mitigation: OPAMYES=1.
-        #
-        #   Similarly, cant use --root with `opam dkml`.
-        #   Mitigation: Use -b option which removes --root.
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command "env" `
-            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
-                "OPAMYES=1"
-                "$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh"
-                "-p"
-                "$DkmlHostAbi"
-                "-v"
-                "$ProgramMSYS2AbsPath"
-                "-o"
-                "$OpamExe"
-                "-b"
-                "dkml"
-                "version"))
     }
 
-    # END opam switch create playground and opam dkml plugin
+    # END opam switch create playground
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
