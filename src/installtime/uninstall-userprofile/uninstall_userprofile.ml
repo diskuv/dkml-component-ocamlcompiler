@@ -32,15 +32,34 @@ let uninstall_start_res ~scripts_dir ~prefix_dir ~is_audit =
   log_spawn_onerror_exit ~id:"a0d16230" cmd;
   Ok ()
 
-(* Remove the subdirectories of the installation directory, including
-   legacy slot 0 *)
+(* Remove the subdirectories of the installation directory. We don't
+   uninstall the entire installation directory because on Windows
+   we can't uninstall the uninstall.exe itself (while it is running). *)
 let uninstall_programdir_res ~prefix_dir =
   List.iter
     (fun i ->
       let program_dir = Fpath.(prefix_dir / i) in
       Dkml_install_api.uninstall_directory_onerror_exit ~id:"8ae095b1"
         ~dir:program_dir ~wait_seconds_if_stuck:300.)
-    [ "0"; "man"; "lib"; "bin"; "tools"; "usr"; "src"; "share" ]
+    [
+      (* Legacy blue-green deployment slot 0 *)
+      "0";
+      (* Ordinary opam installed directories *)
+      "bin";
+      "doc";
+      "lib";
+      "man";
+      "share";
+      "src";
+      "usr";
+      (* Other components install into tools (although ideally they should
+         uninstall themselves!) *)
+      "tools";
+      (* DKML custom opam repositories *)
+      "repos";
+      (* The 'dkml' tools switch *)
+      "dkml"
+    ]
 
 let uninstall_res ~scripts_dir ~prefix_dir ~is_audit =
   Dkml_install_api.Forward_progress.lift_result __POS__ Fmt.lines
