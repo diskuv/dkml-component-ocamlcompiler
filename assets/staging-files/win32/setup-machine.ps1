@@ -253,14 +253,12 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
     } else {
         $CommonArgs += @("--passive")
     }
-    if (Test-Path -Path $BuildToolsPath\MSBuild\Current\Bin\MSBuild.exe) {
-        $proc = Start-Process -FilePath $VsInstallPath\Install.cmd -NoNewWindow -Wait -PassThru `
-            -ArgumentList (@("$VsInstallPath\vs_buildtools.exe", "modify") + $CommonArgs)
+    $AlreadyInstalledButIncompatible = Get-VSSetupInstance | Where-Object { $_.InstallationPath -eq "$BuildToolsPath" }
+    if ($AlreadyInstalledButIncompatible) {
+        $CommonArgs = @("modify") + $CommonArgs
     }
-    else {
-        $proc = Start-Process -FilePath $VsInstallPath\Install.cmd -NoNewWindow -Wait -PassThru `
-            -ArgumentList (@("$VsInstallPath\vs_buildtools.exe") + $CommonArgs)
-    }
+    $proc = Start-Process -FilePath $VsInstallPath\Install.cmd -NoNewWindow -Wait -PassThru `
+        -ArgumentList (@("$VsInstallPath\vs_buildtools.exe") + $CommonArgs)
     $exitCode = $proc.ExitCode
     if ($exitCode -eq 3010) {
         Write-Warning "Microsoft Visual Studio Build Tools installation succeeded but a reboot is required!"
