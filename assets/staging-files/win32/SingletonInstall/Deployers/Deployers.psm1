@@ -240,7 +240,7 @@ function Uninstall-BlueGreenDeploy {
             -Path $DeployPath `
             -WaitSecondsIfStuck 300 `
             -StuckMessageFormatInfo "Stuck during uninstallation of $DeployPath.`nWaited already {0,5:N1} seconds; will wait at most 300 seconds (5 minutes).`n" `
-            -StuckMessageFormatCritical "Please stop using the program:`t{1}`n"
+            -StuckMessageFormatCritical "Please stop using the program, or manually remove the file(s):`t{1}`n"
 
         # free the slot, but protect against race condition where an external
         # package manager takes over the slot
@@ -560,7 +560,8 @@ function Remove-DirectoryFully {
 
                 # We are waiting until unstuck!
                 $sofar = $timer.elapsed.totalseconds
-                $errcontent = Get-Content $stderr
+                #   don't overwhelm display or PowerShell if lots of errors
+                $errcontent = Get-Content -TotalCount 5 $stderr | Out-String
                 Write-Host ($StuckMessageFormatInfo -f @($sofar, $errcontent)) -NoNewline
                 Write-Host ($StuckMessageFormatCritical -f @($sofar, $errcontent)) -ForegroundColor Red -BackgroundColor Black
                 Start-Sleep -Seconds 5
@@ -582,8 +583,8 @@ function New-CleanDirectory {
 
     Remove-DirectoryFully -Path $Path `
         -WaitSecondsIfStuck 300 `
-        -StuckMessageFormatInfo "Stuck during uninstallation of $DeployPath.`nWaited already {0,5:N1} seconds; will wait at most 300 seconds (5 minutes).`n" `
-        -StuckMessageFormatCritical "Please stop using the program:`t{1}`n"
+        -StuckMessageFormatInfo "Stuck during uninstallation of $Path.`nWaited already {0,5:N1} seconds; will wait at most 300 seconds (5 minutes).`n" `
+        -StuckMessageFormatCritical "Please stop using the program, or manually remove the file(s):`t{1}`n"
     New-Item -Path $Path -ItemType Directory | Out-Null
 }
 Export-ModuleMember -Function New-CleanDirectory
