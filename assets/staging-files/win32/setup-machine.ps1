@@ -241,12 +241,13 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
         "--norestart",
         "--installPath", "$BuildToolsPath",
 
-        # We don't want unreproducible channel updates!
-        # https://docs.microsoft.com/en-us/visualstudio/install/use-command-line-parameters-to-install-visual-studio?view=vs-2019#layout-command-and-command-line-parameters
-        # So always use the specific versioned installation channel for reproducibility.
-        "--channelUri", "$env:SystemDrive\doesntExist.chman"
-        # a) the normal release channel:                    "--channelUri", "https://aka.ms/vs/$VsBuildToolsMajorVer/release/channel"
-        # b) mistaken sticky value from Diskuv OCaml 0.1.x: "--channelUri", "$VsInstallPath\VisualStudio.chman"
+        # a) We don't want unreproducible channel updates!
+        #    https://docs.microsoft.com/en-us/visualstudio/install/use-command-line-parameters-to-install-visual-studio?view=vs-2019#layout-command-and-command-line-parameters
+        #    So always use the specific versioned installation channel for reproducibility.
+        #    "--channelUri", "$env:SystemDrive\doesntExist.chman"
+        # b) the normal release channel:
+        "--channelUri", "https://aka.ms/vs/$VsBuildToolsMajorVer/release/channel"
+        # c) mistaken sticky value from Diskuv OCaml 0.1.x: "--channelUri", "$VsInstallPath\VisualStudio.chman"
     ) + $VsComponents.Add
     if ($SilentInstall) {
         $CommonArgs += @("--quiet")
