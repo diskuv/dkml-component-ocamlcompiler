@@ -562,8 +562,8 @@ function Remove-DirectoryFully {
                 # We are waiting until unstuck!
                 $sofar = $timer.elapsed.totalseconds
                 $errcontent = Get-Content $stderr
-                Write-Host ($StuckMessageFormatInfo -f $sofar, $errcontent) -NoNewline
-                Write-Host ($StuckMessageFormatCritical -f $sofar, $errcontent) -ForegroundColor Red -BackgroundColor Black
+                Write-Host ($StuckMessageFormatInfo -f @($sofar, $errcontent)) -NoNewline
+                Write-Host ($StuckMessageFormatCritical -f @($sofar, $errcontent)) -ForegroundColor Red -BackgroundColor Black
                 Start-Sleep -Seconds 5
             } while ($timer.elapsed.totalseconds -lt $WaitSecondsIfStuck)
             Remove-Item $stderr
