@@ -202,25 +202,27 @@ $global:ProgressActivity = "Install Visual Studio Build Tools"
 Write-ProgressStep
 
 if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure-Object).Count -eq 0) {
-    $VsInstallTempPath = "$TempPath\vsinstall"
+    # Create BuildTools directory
+    $BuildToolsPath = "$env:SystemDrive\DiskuvOCaml\BuildTools"
+    if (!(Test-Path -Path $BuildToolsPath)) { New-Item -Path $BuildToolsPath -ItemType Directory | Out-Null }
 
-    # wipe installation directory so previous installs don't leak into the current install
-    New-CleanDirectory -Path $VsInstallTempPath
+    # Wipe installation directory so previous installs don't leak into the current install. We re-use
+    # a stable directory because we want all the Visual Studio installation error reporting to be
+    # in non-temporary directories.
+    $VsInstallPath = "$env:SystemDrive\DiskuvOCaml\vsinstall"
+    New-CleanDirectory -Path $VsInstallPath
 
     # Get components to install
     $VsComponents = Get-VisualStudioComponents -VcpkgCompatibility:$VcpkgCompatibility
 
-    Invoke-WebRequest -Uri https://aka.ms/vscollect.exe   -OutFile $VsInstallTempPath\collect.exe
-    Invoke-WebRequest -Uri "$VsBuildToolsInstallChannel"  -OutFile $VsInstallTempPath\VisualStudio.chman
-    Invoke-WebRequest -Uri "$VsBuildToolsInstaller"       -OutFile $VsInstallTempPath\vs_buildtools.exe
-    Invoke-WebRequest -Uri https://raw.githubusercontent.com/MisterDA/Windows-OCaml-Docker/d3a107132f24c05140ad84f85f187e74e83e819b/Install.cmd -OutFile $VsInstallTempPath\Install.orig.cmd
-    $content = Get-Content -Path $VsInstallTempPath\Install.orig.cmd -Raw
-    $content = $content -replace "C:\\TEMP", "$VsInstallTempPath"
-    $content = $content -replace "C:\\vslogs.zip", "$VsInstallTempPath\vslogs.zip"
-    $content | Set-Content -Path $VsInstallTempPath\Install.cmd
-
-    # Create destination directory
-    if (!(Test-Path -Path $env:SystemDrive\DiskuvOCaml)) { New-Item -Path $env:SystemDrive\DiskuvOCaml -ItemType Directory | Out-Null }
+    Invoke-WebRequest -Uri https://aka.ms/vscollect.exe   -OutFile $VsInstallPath\collect.exe
+    Invoke-WebRequest -Uri "$VsBuildToolsInstallChannel"  -OutFile $VsInstallPath\VisualStudio.chman
+    Invoke-WebRequest -Uri "$VsBuildToolsInstaller"       -OutFile $VsInstallPath\vs_buildtools.exe
+    Invoke-WebRequest -Uri https://raw.githubusercontent.com/MisterDA/Windows-OCaml-Docker/d3a107132f24c05140ad84f85f187e74e83e819b/Install.cmd -OutFile $VsInstallPath\Install.orig.cmd
+    $content = Get-Content -Path $VsInstallPath\Install.orig.cmd -Raw
+    $content = $content -replace "C:\\TEMP", "$VsInstallPath"
+    $content = $content -replace "C:\\vslogs.zip", "$VsInstallPath\vslogs.zip"
+    $content | Set-Content -Path $VsInstallPath\Install.cmd
 
     # See how to use vs_buildtools.exe at
     # https://docs.microsoft.com/en-us/visualstudio/install/use-command-line-parameters-to-install-visual-studio?view=vs-2019
@@ -237,27 +239,27 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
         "--wait",
         "--nocache",
         "--norestart",
-        "--installPath", "$env:SystemDrive\DiskuvOCaml\BuildTools",
+        "--installPath", "$BuildToolsPath",
 
         # We don't want unreproducible channel updates!
         # https://docs.microsoft.com/en-us/visualstudio/install/use-command-line-parameters-to-install-visual-studio?view=vs-2019#layout-command-and-command-line-parameters
         # So always use the specific versioned installation channel for reproducibility.
         "--channelUri", "$env:SystemDrive\doesntExist.chman"
         # a) the normal release channel:                    "--channelUri", "https://aka.ms/vs/$VsBuildToolsMajorVer/release/channel"
-        # b) mistaken sticky value from Diskuv OCaml 0.1.x: "--channelUri", "$VsInstallTempPath\VisualStudio.chman"
+        # b) mistaken sticky value from Diskuv OCaml 0.1.x: "--channelUri", "$VsInstallPath\VisualStudio.chman"
     ) + $VsComponents.Add
     if ($SilentInstall) {
         $CommonArgs += @("--quiet")
     } else {
         $CommonArgs += @("--passive")
     }
-    if (Test-Path -Path $env:SystemDrive\DiskuvOCaml\BuildTools\MSBuild\Current\Bin\MSBuild.exe) {
-        $proc = Start-Process -FilePath $VsInstallTempPath\Install.cmd -NoNewWindow -Wait -PassThru `
-            -ArgumentList (@("$VsInstallTempPath\vs_buildtools.exe", "modify") + $CommonArgs)
+    if (Test-Path -Path $BuildToolsPath\MSBuild\Current\Bin\MSBuild.exe) {
+        $proc = Start-Process -FilePath $VsInstallPath\Install.cmd -NoNewWindow -Wait -PassThru `
+            -ArgumentList (@("$VsInstallPath\vs_buildtools.exe", "modify") + $CommonArgs)
     }
     else {
-        $proc = Start-Process -FilePath $VsInstallTempPath\Install.cmd -NoNewWindow -Wait -PassThru `
-            -ArgumentList (@("$VsInstallTempPath\vs_buildtools.exe") + $CommonArgs)
+        $proc = Start-Process -FilePath $VsInstallPath\Install.cmd -NoNewWindow -Wait -PassThru `
+            -ArgumentList (@("$VsInstallPath\vs_buildtools.exe") + $CommonArgs)
     }
     $exitCode = $proc.ExitCode
     if ($exitCode -eq 3010) {
@@ -275,10 +277,10 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
         Write-Error (
             "`n`nMicrosoft Visual Studio Build Tools installation failed! Exited with $exitCode.!`n`n" +
             "FIRST you can retry this script which can resolve intermittent network failures or (rarer) Visual Studio installer bugs.`n"+
-            "SECOND you can run the following (all on one line) to manually install Visual Studio Build Tools:`n`n`t$VsInstallTempPath\vs_buildtools.exe $($VsComponents.Add)`n`n"+
+            "SECOND you can run the following (all on one line) to manually install Visual Studio Build Tools:`n`n`t$VsInstallPath\vs_buildtools.exe $($VsComponents.Add)`n`n"+
             "Make sure the following components are installed:`n"+
             "$($VsComponents.Describe)`n" +
-            "THIRD, if everything else failed, you can file a Bug Report at https://github.com/diskuv/dkml-installer-ocaml/issues and attach $VsInstallTempPath\vslogs.zip`n"
+            "THIRD, if everything else failed, you can file a Bug Report at https://github.com/diskuv/dkml-installer-ocaml/issues and attach $VsInstallPath\vslogs.zip`n"
         )
         exit 1
     }
@@ -287,7 +289,7 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
     $CompatibleVisualStudios = Get-CompatibleVisualStudios -ErrorIfNotFound:$false -VcpkgCompatibility:$VcpkgCompatibility
     if (($CompatibleVisualStudios | Measure-Object).Count -eq 0) {
         $ErrorActionPreference = "Continue"
-        & $VsInstallTempPath\collect.exe "-zip:$VsInstallTempPath\vslogs.zip"
+        & $VsInstallPath\collect.exe "-zip:$VsInstallPath\vslogs.zip"
         if (-not $SkipProgress) {
             Clear-Host
         }
@@ -301,12 +303,12 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
             "FIRST you should reboot and try again.`n`n"+
             ". . . `n`n"+
             ". . . `n`n"+
-            "SECOND you can run the following (all on one line) to manually install Visual Studio Build Tools:`n`n`t$VsInstallTempPath\vs_buildtools.exe $($VsComponents.Add)`n`n"+
+            "SECOND you can run the following (all on one line) to manually install Visual Studio Build Tools:`n`n`t$VsInstallPath\vs_buildtools.exe $($VsComponents.Add)`n`n"+
             "Make sure the following components are installed:`n"+
             "$($VsComponents.Describe)`n" +
             ". . .`n`n"+
             ". . .`n`n"+
-            "THIRD, if everything else failed, you can file a Bug Report at https://github.com/diskuv/dkml-installer-ocaml/issues and attach $VsInstallTempPath\vslogs.zip`n" +
+            "THIRD, if everything else failed, you can file a Bug Report at https://github.com/diskuv/dkml-installer-ocaml/issues and attach $VsInstallPath\vslogs.zip`n" +
             ". . . `n`n"+
             ". . . `n`n"
         )
