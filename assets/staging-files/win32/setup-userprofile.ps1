@@ -449,7 +449,7 @@ function Import-DiskuvOCamlAsset {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         Write-ProgressCurrentOperation -CurrentOperation "HTTP ${StatusCode}: $uri"
         if ($StatusCode -ne 404) {
-            throw
+            throw "HTTP ${StatusCode}: $uri"
         }
         # 404 Not Found. The asset may not have been uploaded / built yet so this is not a fatal error.
         # HOWEVER ... there is a nasty bug for older PowerShell + .NET versions with incorrect escape encoding.
@@ -473,7 +473,7 @@ function Import-DiskuvOCamlAsset {
             $StatusCode = $_.Exception.Response.StatusCode.value__
             Write-ProgressCurrentOperation -CurrentOperation "HTTP ${StatusCode}: $fixedUri"
             if ($StatusCode -ne 404) {
-                throw
+                throw "HTTP ${StatusCode}: $fixedUri"
             }
             # 404 Not Found. Not a fatal error
             return $false
@@ -655,7 +655,7 @@ if (-not $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected) {
             Write-Information ''
             Write-Information 'Press any key to exit this script...';
             $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
-            throw
+            throw "Git installer failed"
         }
 
         # Get new PATH so we can locate the new Git

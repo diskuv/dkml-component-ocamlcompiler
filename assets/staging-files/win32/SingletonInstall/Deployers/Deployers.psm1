@@ -555,8 +555,7 @@ function Remove-DirectoryFully {
                 # If not explicit that we want to wait, immediately exit
                 # and say what the problem was.
                 if ($WaitSecondsIfStuck -lt 0) {
-                    Write-Error "$(Get-Content $stderr)"
-                    throw
+                    throw (Get-Content $stderr)
                 }
 
                 # We are waiting until unstuck!
@@ -569,8 +568,7 @@ function Remove-DirectoryFully {
             Remove-Item $stderr
         }
         if (!$success -and ($WaitSecondsIfStuck -ge 0)) {
-            Write-Error "Could not remove the directory $Path after waiting $WaitSecondsIfStuck seconds"
-            throw
+            throw "Could not remove the directory $Path after waiting $WaitSecondsIfStuck seconds"
         }
     }
 }
