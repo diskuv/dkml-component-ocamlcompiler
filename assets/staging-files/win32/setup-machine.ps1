@@ -256,7 +256,14 @@ if ((-not $SkipAutoInstallVsBuildTools) -and ($CompatibleVisualStudios | Measure
     }
     $AlreadyInstalledButIncompatible = Get-VSSetupInstance | Where-Object { $_.InstallationPath -eq "$BuildToolsPath" }
     if ($AlreadyInstalledButIncompatible) {
+        # Modify the previous incompatible Visual Studio installation. Aka an upgrade or a downgrade.
         $CommonArgs = @("modify") + $CommonArgs
+    } else {
+        # First time installation. However we may have had an aborted prior installation, and
+        # Visual Studio Installer (in dd_installer_TIMESTAMP.log) will give a:
+        #   Warning: Visual Studio cannot be installed to a nonempty directory '...\BuildTools'.
+        # if we don't empty the directory first
+        New-CleanDirectory -Path $BuildToolsPath
     }
     $proc = Start-Process -FilePath $VsInstallPath\Install.cmd -NoNewWindow -Wait -PassThru `
         -ArgumentList (@("$VsInstallPath\vs_buildtools.exe") + $CommonArgs)
