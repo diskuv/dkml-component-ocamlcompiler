@@ -170,12 +170,15 @@ let register () =
     (module struct
       include Default_component_config
 
+      (* Even though this is "network" the components are "offline".
+         It is the setup-machine.ps1 and setup-userprofile.ps1 that download
+         from the network. *)
       let component_name = "network-ocamlcompiler"
 
       let install_depends_on =
         [
           "staging-ocamlrun";
-          "network-unixutils";
+          "offline-unixutils";
           "offline-opamshim";
           "staging-desktop-compile";
         ]
