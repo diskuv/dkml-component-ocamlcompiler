@@ -72,6 +72,8 @@
 .Parameter GlobalCompileDir
     The directory containing global-compile.ci.txt and global-compile.full.txt.
     They contain the opam package versions for each flavor (lowercase).
+.Parameter MSYS2Dir
+    The MSYS2 installation directory.
 .Parameter DkmlHostAbi
     Install a `windows_x86` or `windows_x86_64` distribution.
 
@@ -119,9 +121,6 @@
 .Parameter NoDeploymentSlot
     Do not use deployment slot subdirectories. Instead the install will
     go directly into the installation prefix. Useful in CI situations
-.Parameter MSYS2Dir
-    When specified the specified MSYS2 installation directory will be used.
-    Useful in CI situations.
 .Parameter IncrementalDeployment
     Advanced.
 
@@ -163,14 +162,15 @@ param (
     [Parameter(Mandatory)]
     [string]
     $GlobalCompileDir,
+    [Parameter(Mandatory)]
+    [string]
+    $MSYS2Dir,
     [string]
     $DkmlPath,
     [string]
     $TempParentPath,
     [int]
     $ParentProgressId = -1,
-    [string]
-    $MSYS2Dir,
     [string]
     $InstallationPrefix,
     [switch]
@@ -942,65 +942,8 @@ try {
     # ----------------------------------------------------------------
     # BEGIN MSYS2
 
-    $global:ProgressActivity = "Install MSYS2"
+    $global:ProgressActivity = "Update MSYS2"
     Write-ProgressStep
-
-    $MSYS2ParentDir = "$ProgramPath\tools"
-    if ($null -eq $MSYS2Dir -or "" -eq $MSYS2Dir) {
-        $MSYS2Dir = "$MSYS2ParentDir\MSYS2"
-    }
-    $MSYS2CachePath = "$TempPath\MSYS2"
-    if ([Environment]::Is64BitOperatingSystem) {
-        # The "base" installer is friendly for CI (ex. GitLab CI).
-        # The non-base installer will not work in CI. Will get exit code -1073741515 (0xFFFFFFFFC0000135)
-        # which is STATUS_DLL_NOT_FOUND; likely a graphical DLL is linked that is not present in headless
-        # Windows Server based CI systems.
-        $MSYS2SetupExeBasename = "msys2-base-x86_64-20210725.sfx.exe"
-        $MSYS2UrlPath = "2021-07-25/msys2-base-x86_64-20210725.sfx.exe"
-        $MSYS2Sha256 = "43c09824def2b626ff187c5b8a0c3e68c1063e7f7053cf20854137dc58f08592"
-        $MSYS2BaseSubdir = "msys64"
-        $MSYS2IsBase = $true
-    } else {
-        # There is no 32-bit base installer, so have to use the automated but graphical installer.
-        $MSYS2SetupExeBasename = "msys2-i686-20200517.exe"
-        $MSYS2UrlPath = "2020-05-17/msys2-i686-20200517.exe"
-        $MSYS2Sha256 = "e478c521d4849c0e96cf6b4a0e59fe512b6a96aa2eb00388e77f8f4bc8886794"
-        $MSYS2IsBase = $false
-    }
-    $MSYS2SetupExe = "$MSYS2CachePath\$MSYS2SetupExeBasename"
-
-    # Skip with ... $global:SkipMSYS2Setup = $true ... remove it with ... Remove-Variable SkipMSYS2Setup
-    if (!$global:SkipMSYS2Setup) {
-        # https://github.com/msys2/msys2-installer#cli-usage-examples
-        if (!(Test-Path "$MSYS2Dir\msys2.exe")) {
-            # download and verify installer
-            if (!(Test-Path -Path $MSYS2CachePath)) { New-Item -Path $MSYS2CachePath -ItemType Directory | Out-Null }
-            if (!(Test-Path -Path $MSYS2SetupExe)) {
-                Invoke-WebRequest -Uri "https://github.com/msys2/msys2-installer/releases/download/$MSYS2UrlPath" -OutFile "$MSYS2SetupExe.tmp"
-                $MSYS2ActualHash = (Get-FileHash -Algorithm SHA256 "$MSYS2SetupExe.tmp").Hash
-                if ("$MSYS2Sha256" -ne "$MSYS2ActualHash") {
-                    throw "The MSYS2 installer was corrupted. You will need to retry the installation. If this repeatedly occurs, please send an email to support@diskuv.com"
-                }
-                Rename-Item -Path "$MSYS2SetupExe.tmp" "$MSYS2SetupExeBasename"
-            }
-
-            # remove directory, especially important so possible subsequent Rename-Item to work
-            Remove-DirectoryFully -Path $MSYS2Dir
-
-            if ($MSYS2IsBase) {
-                # extract
-                if ($null -eq $MSYS2BaseSubdir) { throw "check_state MSYS2BaseSubdir is not null"}
-                Remove-DirectoryFully -Path "$MSYS2ParentDir\$MSYS2BaseSubdir"
-                Invoke-Win32CommandWithProgress -FilePath $MSYS2SetupExe -ArgumentList "-y", "-o$MSYS2ParentDir"
-
-                # rename to MSYS2
-                Rename-Item -Path "$MSYS2ParentDir\$MSYS2BaseSubdir" -NewName "MSYS2"
-            } else {
-                if (!(Test-Path -Path $MSYS2Dir)) { New-Item -Path $MSYS2Dir -ItemType Directory | Out-Null }
-                Invoke-Win32CommandWithProgress -FilePath $MSYS2SetupExe -ArgumentList "--silentUpdate", "--verbose", $MSYS2Dir
-            }
-        }
-    }
 
     $global:AdditionalDiagnostics += "[Advanced] MSYS2 commands can be run with: $MSYS2Dir\msys2_shell.cmd`n"
     $HereDirMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$HereDir"
