@@ -1,4 +1,4 @@
-# enduser-ocamlcompiler 4.12.1
+# enduser-ocamlcompiler
 
 The ocamlcompiler component installs an OCaml compiler in the end-user
 installation directory.
