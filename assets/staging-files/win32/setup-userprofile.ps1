@@ -64,9 +64,9 @@
     The `Full` flavor installs everything, including human-centric applications
     like `utop`.
 .Parameter OCamlLangVersion
-    Either `4.12.1` or `4.13.1`.
+    Either `4.12.1` or `4.14.0`.
 
-    Defaults to 4.12.1
+    Defaults to 4.14.0
 .Parameter OpamExe
     The location of a pre-existing opam.exe.
 .Parameter GlobalCompileDir
@@ -150,9 +150,9 @@ param (
     [ValidateSet("CI", "Full")]
     [string]
     $Flavor = 'Full',
-    [ValidateSet("4.12.1", "4.13.1")]
+    [ValidateSet("4.12.1", "4.14.0")]
     [string]
-    $OCamlLangVersion = "4.12.1",
+    $OCamlLangVersion = "4.14.0",
     [ValidateSet("windows_x86", "windows_x86_64")]
     [string]
     $DkmlHostAbi,
@@ -275,10 +275,21 @@ $OCamlLangGitCommit = switch ($OCamlLangVersion)
 {
     "4.12.1" {"46c947827ec2f6d6da7fe5e195ae5dda1d2ad0c5"; Break}
     "4.13.1" {"ab626576eee205615a9d7c5a66c2cb2478f1169c"; Break}
+    "4.14.0" {"15553b77175270d987058b386d737ccb939e8d5a"; Break}
     "5.00.0+dev0-2021-11-05" {"284834d31767d323aae1cee4ed719cc36aa1fb2c"; Break}
     default {
         Write-Error ("`n`nThe OCaml version $OCamlLangVersion is not supported")
         # exit 1
+    }
+}
+
+# D. Calculate whether the OCaml version comes with the native ocaml toplevel
+$HasOcamlNat = switch ($OCamlLangVersion)
+{
+    "4.14.0" {$True; Break}
+    default {
+        # 5.x comes with the native ocaml toplevel; assume 6.x, etc. do the same
+        -not ($OcamlLangVersion -match "^4[.]")
     }
 }
 
@@ -332,6 +343,12 @@ $OCamlBinaries = @(
     "ocamlruni.exe"
     "ocamlyacc.exe"
 )
+if ($HasOcamlNat) {
+    $OCamlBinaries = @(
+        "ocamlnat.exe"
+        $OCamlBinaries
+    )
+}
 $CiFlavorBinaries = @(
     # ocamlfind
     "ocamlfind.exe"
