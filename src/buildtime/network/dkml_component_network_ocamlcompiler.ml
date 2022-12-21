@@ -137,6 +137,8 @@ let execute_install_user ctx =
           % Fpath.to_string important_paths.tmppath
           % "--scripts-dir"
           % Fpath.to_string important_paths.scriptsdir
+          % "--dkml-confdir-exe"
+          % Fpath.to_string (Staging_dkmlconfdir_api.dkml_confdir_exe ctx)
           %% Log_config.to_args ctx.Context.log_config)
       in
       let cmd =

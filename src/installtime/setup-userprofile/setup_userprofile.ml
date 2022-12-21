@@ -9,7 +9,11 @@ module Arg = Cmdliner.Arg
 module Term = Cmdliner.Term
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
-    msys2_dir opam_exe vcpkg global_compile_dir =
+    msys2_dir opam_exe vcpkg global_compile_dir dkml_confdir_exe =
+  let model_conf =
+    Staging_dkmlconfdir_api.Conf_loader.create_from_system_confdir
+      ~unit_name:"ocamlcompiler" ~dkml_confdir_exe
+  in
   let res =
     Dkml_install_api.Forward_progress.lift_result __POS__ Fmt.lines
       Dkml_install_api.Forward_progress.stderr_fatallog
@@ -66,6 +70,12 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
         % "-TempParentPath" % temp_dir_83 % "-SkipProgress")
     in
     let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
+    let cmd =
+      if Model_conf.feature_flag_imprecise_c99_float_ops model_conf then (
+        Logs.info (fun l -> l "Using [feature_flag_imprecise_c99_float_ops]");
+        Cmd.(cmd % "-ImpreciseC99FloatOps"))
+      else cmd
+    in
     Logs.info (fun l ->
         l "Installing Git, OCaml and other tools with@ @[%a@]" Cmd.pp cmd);
     log_spawn_onerror_exit ~id:"a0d16230" cmd;
@@ -102,6 +112,13 @@ let abi_t =
 
 let vcpkg_t = Arg.(value & flag & info [ "vcpkg" ])
 
+let dkml_confdir_exe_t =
+  let doc = "The location of dkml-confdir.exe" in
+  let v =
+    Arg.(required & opt (some file) None & info ~doc [ "dkml-confdir-exe" ])
+  in
+  Term.(const Fpath.v $ v)
+
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
   Logs.set_level level;
@@ -117,7 +134,7 @@ let () =
     Term.
       ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
         $ abi_t $ prefix_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t
-        $ global_compile_dir_t,
+        $ global_compile_dir_t $ dkml_confdir_exe_t,
         info "setup-userprofile.bc"
           ~doc:
             "Install Git for Windows and Opam, and compiles OCaml and some \

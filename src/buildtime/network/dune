@@ -4,6 +4,7 @@
  (libraries
   dkml-install.register
   dkml-component-staging-ocamlrun.api
+  dkml-component-staging-dkmlconfdir.api
   bos
   logs
   dkml-component-network-ocamlcompiler.common))

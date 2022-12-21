@@ -87,6 +87,10 @@
     The PowerShell progress identifier. Optional, defaults to -1.
     Use when embedding this script within another setup program
     that reports its own progress.
+.Parameter ImpreciseC99FloatOps
+    Compile OCaml with --enable-imprecise-c99-float-ops for floating-point
+    operation emulation. Often needed when running inside VirtualBox on
+    macOS hardware.
 .Parameter SkipAutoUpgradeGitWhenOld
     Ordinarily if Git for Windows is installed on the machine but
     it is less than version 1.7.2 then Git for Windows 2.36.1 is
@@ -173,6 +177,8 @@ param (
     $ParentProgressId = -1,
     [string]
     $InstallationPrefix,
+    [switch]
+    $ImpreciseC99FloatOps,
     [switch]
     $SkipAutoUpgradeGitWhenOld,
     [switch]
@@ -1092,6 +1098,11 @@ try {
             # okay. already installed
         } else {
             # build into bin/
+            if ($ImpreciseC99FloatOps) {
+                $ConfigureArgs = "--enable-imprecise-c99-float-ops"
+            } else {
+                $ConfigureArgs = ""
+            }
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
                 -Command "env" `
                 -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
@@ -1100,7 +1111,8 @@ try {
                     "$DkmlMSYS2AbsPath"
                     "$OCamlLangGitCommit"
                     "$DkmlHostAbi"
-                    "$ProgramMSYS2AbsPath"))
+                    "$ProgramMSYS2AbsPath"
+                    "$ConfigureArgs"))
             # and move into usr/bin/
             if ("$ProgramRelGeneralBinDir" -ne "bin") {
                 Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `

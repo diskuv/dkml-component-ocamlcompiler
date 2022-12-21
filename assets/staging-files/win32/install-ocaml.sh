@@ -1,6 +1,6 @@
 #!/bin/bash
 # ----------------------------
-# install-ocaml.sh DKMLDIR GIT_TAG_OR_COMMIT DKMLHOSTABI INSTALLDIR
+# install-ocaml.sh DKMLDIR GIT_TAG_OR_COMMIT DKMLHOSTABI INSTALLDIR CONFIGUREARGS
 
 set -euf
 
@@ -15,6 +15,9 @@ DKMLHOSTABI=$1
 shift
 
 INSTALLDIR=$1
+shift
+
+CONFIGUREARGS=$1
 shift
 
 # shellcheck disable=SC1091
@@ -54,6 +57,7 @@ log_trace "$DKMLDIR"/vendor/dkml-compiler/src/r-c-ocaml-1-setup.sh \
     -v "$GIT_TAG_OR_COMMIT" \
     -e "$DKMLHOSTABI" \
     -k vendor/dkml-compiler/env/standard-compiler-env-to-ocaml-configure-env.sh \
+    -m "$CONFIGUREARGS" \
     -z
 
 # Use reproducible directory created by setup

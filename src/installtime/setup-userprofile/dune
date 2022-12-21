@@ -1,3 +1,15 @@
+(library
+ (name model_conf)
+ (libraries sexplib dkml-component-staging-dkmlconfdir.api)
+ (modules model_conf)
+ (preprocess
+  (pps ppx_sexp_conv)))
+
+(test
+ (name test_model_conf)
+ (libraries alcotest model_conf dkml-component-staging-dkmlconfdir.api)
+ (modules test_model_conf))
+
 (executable
  (name setup_userprofile)
  (public_name setup_userprofile)
@@ -7,7 +19,9 @@
  (libraries
   dkml-component-network-ocamlcompiler.common
   dkml-install.api
+  dkml-component-staging-dkmlconfdir.api
   diskuvbox
+  model_conf
   bos
   fpath
   base64
@@ -16,7 +30,10 @@
   logs.cli
   logs.fmt
   fmt.cli
-  fmt.tty))
+  fmt.tty)
+ (modules setup_userprofile)
+ (preprocess
+  (pps ppx_sexp_conv)))
 
 (install
  (section share)
