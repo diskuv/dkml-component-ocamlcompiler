@@ -166,6 +166,10 @@ pin-depends: [
     "git+https://github.com/diskuv/dkml-component-opam.git"
   ]
   [
+    "dkml-component-offline-opamshim.2.2.0~alpha0~20221104"
+    "git+https://github.com/diskuv/dkml-component-opam.git"
+  ]
+  [
     "dkml-component-staging-desktop-compile.0.1.0"
     "git+https://gitlab.com/diskuv-ocaml/components/dkml-component-desktop.git"
   ]
