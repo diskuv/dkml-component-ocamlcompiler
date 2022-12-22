@@ -17,8 +17,12 @@ shift
 INSTALLDIR=$1
 shift
 
-CONFIGUREARGS=$1
-shift
+if (( $# >= 1 )); then
+    CONFIGUREARGS=$1
+    shift
+else
+    CONFIGUREARGS=
+fi
 
 # shellcheck disable=SC1091
 . "$DKMLDIR"/vendor/drc/unix/crossplatform-functions.sh

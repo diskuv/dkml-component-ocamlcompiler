@@ -1101,7 +1101,9 @@ try {
             if ($ImpreciseC99FloatOps) {
                 $ConfigureArgs = "--enable-imprecise-c99-float-ops"
             } else {
-                $ConfigureArgs = ""
+                # We do not use an empty string since Powershell 5.1.19041.2364
+                # seems to erase empty arguments
+                $ConfigureArgs = "--disable-imprecise-c99-float-ops"
             }
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
                 -Command "env" `
