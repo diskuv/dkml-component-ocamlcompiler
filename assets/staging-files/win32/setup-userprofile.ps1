@@ -1253,7 +1253,9 @@ try {
                 "-v"
                 "$ProgramMSYS2AbsPath"
                 "-o"
-                "$OpamExe"))
+                "$OpamExe"
+                "-m"
+                "conf-withdkml"))
 
         # Diagnostics: Display all the switches
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
