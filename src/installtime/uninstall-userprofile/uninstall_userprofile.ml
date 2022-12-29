@@ -58,7 +58,9 @@ let uninstall_programdir_res ~prefix_dir =
       (* DKML custom opam repositories *)
       "repos";
       (* The 'dkml' tools switch *)
-      "dkml"
+      "dkml";
+      (* The 'playground' switch *)
+      "playground"
     ]
 
 let uninstall_res ~scripts_dir ~prefix_dir ~is_audit =
