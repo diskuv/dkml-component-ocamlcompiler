@@ -145,7 +145,7 @@ function Remove-ItemQuietly {
         Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
 
         if (!$AuditOnly) {
-            Remove-Item -Force -Path $Path
+            Remove-Item -Force -Recurse -Path $Path
         }
     }
 }
