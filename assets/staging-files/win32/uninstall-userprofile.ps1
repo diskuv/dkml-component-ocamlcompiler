@@ -73,10 +73,7 @@ Import-Module Deployers
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 3
-if ($VcpkgCompatibility) {
-    $ProgressTotalSteps = $ProgressTotalSteps + 2
-}
+$ProgressTotalSteps = 4
 $ProgressId = $ParentProgressId + 1
 $global:ProgressStatus = $null
 
@@ -193,14 +190,19 @@ function Set-UserEnvironmentVariable {
     }
 }
 
-# From here on we need to stuff $ProgramPath with all the binaries for the distribution
-# VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-
-# Notes:
-# * Include lots of `TestPath` existence tests to speed up incremental deployments.
-
 $global:AdditionalDiagnostics = "`n`n"
 try {
+
+    # ----------------------------------------------------------------
+    # BEGIN Remove playground switch
+
+    $global:ProgressActivity = "Remove playground switch"
+    Write-ProgressStep
+
+    Remove-ItemQuietly -Path "$env:LOCALAPPDATA\opam\playground"
+
+    # END Remove playground switch
+    # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
     # BEGIN Modify User's environment variables
