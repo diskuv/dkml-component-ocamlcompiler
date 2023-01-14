@@ -67,7 +67,8 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
         % dkml_path_83 % "-GlobalCompileDir" % global_compile_dir_83
         % "-NoDeploymentSlot" % "-DkmlHostAbi"
         % Context.Abi_v2.to_canonical_string abi
-        % "-TempParentPath" % temp_dir_83 % "-SkipProgress")
+        % "-TempParentPath" % temp_dir_83 % "-SkipProgress"
+        % "-SkipMSYS2Update")
     in
     let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
     let cmd =

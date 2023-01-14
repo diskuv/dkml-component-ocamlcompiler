@@ -119,6 +119,8 @@
     vcpkg (the C package manager).
 .Parameter SkipProgress
     Do not use the progress user interface.
+.Parameter SkipMSYS2Update
+    Do not update MSYS2 system or packages.
 .Parameter OnlyOutputCacheKey
     Only output the userprofile cache key. The cache key is 1-to-1 with
     the version of the Diskuv OCaml distribution.
@@ -142,7 +144,7 @@
     PS> vendor\diskuv-ocaml\installtime\windows\setup-userprofile.ps1
 
 .Example
-    PS> $global:SkipMSYS2Setup = $true ; $global:SkipMSYS2Update = $true ; $global:SkipMobyDownload = $true ; $global:SkipMobyFixup = $true ; $global:SkipOpamSetup = $true; $global:SkipOcamlSetup = $true
+    PS> $global:SkipMSYS2Setup = $true ; $global:SkipMobyDownload = $true ; $global:SkipMobyFixup = $true ; $global:SkipOpamSetup = $true; $global:SkipOcamlSetup = $true
     PS> vendor\diskuv-ocaml\installtime\windows\setup-userprofile.ps1
 #>
 
@@ -187,6 +189,8 @@ param (
     $VcpkgCompatibility,
     [switch]
     $SkipProgress,
+    [switch]
+    $SkipMSYS2Update,
     [switch]
     $OnlyOutputCacheKey,
     [switch]
@@ -511,7 +515,10 @@ function Import-DiskuvOCamlAsset {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 12
+$ProgressTotalSteps = 11
+if (-not $SkipMSYS2Update) {
+    $ProgressTotalSteps = $ProgressTotalSteps + 1
+}
 if ($VcpkgCompatibility) {
     $ProgressTotalSteps = $ProgressTotalSteps + 2
 }
@@ -965,27 +972,26 @@ try {
     # ----------------------------------------------------------------
     # BEGIN MSYS2
 
-    $global:ProgressActivity = "Update MSYS2"
-    Write-ProgressStep
-
     $global:AdditionalDiagnostics += "[Advanced] MSYS2 commands can be run with: $MSYS2Dir\msys2_shell.cmd`n"
     $HereDirMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$HereDir"
 
-    # Create home directories and other files and settings
-    # A: Use patches from https://patchew.org/QEMU/20210709075218.1796207-1-thuth@redhat.com/
-    ((Get-Content -path $MSYS2Dir\etc\post-install\07-pacman-key.post -Raw) -replace '--refresh-keys', '--version') |
-        Set-Content -Path $MSYS2Dir\etc\post-install\07-pacman-key.post # A
-    #   the first time with a login will setup gpg keys but will exit with `mkdir: cannot change permissions of /dev/shm`
-    #   so we do -IgnoreErrors but will otherwise set all the directories correctly
-    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
-        -Command "bash" -ArgumentList @("-lc", "true")
-    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command "sed" -ArgumentList @("-i", "s/^CheckSpace/#CheckSpace/g", "/etc/pacman.conf") # A
-
     # Synchronize packages
     #
-    # Skip with ... $global:SkipMSYS2Update = $true ... remove it with ... Remove-Variable SkipMSYS2Update
-    if (!$global:SkipMSYS2Update) {
+    if (-not $SkipMSYS2Update) {
+        $global:ProgressActivity = "Update MSYS2"
+        Write-ProgressStep
+
+            # Create home directories and other files and settings
+        # A: Use patches from https://patchew.org/QEMU/20210709075218.1796207-1-thuth@redhat.com/
+        ((Get-Content -path $MSYS2Dir\etc\post-install\07-pacman-key.post -Raw) -replace '--refresh-keys', '--version') |
+            Set-Content -Path $MSYS2Dir\etc\post-install\07-pacman-key.post # A
+        #   the first time with a login will setup gpg keys but will exit with `mkdir: cannot change permissions of /dev/shm`
+        #   so we do -IgnoreErrors but will otherwise set all the directories correctly
+        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
+            -Command "bash" -ArgumentList @("-lc", "true")
+        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
+            -Command "sed" -ArgumentList @("-i", "s/^CheckSpace/#CheckSpace/g", "/etc/pacman.conf") # A
+
         if ($Flavor -ne "CI") {
             # Pacman does not update individual packages but rather the full system is upgraded. We _must_
             # upgrade the system before installing packages, except we allow CI systems to use whatever
