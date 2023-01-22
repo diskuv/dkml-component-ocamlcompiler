@@ -840,9 +840,13 @@ function Invoke-MSYS2CommandWithProgress {
     # 1. Add Git to path
     # 2. Use our temporary directory, which will get cleaned up automatically,
     #    as the parent temp directory for DKML (so it gets cleaned up automatically).
-    $GitMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$GitPath"
-    $TempMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$TempPath"
-    $Command = "env"
+    # 3. Always use full path to MSYS2 env, because Scoop and Chocolately can
+    #    add their own Unix executables to the PATH
+    $MSYS2Env = Join-Path (Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin") -ChildPath "env.exe"
+    $MSYS2Cygpath = Join-Path (Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin") -ChildPath "cygpath.exe"
+    $GitMSYS2AbsPath = & $MSYS2Cygpath -au "$GitPath"
+    $TempMSYS2AbsPath = & $MSYS2Cygpath -au "$TempPath"
+    $Command = $MSYS2Env
     $ArgumentList = @(
         "PATH=${GitMSYS2AbsPath}:$INVOKER_MSYSTEM_PREFIX/bin:/usr/bin:/bin"
         "DKML_TMP_PARENTDIR=$TempMSYS2AbsPath"
@@ -973,7 +977,18 @@ try {
     # BEGIN MSYS2
 
     $global:AdditionalDiagnostics += "[Advanced] MSYS2 commands can be run with: $MSYS2Dir\msys2_shell.cmd`n"
-    $HereDirMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$HereDir"
+
+    # Always use full path to MSYS2 executables, because Scoop and Chocolately can
+    # add their own Unix executables to the PATH
+    $MSYS2UsrBin = Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin"
+    $MSYS2Env = Join-Path $MSYS2UsrBin -ChildPath "env.exe"
+    $MSYS2Bash = Join-Path $MSYS2UsrBin -ChildPath "bash.exe"
+    $MSYS2Sh = Join-Path $MSYS2UsrBin -ChildPath "sh.exe"
+    $MSYS2Sed = Join-Path $MSYS2UsrBin -ChildPath "sed.exe"
+    $MSYS2Pacman = Join-Path $MSYS2UsrBin -ChildPath "pacman.exe"
+    $MSYS2Cygpath = Join-Path $MSYS2UsrBin -ChildPath "cygpath.exe"
+
+    $HereDirMSYS2AbsPath = & $MSYS2Cygpath -au "$HereDir"
 
     # Synchronize packages
     #
@@ -988,9 +1003,9 @@ try {
         #   the first time with a login will setup gpg keys but will exit with `mkdir: cannot change permissions of /dev/shm`
         #   so we do -IgnoreErrors but will otherwise set all the directories correctly
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
-            -Command "bash" -ArgumentList @("-lc", "true")
+            -Command $MSYS2Bash -ArgumentList @("-lc", "true")
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command "sed" -ArgumentList @("-i", "s/^CheckSpace/#CheckSpace/g", "/etc/pacman.conf") # A
+            -Command $MSYS2Sed -ArgumentList @("-i", "s/^CheckSpace/#CheckSpace/g", "/etc/pacman.conf") # A
 
         if ($Flavor -ne "CI") {
             # Pacman does not update individual packages but rather the full system is upgraded. We _must_
@@ -1005,14 +1020,14 @@ try {
             # ... when pacman decides to upgrade itself, it kills all the MSYS2 processes. So we need to run at least
             # once and ignore any errors from forcible termination.
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
-                -Command "pacman" -ArgumentList @("-Syu", "--noconfirm")
+                -Command $MSYS2Pacman -ArgumentList @("-Syu", "--noconfirm")
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command "pacman" -ArgumentList @("-Syu", "--noconfirm")
+                -Command $MSYS2Pacman -ArgumentList @("-Syu", "--noconfirm")
         }
 
         # Install new packages and/or full system if any were not installed ("--needed")
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command "pacman" -ArgumentList (
+            -Command $MSYS2Pacman -ArgumentList (
                 @("-S", "--needed", "--noconfirm") +
                 $AllMSYS2Packages)
     }
@@ -1023,9 +1038,9 @@ try {
     # ----------------------------------------------------------------
     # BEGIN Define dkmlvars
 
-    $DkmlMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$DkmlPath"
-    $InstallationPrefixMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$InstallationPrefix"
-    $ProgramMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$ProgramPath"
+    $DkmlMSYS2AbsPath = & $MSYS2Cygpath -au "$DkmlPath"
+    $InstallationPrefixMSYS2AbsPath = & $MSYS2Cygpath -au "$InstallationPrefix"
+    $ProgramMSYS2AbsPath = & $MSYS2Cygpath -au "$ProgramPath"
 
     # dkmlvars.* (DiskuvOCaml variables) are scripts that set variables about the deployment.
     $UnixVarsArray = @(
@@ -1089,7 +1104,7 @@ try {
     $global:ProgressActivity = "Install native Windows ocaml.exe and related binaries"
     Write-ProgressStep
 
-    $ProgramGeneralBinMSYS2AbsPath = & $MSYS2Dir\usr\bin\cygpath.exe -au "$ProgramGeneralBinDir"
+    $ProgramGeneralBinMSYS2AbsPath = & $MSYS2Cygpath -au "$ProgramGeneralBinDir"
 
     # Skip with ... $global:SkipOcamlSetup = $true ... remove it with ... Remove-Variable SkipOcamlSetup
     if (!$global:SkipOcamlSetup) {
@@ -1112,9 +1127,9 @@ try {
                 $ConfigureArgs = "--disable-imprecise-c99-float-ops"
             }
             Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command "env" `
+                -Command $MSYS2Env `
                 -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
-                    "sh"
+                    $MSYS2Sh
                     "$HereDirMSYS2AbsPath/install-ocaml.sh"
                     "$DkmlMSYS2AbsPath"
                     "$OCamlLangGitCommit"
@@ -1124,7 +1139,7 @@ try {
             # and move into usr/bin/
             if ("$ProgramRelGeneralBinDir" -ne "bin") {
                 Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                    -Command "sh" -ArgumentList @(
+                    -Command $MSYS2Sh -ArgumentList @(
                         "-c",
                         ("install -d '$ProgramGeneralBinMSYS2AbsPath' && " +
                          "for b in $OCamlBinaries; do mv -v '$ProgramMSYS2AbsPath'/bin/`$b '$ProgramGeneralBinMSYS2AbsPath'/; done")
@@ -1171,7 +1186,7 @@ try {
     # Upgrades. Possibly ask questions to delete things, so no progress indicator
     Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
         -ForceConsole `
-        -Command "env" `
+        -Command $MSYS2Env `
         -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
             "$HereDirMSYS2AbsPath/deinit-opam-root.sh"
             "-d"
@@ -1182,7 +1197,7 @@ try {
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
     if (!$global:SkipOpamSetup) {
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command "env" `
+            -Command $MSYS2Env `
             -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
                 "$DkmlPath\vendor\drd\src\unix\private\init-opam-root.sh"
                 "-p"
@@ -1214,7 +1229,7 @@ try {
         [string[]]$GlobalCompileArgs = $GlobalCompileArray | ForEach-Object { @("-a", $_) }
 
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command "env" `
+            -Command $MSYS2Env `
             -ArgumentList (
                 $UnixPlusPrecompleteVarsArray +
                 @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
@@ -1247,7 +1262,7 @@ try {
     if (!$global:SkipOpamSetup) {
         # Install the playground switch
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command "env" `
+            -Command $MSYS2Env `
             -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
                 "$DkmlPath\vendor\drd\src\unix\create-opam-switch.sh"
                 "-p"
@@ -1265,7 +1280,7 @@ try {
 
         # Diagnostics: Display all the switches
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command "env" `
+            -Command $MSYS2Env `
             -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
                 "$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh"
                 "-p"
@@ -1375,7 +1390,7 @@ try {
     Set-Content -Path "$InstallationPrefix\dkmlvars.ps1" -Value $PowershellVarsContents -Encoding Unicode
 
     Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command "sh" `
+        -Command $MSYS2Sh `
         -ArgumentList @(
             "-eufcx",
             ("dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sh'   '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sh' && " +
