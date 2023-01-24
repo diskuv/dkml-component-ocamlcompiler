@@ -49,11 +49,6 @@ cd "$DKMLDIR"
 # From here onwards everything should be run using RELATIVE PATHS ...
 # >>>>>>>>>
 
-# Standard MSVC flags during DKML installation for the system OCaml compiler
-# - Debug: https://learn.microsoft.com/en-us/cpp/build/reference/z7-zi-zi-debug-information-format?view=msvc-170
-CFLAGS="-Z7"
-export CFLAGS
-
 # Install the source code
 log_trace "$DKMLDIR"/vendor/dkml-compiler/src/r-c-ocaml-1-setup.sh \
     -d "$DKMLDIR" \
