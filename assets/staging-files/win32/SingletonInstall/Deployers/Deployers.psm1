@@ -504,8 +504,25 @@ function Remove-DirectoryFully {
         # should delete ReadOnly files (which are typical for Opam installed executables), it
         # fails with: "You do not have sufficient access rights to perform this operation".
         # Instead we have to remove the ReadOnly attribute.
+        $firstFailure = $null
         Get-ChildItem $Path -Recurse -Force | Where-Object { $_.Attributes -band [io.fileattributes]::ReadOnly } | ForEach-Object {
-            Set-ItemProperty -Path $_.FullName -Name Attributes -Value ($_.Attributes -band (-bnot [io.fileattributes]::ReadOnly))
+            # $_ is now the file object
+            $currentFile = $_
+            try {
+                Set-ItemProperty -Path $_.FullName -Name Attributes -Value ($_.Attributes -band (-bnot [io.fileattributes]::ReadOnly))
+            } catch {
+                # Handle drives that do not support setting attributes, even though we are not adding any!
+                # https://github.com/diskuv/dkml-installer-ocaml/issues/38.
+                # $_ is now the error object
+                if ($null -eq $firstFailure) {
+                    $firstFailure = (
+                        "The drive containing $Path does not support setting attributes on some or all of its files. " +
+                        "Here is one file that could not be set: $($currentFile.FullName). $_")
+                }
+            }
+        }
+        if ($firstFailure) {
+            Write-Warning "$firstFailure"
         }
 
         # We want to do `Remove-Item -Path $Path -Recurse -Force`. However the docs for Remove-Item
@@ -562,8 +579,8 @@ function Remove-DirectoryFully {
                 $sofar = $timer.elapsed.totalseconds
                 #   don't overwhelm display or PowerShell if lots of errors
                 $errcontent = Get-Content -TotalCount 5 $stderr | Out-String
-                Write-Host ($StuckMessageFormatInfo -f @($sofar, $errcontent)) -NoNewline
-                Write-Host ($StuckMessageFormatCritical -f @($sofar, $errcontent)) -ForegroundColor Red -BackgroundColor Black
+                Write-Information ($StuckMessageFormatInfo -f @($sofar, $errcontent)) -NoNewline
+                Write-Information ($StuckMessageFormatCritical -f @($sofar, $errcontent)) -ForegroundColor Red -BackgroundColor Black
                 Start-Sleep -Seconds 5
             } while ($timer.elapsed.totalseconds -lt $WaitSecondsIfStuck)
             Remove-Item $stderr
