@@ -8,7 +8,7 @@ open Dkml_install_api
 module Arg = Cmdliner.Arg
 module Term = Cmdliner.Term
 
-let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
+let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi control_dir
     msys2_dir opam_exe vcpkg global_compile_dir dkml_confdir_exe =
   let model_conf =
     Staging_dkmlconfdir_api.Conf_loader.create_from_system_confdir
@@ -38,12 +38,30 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
              MSYS2 environment."
             Fpath.pp x
     in
-    let* prefix_dir = Fpath.of_string prefix_dir in
+    let* control_dir = Fpath.of_string control_dir in
     let* temp_dir = Fpath.of_string temp_dir in
     let* opam_exe = Fpath.of_string opam_exe in
     let* dkml_dir = Fpath.of_string dkml_dir in
     let* msys2_dir = Fpath.of_string msys2_dir in
     let* global_compile_dir = Fpath.of_string global_compile_dir in
+    (* Uninstall the old control directory. For now we don't have the
+       formal concept of a data directory, although the default Opam root is
+       the defacto data directory today. We do _not_ uninstall the
+       data directory in the installer. That would only be done in
+       the uninstaller, and we don't uninstall the default Opam root because
+       it is too important.
+
+       This procedure gives us a form of "upgrade" in addition to install.
+
+       Things to consider:
+       * Should MSYS2 be in a data directory? Basically, once it is installed,
+         does MSYS2 ever need to change? Sadly it does ... when new MSYS2
+         packages are introduced, MSYS2 must be upgraded. And while MSYS2
+         has great upgrading ability, it has been quite troublesome to do that
+         during an installation. Confer:
+         https://github.com/diskuv/dkml-installer-ocaml/issues/25.
+      *)
+    Ocamlcompiler_common.uninstall_controldir ~control_dir;
     (* We cannot directly call PowerShell because we likely do not have
        administrator rights.
 
@@ -53,7 +71,7 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
        so there are no spaces. *)
     let setup_bat = Fpath.(v scripts_dir / "setup-userprofile.bat") in
     let to83 = Ocamlcompiler_common.Os.Windows.get_dos83_short_path in
-    let* prefix_dir_83 = to83 prefix_dir in
+    let* control_dir_83 = to83 control_dir in
     let* msys2_dir_83 = to83 msys2_dir in
     let* opam_exe_83 = to83 opam_exe in
     let* dkml_path_83 = to83 dkml_dir in
@@ -62,13 +80,12 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi prefix_dir
     let cmd =
       Cmd.(
         v (Fpath.to_string setup_bat)
-        % "-AllowRunAsAdmin" % "-InstallationPrefix" % prefix_dir_83
+        % "-AllowRunAsAdmin" % "-InstallationPrefix" % control_dir_83
         % "-MSYS2Dir" % msys2_dir_83 % "-OpamExe" % opam_exe_83 % "-DkmlPath"
         % dkml_path_83 % "-GlobalCompileDir" % global_compile_dir_83
         % "-NoDeploymentSlot" % "-DkmlHostAbi"
         % Context.Abi_v2.to_canonical_string abi
-        % "-TempParentPath" % temp_dir_83 % "-SkipProgress"
-        % "-SkipMSYS2Update")
+        % "-TempParentPath" % temp_dir_83 % "-SkipProgress" % "-SkipMSYS2Update")
     in
     let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
     let cmd =
@@ -91,11 +108,10 @@ let scripts_dir_t =
   Arg.(required & opt (some dir) None & info [ "scripts-dir" ])
 
 let dkml_dir_t = Arg.(required & opt (some dir) None & info [ "dkml-dir" ])
-
 let tmp_dir_t = Arg.(required & opt (some dir) None & info [ "temp-dir" ])
 
-let prefix_dir_t =
-  Arg.(required & opt (some string) None & info [ "prefix-dir" ])
+let control_dir_t =
+  Arg.(required & opt (some string) None & info [ "control-dir" ])
 
 let msys2_dir_t = Arg.(required & opt (some dir) None & info [ "msys2-dir" ])
 
@@ -134,7 +150,7 @@ let () =
   let t =
     Term.
       ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-        $ abi_t $ prefix_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t
+        $ abi_t $ control_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t
         $ global_compile_dir_t $ dkml_confdir_exe_t,
         info "setup-userprofile.bc"
           ~doc:

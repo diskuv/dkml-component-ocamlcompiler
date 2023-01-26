@@ -119,7 +119,7 @@ let execute_install_user ctx =
       let cmd =
         Cmd.(
           v (Fpath.to_string bytecode)
-          % "--prefix"
+          % "--control-dir"
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%")
           % "--msys2-dir"
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%/tools/MSYS2")
@@ -157,7 +157,7 @@ let execute_uninstall_user ctx =
       let cmd =
         Cmd.(
           v (Fpath.to_string bytecode)
-          % "--prefix"
+          % "--control-dir"
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%")
           % "--scripts-dir"
           % Fpath.to_string important_paths.scriptsdir
