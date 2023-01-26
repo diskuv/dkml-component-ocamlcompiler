@@ -297,6 +297,15 @@ $OCamlLangGitCommit = switch ($OCamlLangVersion)
 $HasOcamlNat = switch ($OCamlLangVersion)
 {
     "4.14.0" {$True; Break}
+    "4.14.1" {$True; Break}
+    "4.14.2" {$True; Break}
+    "4.14.3" {$True; Break}
+    "4.14.4" {$True; Break}
+    "4.14.5" {$True; Break}
+    "4.14.6" {$True; Break}
+    "4.14.7" {$True; Break}
+    "4.14.8" {$True; Break}
+    "4.14.9" {$True; Break}
     default {
         # 5.x comes with the native ocaml toplevel; assume 6.x, etc. do the same
         -not ($OcamlLangVersion -match "^4[.]")
