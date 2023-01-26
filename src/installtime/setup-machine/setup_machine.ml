@@ -43,7 +43,7 @@ let setup (_ : Dkml_install_api.Log_config.t) scripts_dir dkml_dir temp_dir
       exit (Dkml_install_api.Forward_progress.Exit_code.to_int_exitcode ec)
 
 let scripts_dir_t =
-  Arg.(required & opt (some string) None & info [ "scripts-dir" ])
+  Arg.(required & opt (some dir) None & info [ "scripts-dir" ])
 
 let dkml_dir_t = Arg.(required & opt (some string) None & info [ "dkml-dir" ])
 
