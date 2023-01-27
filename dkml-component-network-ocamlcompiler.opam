@@ -164,15 +164,15 @@ pin-depends: [
     "git+https://github.com/diskuv/dkml-component-opam.git"
   ]
   [
-    "dkml-component-staging-desktop-compile.0.1.0"
+    "dkml-component-staging-desktop-compile.1.2.0"
     "git+https://gitlab.com/diskuv-ocaml/components/dkml-component-desktop.git"
   ]
   [
-    "dkml-component-staging-dkmlconfdir.0.1.0"
+    "dkml-component-staging-dkmlconfdir.1.2.0"
     "git+https://gitlab.com/diskuv-ocaml/components/dkml-component-desktop.git"
   ]
   [
-    "dkml-component-staging-withdkml.0.1.0"
+    "dkml-component-staging-withdkml.1.2.0"
     "git+https://gitlab.com/diskuv-ocaml/components/dkml-component-desktop.git"
   ]
 ]
