@@ -70,7 +70,7 @@
 .Parameter OpamExe
     The location of a pre-existing opam.exe.
 .Parameter GlobalCompileDir
-    The directory containing global-compile.ci.txt and global-compile.full.txt.
+    The directory containing global-compile.ci.txt and/or global-compile.full.txt.
     They contain the opam package versions for each flavor (lowercase).
 .Parameter MSYS2Dir
     The MSYS2 installation directory.
