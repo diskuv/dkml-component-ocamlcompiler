@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "dkml-component-network-ocamlcompiler"
-version: "4.14.0~1.2.0"
+version: "4.14.0~1.2.1~prerel1"
 synopsis: "DKML component for ocamlcompiler"
 description:
   "Network installed component for OCaml bytecode and native compiler"
@@ -179,8 +179,8 @@ pin-depends: [
 ]
 # dkml-compiler managed by diskuv-ocaml's release.sh
 extra-source "dl/dkml-compiler.tar.gz" {
-  src: "https://github.com/diskuv/dkml-compiler/archive/refs/tags/1.2.0.tar.gz"
+  src: "https://github.com/diskuv/dkml-compiler/archive/refs/tags/1.2.1-prerel1.tar.gz"
   checksum: [
-    "sha256=ca339cfd3f712fd21d39ca1a9acfb0bec9cbff465e2621f5c2072056c5760e58"
+    "sha256=91680d52cfa009f2f94eb80b78c8a1be248a7d474dde3a64730dc99d65a55516"
   ]
 }
