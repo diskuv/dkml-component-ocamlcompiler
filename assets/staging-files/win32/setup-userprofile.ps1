@@ -240,6 +240,7 @@ Import-Module UnixInvokers
 Import-Module Machine
 Import-Module DeploymentVersion
 Import-Module DeploymentHash # for Get-Sha256Hex16OfText
+Import-Module ListingParser
 
 # Make sure not Run as Administrator
 if ([System.Environment]::OSVersion.Platform -eq "Win32NT") {
@@ -320,60 +321,22 @@ $HasOcamlNat = switch ($OCamlLangVersion)
 $NinjaVersion = "1.10.2"
 $CMakeVersion = "3.21.1"
 $InotifyTag = "36d18f3dfe042b21d7136a1479f08f0d8e30e2f9"
-$OCamlBinaries = @(
-    "flexlink.exe"
-    "ocaml.exe"
-    "ocamlc.byte.exe"
-    "ocamlc.exe"
-    "ocamlc.opt.exe"
-    "ocamlcmt.exe"
-    "ocamlcp.byte.exe"
-    "ocamlcp.exe"
-    "ocamlcp.opt.exe"
-    "ocamldebug.exe"
-    "ocamldep.byte.exe"
-    "ocamldep.exe"
-    "ocamldep.opt.exe"
-    "ocamldoc.exe"
-    "ocamldoc.opt.exe"
-    "ocamllex.byte.exe"
-    "ocamllex.exe"
-    "ocamllex.opt.exe"
-    "ocamlmklib.byte.exe"
-    "ocamlmklib.exe"
-    "ocamlmklib.opt.exe"
-    "ocamlmktop.byte.exe"
-    "ocamlmktop.exe"
-    "ocamlmktop.opt.exe"
-    "ocamlobjinfo.byte.exe"
-    "ocamlobjinfo.exe"
-    "ocamlobjinfo.opt.exe"
-    "ocamlopt.byte.exe"
-    "ocamlopt.exe"
-    "ocamlopt.opt.exe"
-    "ocamloptp.byte.exe"
-    "ocamloptp.exe"
-    "ocamloptp.opt.exe"
-    "ocamlprof.byte.exe"
-    "ocamlprof.exe"
-    "ocamlprof.opt.exe"
-    "ocamlrun.exe"
-    "ocamlrund.exe"
-    "ocamlruni.exe"
-    "ocamlyacc.exe"
-)
-if ($HasOcamlNat) {
-    $OCamlBinaries = @(
-        "ocamlnat.exe"
-        $OCamlBinaries
-    )
-}
-$CiFlavorBinaries = @(
-    # ocamlfind
-    "ocamlfind.exe"
-    # ocaml
+$ListingPath = Join-Path $HereDir -ChildPath "files"
+$OCamlBinaries = Get-InstallationBinaries `
+    -Part ocaml `
+    -ListingPath $ListingPath `
+    -Abi $DkmlHostAbi `
+    -OCamlVer $OCamlLangVersion
+$FlavorBinariesOnly = Get-InstallationBinaries `
+    -Part $Flavor.ToLower() `
+    -ListingPath $ListingPath `
+    -Abi $DkmlHostAbi `
+    -OCamlVer $OCamlLangVersion
+$FlavorBinaries = @(
     $OCamlBinaries
-)
+    $FlavorBinariesOnly)
+Write-Information "Setting up OCaml binaries: $OCamlBinaries"
+Write-Information "Setting up flavor binaries: $FlavorBinariesOnly"
 $CiFlavorStubs = @(
     # Stubs are important if the binaries need them.
     #   C:\Users\you>utop
@@ -387,12 +350,6 @@ $CiFlavorToplevels = @(
     # switch that may be deleted later).
     "topfind"
 )
-$FullFlavorBinaries = @(
-    # ci
-    $CiFlavorBinaries
-    # full
-    "utop.exe"
-    "utop-full.exe")
 $FullFlavorStubs = @(
     # Stubs are important if the binaries need them.
     #   C:\Users\you>utop
@@ -414,11 +371,9 @@ $FullFlavorToplevels = @(
     # full
 )
 if ($Flavor -eq "Full") {
-    $FlavorBinaries = $FullFlavorBinaries
     $FlavorStubs = $FullFlavorStubs
     $FlavorToplevels = $FullFlavorToplevels
 } elseif ($Flavor -eq "CI") {
-    $FlavorBinaries = $CiFlavorBinaries
     $FlavorStubs = $CiFlavorStubs
     $FlavorToplevels = $CiFlavorToplevels
 }
@@ -1349,7 +1304,7 @@ try {
 
     # Flavor binaries
     if (!(Test-Path -Path $ProgramGeneralBinDir)) { New-Item -Path $ProgramGeneralBinDir -ItemType Directory | Out-Null }
-    foreach ($binary in $FlavorBinaries) {
+    foreach ($binary in $FlavorBinariesOnly) {
         Copy-DkmlFile -OpamFile "bin\$binary" -Destination "$ProgramGeneralBinDir\$binary"
     }
 
