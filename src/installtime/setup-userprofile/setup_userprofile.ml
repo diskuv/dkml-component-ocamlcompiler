@@ -8,8 +8,8 @@ open Dkml_install_api
 module Arg = Cmdliner.Arg
 module Term = Cmdliner.Term
 
-let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi control_dir
-    msys2_dir opam_exe vcpkg global_compile_dir dkml_confdir_exe =
+let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
+    control_dir msys2_dir opam_exe vcpkg global_compile_dir dkml_confdir_exe =
   let model_conf =
     Staging_dkmlconfdir_api.Conf_loader.create_from_system_confdir
       ~unit_name:"ocamlcompiler" ~dkml_confdir_exe
@@ -60,8 +60,8 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi control_dir
          has great upgrading ability, it has been quite troublesome to do that
          during an installation. Confer:
          https://github.com/diskuv/dkml-installer-ocaml/issues/25.
-      *)
-    Ocamlcompiler_common.uninstall_controldir ~control_dir;
+    *)
+    Ocamlcompiler_common.uninstall_controldir ~control_dir ~target_abi;
     (* We cannot directly call PowerShell because we likely do not have
        administrator rights.
 
@@ -81,10 +81,11 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir abi control_dir
       Cmd.(
         v (Fpath.to_string setup_bat)
         % "-AllowRunAsAdmin" % "-InstallationPrefix" % control_dir_83
-        % "-MSYS2Dir" % msys2_dir_83 % "-OpamExe" % opam_exe_83 % "-DkmlPath"
-        % dkml_path_83 % "-GlobalCompileDir" % global_compile_dir_83
-        % "-NoDeploymentSlot" % "-DkmlHostAbi"
-        % Context.Abi_v2.to_canonical_string abi
+        % "-OCamlLangVersion" % Ocamlcompiler_common.ocaml_ver % "-MSYS2Dir"
+        % msys2_dir_83 % "-OpamExe" % opam_exe_83 % "-DkmlPath" % dkml_path_83
+        % "-GlobalCompileDir" % global_compile_dir_83 % "-NoDeploymentSlot"
+        % "-DkmlHostAbi"
+        % Context.Abi_v2.to_canonical_string target_abi
         % "-TempParentPath" % temp_dir_83 % "-SkipProgress" % "-SkipMSYS2Update")
     in
     let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
@@ -120,12 +121,12 @@ let global_compile_dir_t =
 
 let opam_exe_t = Arg.(required & opt (some file) None & info [ "opam-exe" ])
 
-let abi_t =
+let target_abi_t =
   let open Context.Abi_v2 in
   let l =
     List.map (fun v -> (to_canonical_string v, v)) Context.Abi_v2.values
   in
-  Arg.(required & opt (some (enum l)) None & info [ "abi" ])
+  Arg.(required & opt (some (enum l)) None & info [ "target-abi" ])
 
 let vcpkg_t = Arg.(value & flag & info [ "vcpkg" ])
 
@@ -150,7 +151,7 @@ let () =
   let t =
     Term.
       ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-        $ abi_t $ control_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t
+        $ target_abi_t $ control_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t
         $ global_compile_dir_t $ dkml_confdir_exe_t,
         info "setup-userprofile.bc"
           ~doc:

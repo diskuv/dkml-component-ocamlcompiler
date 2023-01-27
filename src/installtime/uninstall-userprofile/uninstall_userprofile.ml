@@ -33,7 +33,7 @@ let uninstall_env ~scripts_dir ~control_dir ~is_audit =
   log_spawn_onerror_exit ~id:"a0d16230" cmd;
   Ok ()
 
-let do_uninstall ~scripts_dir ~control_dir ~is_audit =
+let do_uninstall ~scripts_dir ~control_dir ~is_audit ~target_abi =
   Dkml_install_api.Forward_progress.lift_result __POS__ Fmt.lines
     Dkml_install_api.Forward_progress.stderr_fatallog
   @@ Rresult.R.reword_error (Fmt.str "%a" Rresult.R.pp_msg)
@@ -41,11 +41,11 @@ let do_uninstall ~scripts_dir ~control_dir ~is_audit =
   let ( let* ) = Rresult.R.bind in
   let* control_dir = Fpath.of_string control_dir in
   let* () = uninstall_env ~scripts_dir ~control_dir ~is_audit in
-  Ocamlcompiler_common.uninstall_controldir ~control_dir;
+  Ocamlcompiler_common.uninstall_controldir ~control_dir ~target_abi;
   Ok ()
 
-let uninstall (_ : Log_config.t) scripts_dir control_dir is_audit =
-  match do_uninstall ~scripts_dir ~control_dir ~is_audit with
+let uninstall (_ : Log_config.t) scripts_dir control_dir is_audit target_abi =
+  match do_uninstall ~scripts_dir ~control_dir ~is_audit ~target_abi with
   | Completed | Continue_progress ((), _) -> ()
   | Halted_progress ec ->
       exit (Dkml_install_api.Forward_progress.Exit_code.to_int_exitcode ec)
@@ -57,6 +57,13 @@ let control_dir_t =
   Arg.(required & opt (some string) None & info [ "control-dir" ])
 
 let is_audit_t = Arg.(value & flag & info [ "audit-only" ])
+
+let target_abi_t =
+  let open Context.Abi_v2 in
+  let l =
+    List.map (fun v -> (to_canonical_string v, v)) Context.Abi_v2.values
+  in
+  Arg.(required & opt (some (enum l)) None & info [ "target-abi" ])
 
 let uninstall_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
@@ -72,7 +79,7 @@ let () =
   let t =
     Term.
       ( const uninstall $ uninstall_log_t $ scripts_dir_t $ control_dir_t
-        $ is_audit_t,
+        $ is_audit_t $ target_abi_t,
         info "uninstall-userprofile.bc" ~doc:"Uninstall OCaml" )
   in
   Term.(exit @@ eval t)

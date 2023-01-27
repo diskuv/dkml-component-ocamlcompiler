@@ -22,7 +22,6 @@ BeforeAll {
 }
 
 Describe 'Test-InstallationBinary -Line' {
-    
     It 'Given [flexlink    windows_.*  .*] when -Abi=darwin_x86_64 then fails' {
         Test-InstallationBinary -Line "flexlink`twindows_.*`t.*" -Abi "darwin_x86_64" | Should -BeNullOrEmpty
     }
@@ -41,6 +40,8 @@ Describe 'Test-InstallationBinary -Line' {
 }
 
 Describe 'Get-InstallationBinaries' {
+    # Same tests exist in test_common.ml
+    
     It 'Given -Part ocaml when -Abi darwin_x86_64 then includes ocamlc.opt' {
         Get-InstallationBinaries -Part ocaml -ListingPath $ListingPath -Abi "darwin_x86_64" -OCamlVer "y" | Should -Contain "ocamlc.opt"
     }

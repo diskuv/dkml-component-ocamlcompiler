@@ -1,4 +1,24 @@
+(rule
+ (deps
+  (glob_files ../../assets/staging-files/win32/files/*.install))
+ (target installation_files.ml)
+ (action
+  (run
+   ocaml-crunch
+   -m
+   plain
+   -o
+   %{target}
+   ../../assets/staging-files/win32/files)))
+
 (library
  (name ocamlcompiler_common)
  (public_name dkml-component-network-ocamlcompiler.common)
- (libraries bos dkml-install.api fpath))
+ (modules
+  (:standard \ test_common))
+ (libraries bos dkml-install.api fpath re))
+
+(test
+ (name test_common)
+ (modules test_common)
+ (libraries alcotest ocamlcompiler_common))

@@ -46,9 +46,7 @@ let scripts_dir_t =
   Arg.(required & opt (some dir) None & info [ "scripts-dir" ])
 
 let dkml_dir_t = Arg.(required & opt (some string) None & info [ "dkml-dir" ])
-
 let tmp_dir_t = Arg.(required & opt (some string) None & info [ "temp-dir" ])
-
 let vcpkg_t = Arg.(value & flag & info [ "vcpkg" ])
 
 let setup_log style_renderer level =
