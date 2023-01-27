@@ -161,10 +161,25 @@ let uninstall_controldir ~control_dir ~target_abi =
   let files = root_files @ usr_bin_files in
   List.iter
     (fun relname ->
+      let ( let* ) = Result.bind in
+      let open Bos in
       let filenm = Fpath.(control_dir // v relname) in
-      match Bos.OS.File.delete filenm with
+      let sequence =
+        let* exists = OS.File.exists filenm in
+        if exists then
+          (* With Windows cannot delete the file using OS.File.delete if it
+             is readonly *)
+          let* () = OS.Path.Mode.set filenm 0o644 in
+          OS.File.delete filenm
+        else Ok ()
+      in
+      match sequence with
       | Error msg ->
-          Logs.warn (fun l ->
-              l "Could not delete %a. %a" Fpath.pp filenm Rresult.R.pp_msg msg)
+          Dkml_install_api.Forward_progress.stderr_fatallog ~id:"514cf711"
+            (Fmt.str "Could not delete %a. %a" Fpath.pp filenm Rresult.R.pp_msg
+               msg);
+          exit
+            (Dkml_install_api.Forward_progress.Exit_code.to_int_exitcode
+               Exit_transient_failure)
       | Ok () -> ())
     files
