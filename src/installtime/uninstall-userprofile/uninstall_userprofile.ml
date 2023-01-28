@@ -1,11 +1,6 @@
-(* Cmdliner 1.0 -> 1.1 deprecated a lot of things. But until Cmdliner 1.1
-   is in common use in Opam packages we should provide backwards compatibility.
-   In fact, Diskuv OCaml is not even using Cmdliner 1.1. *)
-[@@@alert "-deprecated"]
-
-open Bos
 open Dkml_install_api
 module Arg = Cmdliner.Arg
+module Cmd = Cmdliner.Cmd
 module Term = Cmdliner.Term
 
 (* Call the PowerShell (legacy!) uninstall-userprofile.ps1 script
@@ -23,13 +18,13 @@ let uninstall_env ~scripts_dir ~control_dir ~is_audit =
   let to83 = Ocamlcompiler_common.Os.Windows.get_dos83_short_path in
   let* control_dir_83 = to83 control_dir in
   let cmd =
-    Cmd.(
+    Bos.Cmd.(
       v (Fpath.to_string uninstall_bat)
       % "-InstallationPrefix" % control_dir_83 % "-NoDeploymentSlot"
       % "-SkipProgress")
   in
-  let cmd = if is_audit then Cmd.(cmd % "-AuditOnly") else cmd in
-  Logs.info (fun l -> l "Uninstalling OCaml with@ @[%a@]" Cmd.pp cmd);
+  let cmd = if is_audit then Bos.Cmd.(cmd % "-AuditOnly") else cmd in
+  Logs.info (fun l -> l "Uninstalling OCaml with@ @[%a@]" Bos.Cmd.pp cmd);
   log_spawn_onerror_exit ~id:"a0d16230" cmd;
   Ok ()
 
@@ -77,9 +72,9 @@ let uninstall_log_t =
 
 let () =
   let t =
-    Term.
-      ( const uninstall $ uninstall_log_t $ scripts_dir_t $ control_dir_t
-        $ is_audit_t $ target_abi_t,
-        info "uninstall-userprofile.bc" ~doc:"Uninstall OCaml" )
+    Term.(
+      const uninstall $ uninstall_log_t $ scripts_dir_t $ control_dir_t
+      $ is_audit_t $ target_abi_t)
   in
-  Term.(exit @@ eval t)
+  let info = Cmd.info "uninstall-userprofile.bc" ~doc:"Uninstall OCaml" in
+  exit (Cmd.eval (Cmd.v info t))

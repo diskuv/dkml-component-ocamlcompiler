@@ -1,10 +1,5 @@
-(* Cmdliner 1.0 -> 1.1 deprecated a lot of things. But until Cmdliner 1.1
-   is in common use in Opam packages we should provide backwards compatibility.
-   In fact, Diskuv OCaml is not even using Cmdliner 1.1. *)
-[@@@alert "-deprecated"]
-
-open Bos
 module Arg = Cmdliner.Arg
+module Cmd = Cmdliner.Cmd
 module Term = Cmdliner.Term
 
 let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~vcpkg =
@@ -25,13 +20,14 @@ let setup_res ~scripts_dir ~dkml_dir ~temp_dir ~vcpkg =
   @@ let* dkml_path_83 = to83 (Fpath.v dkml_dir) in
      let* temp_dir_83 = to83 (Fpath.v temp_dir) in
      let cmd =
-       Cmd.(
+       Bos.Cmd.(
          v (Fpath.to_string setup_machine_bat)
          % "-DkmlPath" % dkml_path_83 % "-TempParentPath" % temp_dir_83
          % "-SkipProgress" % "-AllowRunAsAdmin")
      in
-     let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
-     Logs.info (fun l -> l "Installing Visual Studio with@ @[%a@]" Cmd.pp cmd);
+     let cmd = if vcpkg then Bos.Cmd.(cmd % "-VcpkgCompatibility") else cmd in
+     Logs.info (fun l ->
+         l "Installing Visual Studio with@ @[%a@]" Bos.Cmd.pp cmd);
      Dkml_install_api.log_spawn_onerror_exit ~id:"118acf2a" cmd;
      Ok ()
 
@@ -61,9 +57,9 @@ let setup_log_t =
 
 let () =
   let t =
-    Term.
-      ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-        $ vcpkg_t,
-        info "setup-machine.bc" ~doc:"Install Visual Studio" )
+    Term.(
+      const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
+      $ vcpkg_t)
   in
-  Term.(exit @@ eval t)
+  let info = Cmd.info "setup-machine.bc" ~doc:"Install Visual Studio" in
+  exit (Cmd.eval (Cmd.v info t))

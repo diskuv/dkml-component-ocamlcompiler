@@ -1,11 +1,6 @@
-(* Cmdliner 1.0 -> 1.1 deprecated a lot of things. But until Cmdliner 1.1
-   is in common use in Opam packages we should provide backwards compatibility.
-   In fact, Diskuv OCaml is not even using Cmdliner 1.1. *)
-[@@@alert "-deprecated"]
-
-open Bos
 open Dkml_install_api
 module Arg = Cmdliner.Arg
+module Cmd = Cmdliner.Cmd
 module Term = Cmdliner.Term
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
@@ -20,7 +15,7 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
     @@ Rresult.R.reword_error (Fmt.str "%a" Rresult.R.pp_msg)
     @@
     let ( let* ) = Rresult.R.bind in
-    let* cygpath_opt = OS.Cmd.find_tool (Cmd.v "cygpath") in
+    let* cygpath_opt = Bos.OS.Cmd.find_tool (Bos.Cmd.v "cygpath") in
     let* () =
       match cygpath_opt with
       | None -> Ok ()
@@ -78,7 +73,7 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
     let* temp_dir_83 = to83 temp_dir in
     let* global_compile_dir_83 = to83 global_compile_dir in
     let cmd =
-      Cmd.(
+      Bos.Cmd.(
         v (Fpath.to_string setup_bat)
         % "-AllowRunAsAdmin" % "-InstallationPrefix" % control_dir_83
         % "-OCamlLangVersion" % Ocamlcompiler_common.ocaml_ver % "-MSYS2Dir"
@@ -88,15 +83,15 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
         % Context.Abi_v2.to_canonical_string target_abi
         % "-TempParentPath" % temp_dir_83 % "-SkipProgress" % "-SkipMSYS2Update")
     in
-    let cmd = if vcpkg then Cmd.(cmd % "-VcpkgCompatibility") else cmd in
+    let cmd = if vcpkg then Bos.Cmd.(cmd % "-VcpkgCompatibility") else cmd in
     let cmd =
       if Model_conf.feature_flag_imprecise_c99_float_ops model_conf then (
         Logs.info (fun l -> l "Using [feature_flag_imprecise_c99_float_ops]");
-        Cmd.(cmd % "-ImpreciseC99FloatOps"))
+        Bos.Cmd.(cmd % "-ImpreciseC99FloatOps"))
       else cmd
     in
     Logs.info (fun l ->
-        l "Installing Git, OCaml and other tools with@ @[%a@]" Cmd.pp cmd);
+        l "Installing Git, OCaml and other tools with@ @[%a@]" Bos.Cmd.pp cmd);
     log_spawn_onerror_exit ~id:"a0d16230" cmd;
     Ok ()
   in
@@ -149,13 +144,15 @@ let setup_log_t =
 
 let () =
   let t =
-    Term.
-      ( const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-        $ target_abi_t $ control_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t
-        $ global_compile_dir_t $ dkml_confdir_exe_t,
-        info "setup-userprofile.bc"
-          ~doc:
-            "Install Git for Windows and Opam, and compiles OCaml and some \
-             useful OCaml programs" )
+    Term.(
+      const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
+      $ target_abi_t $ control_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t
+      $ global_compile_dir_t $ dkml_confdir_exe_t)
   in
-  Term.(exit @@ eval t)
+  let info =
+    Cmd.info "setup-userprofile.bc"
+      ~doc:
+        "Install Git for Windows and Opam, and compiles OCaml and some useful \
+         OCaml programs"
+  in
+  exit (Cmd.eval (Cmd.v info t))
