@@ -1,3 +1,3 @@
-# BINARY WITHOUT .EXE <TAB> ABI REGEX <TAB> VERSION REGEX
+# BINARY WITHOUT .EXE <TAB> EXTENSION ON WINDOWS <TAB> EXTENSION ON NON-WINDOWS <TAB> ABI REGEX <TAB> VERSION REGEX
 # Author Note: In Full we must include the CI files
-ocamlfind	.*	.*
+ocamlfind	.exe		.*	.*

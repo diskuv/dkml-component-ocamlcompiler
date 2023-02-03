@@ -39,9 +39,6 @@ end
 
 let ocaml_ver = "4.14.0"
 
-let get_exe_ext target_abi =
-  if Dkml_install_api.Context.Abi_v2.is_windows target_abi then ".exe" else ""
-
 let get_install_files ~part ~target_abi ~ocaml_ver =
   match Installation_files.read (part ^ ".install") with
   | None ->
@@ -72,13 +69,18 @@ let get_install_files ~part ~target_abi ~ocaml_ver =
           (fun line -> not (String.is_prefix ~affix:"#" line))
           lines_non_empty
       in
+      let add_ext filename ~ext_win32 ~ext_non_win32 =
+        if Dkml_install_api.Context.Abi_v2.is_windows target_abi then
+          filename ^ ext_win32
+        else filename ^ ext_non_win32
+      in
       let list_of_tuples =
         (* Convert lines into (binary, abi regex, version regex) *)
         List.map
           (fun line ->
             match String.cuts ~sep:"\t" line with
-            | [ binary; abi_regex; version_regex ] ->
-                ( binary,
+            | [ binary; ext_win32; ext_non_win32; abi_regex; version_regex ] ->
+                ( add_ext binary ~ext_win32 ~ext_non_win32,
                   Re.Posix.compile_pat ("^" ^ abi_regex ^ "$"),
                   Re.Posix.compile_pat ("^" ^ version_regex ^ "$") )
             | _ ->
@@ -87,15 +89,14 @@ let get_install_files ~part ~target_abi ~ocaml_ver =
                      (Printf.sprintf "Invalid .install line: %s" line)))
           lines_no_comments
       in
-      let exe_ext = get_exe_ext target_abi in
       let matching_binaries =
         List.filter_map
-          (fun (binary, abi_regex, version_regex) ->
+          (fun (binary_with_ext, abi_regex, version_regex) ->
             match
               ( Re.execp abi_regex target_abi_string,
                 Re.execp version_regex ocaml_ver )
             with
-            | true, true -> Some (binary ^ exe_ext)
+            | true, true -> Some binary_with_ext
             | _ -> None)
           list_of_tuples
       in

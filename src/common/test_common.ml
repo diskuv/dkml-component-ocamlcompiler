@@ -20,11 +20,18 @@ let () =
           test_case "ocaml-darwin_x86_64-includes-ocamlc.opt" `Quick
             (test_contains ~part:"ocaml" ~target_abi:Darwin_x86_64
                ~ocaml_ver:"y" ~contains:"ocamlc.opt");
-          test_case "ocaml-darwin_x86_64-includes-ocamlc.opt" `Quick
+          test_case "ci-darwin_x86_64-notincludes-ocamlc.opt" `Quick
             (test_not_contains ~part:"ci" ~target_abi:Darwin_x86_64
                ~ocaml_ver:"y" ~contains:"ocamlc.opt");
+          test_case "full-darwin_x86_64-includes-utop" `Quick
+            (test_contains ~part:"full" ~target_abi:Darwin_x86_64 ~ocaml_ver:"y"
+               ~contains:"utop");
           test_case "ocaml-windows_x86_64-includes-ocamlc.opt.exe" `Quick
             (test_contains ~part:"ocaml" ~target_abi:Windows_x86_64
                ~ocaml_ver:"y" ~contains:"ocamlc.opt.exe");
+          test_case "ocaml-windows_x86_64-includes-flexdll_initer_msvc64.obj"
+            `Quick
+            (test_contains ~part:"ocaml" ~target_abi:Windows_x86_64
+               ~ocaml_ver:"y" ~contains:"flexdll_initer_msvc64.obj");
         ] );
     ]
