@@ -1239,6 +1239,13 @@ try {
                 "$ProgramMSYS2AbsPath"
                 "-o"
                 "$OpamExe"
+                # AUTHORITATIVE OPTIONS = dkml-runtime-apps's [cmd_init.ml]. Aka: [dkml init]
+                "-e"
+                "PKG_CONFIG_PATH=$MSYS2Dir\clang64\lib\pkgconfig"
+                "-e"
+                "PKG_CONFIG_SYSTEM_INCLUDE_PATH="
+                "-e"
+                "PKG_CONFIG_SYSTEM_LIBRARY_PATH="
                 "-m"
                 "conf-withdkml"))
 
