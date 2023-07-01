@@ -24,7 +24,6 @@ opam pin dkml-component-staging-withdkml git+https://gitlab.com/diskuv-ocaml/com
 $ocshare = opam var dkml-component-network-ocamlcompiler:share
 $op32share = opam var dkml-component-staging-opam32:share
 $op64share = opam var dkml-component-staging-opam64:share
-$desktopshare = opam var dkml-component-staging-desktop-compile:share
 $fullshare = opam var dkml-component-staging-desktop-full:share
 $withdkmlshare = opam var dkml-component-staging-withdkml:share
 $confshare = opam var dkml-component-staging-dkmlconfdir:share
@@ -63,7 +62,6 @@ _build/default/src/installtime/setup-machine/setup_machine.exe `
 opam exec -- dune build src/installtime/setup-userprofile/setup_userprofile.exe
 _build/default/src/installtime/setup-userprofile/setup_userprofile.exe `
     --scripts-dir=assets\staging-files\win32 `
-    --global-compile-dir="$desktopshare\staging-files\generic" `
     --dkml-confdir-exe="$confshare\staging-files\windows_x86_64\bin\dkml-confdir.exe" `
     --control-dir="$env:TEMP\ocamlcompiler-up" `
     --temp-dir="$env:TEMP\ocamlcompiler-t" `

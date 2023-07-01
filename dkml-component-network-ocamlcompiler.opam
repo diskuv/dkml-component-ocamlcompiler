@@ -19,7 +19,6 @@ depends: [
   "diskuvbox" {>= "0.1.0"}
   "dkml-component-offline-unixutils" {>= "0.1.0"}
   "dkml-component-staging-ocamlrun" {>= "4.12.1~"}
-  "dkml-component-staging-desktop-compile" {>= "0.1.0"}
   "dkml-component-staging-dkmlconfdir" {>= "0.1.0"}
   "dkml-component-offline-opamshim"
     {>= "2.2.0~" & < "2.2.0~dkml20220000" | > "2.2.0~dkml99999999"}

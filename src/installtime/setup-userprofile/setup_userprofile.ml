@@ -4,7 +4,7 @@ module Cmd = Cmdliner.Cmd
 module Term = Cmdliner.Term
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
-    control_dir msys2_dir opam_exe vcpkg global_compile_dir dkml_confdir_exe =
+    control_dir msys2_dir opam_exe vcpkg dkml_confdir_exe =
   let model_conf =
     Staging_dkmlconfdir_api.Conf_loader.create_from_system_confdir
       ~unit_name:"ocamlcompiler" ~dkml_confdir_exe
@@ -38,7 +38,6 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
     let* opam_exe = Fpath.of_string opam_exe in
     let* dkml_dir = Fpath.of_string dkml_dir in
     let* msys2_dir = Fpath.of_string msys2_dir in
-    let* global_compile_dir = Fpath.of_string global_compile_dir in
     (* Uninstall the old control directory. For now we don't have the
        formal concept of a data directory, although the default Opam root is
        the defacto data directory today. We do _not_ uninstall the
@@ -71,14 +70,13 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
     let* opam_exe_83 = to83 opam_exe in
     let* dkml_path_83 = to83 dkml_dir in
     let* temp_dir_83 = to83 temp_dir in
-    let* global_compile_dir_83 = to83 global_compile_dir in
     let cmd =
       Bos.Cmd.(
         v (Fpath.to_string setup_bat)
         % "-AllowRunAsAdmin" % "-InstallationPrefix" % control_dir_83
         % "-OCamlLangVersion" % Ocamlcompiler_common.ocaml_ver % "-MSYS2Dir"
         % msys2_dir_83 % "-OpamExe" % opam_exe_83 % "-DkmlPath" % dkml_path_83
-        % "-GlobalCompileDir" % global_compile_dir_83 % "-NoDeploymentSlot"
+        % "-NoDeploymentSlot"
         % "-DkmlHostAbi"
         % Context.Abi_v2.to_canonical_string target_abi
         % "-TempParentPath" % temp_dir_83 % "-SkipProgress" % "-SkipMSYS2Update")
@@ -110,9 +108,6 @@ let control_dir_t =
   Arg.(required & opt (some string) None & info [ "control-dir" ])
 
 let msys2_dir_t = Arg.(required & opt (some dir) None & info [ "msys2-dir" ])
-
-let global_compile_dir_t =
-  Arg.(required & opt (some dir) None & info [ "global-compile-dir" ])
 
 let opam_exe_t = Arg.(required & opt (some file) None & info [ "opam-exe" ])
 
@@ -147,7 +142,7 @@ let () =
     Term.(
       const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
       $ target_abi_t $ control_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t
-      $ global_compile_dir_t $ dkml_confdir_exe_t)
+      $ dkml_confdir_exe_t)
   in
   let info =
     Cmd.info "setup-userprofile.bc"

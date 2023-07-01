@@ -121,9 +121,6 @@ let execute_install_user ctx =
           % "--opam-exe"
           % Fpath.to_string
               (ctx.Context.path_eval "%{prefix}%/bin/opam-real.exe")
-          % "--global-compile-dir"
-          % Fpath.to_string
-              (ctx.Context.path_eval "%{staging-desktop-compile:share-generic}%")
           % "--target-abi"
           % Context.Abi_v2.to_canonical_string ctx.Context.target_abi_v2
           % "--dkml-dir"
@@ -179,7 +176,6 @@ let register () =
           "staging-ocamlrun";
           "offline-unixutils";
           "offline-opamshim";
-          "staging-desktop-compile";
         ]
 
       let uninstall_depends_on = [ "staging-ocamlrun" ]

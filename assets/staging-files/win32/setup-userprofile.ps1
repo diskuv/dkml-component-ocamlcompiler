@@ -69,9 +69,6 @@
     Defaults to 4.14.0
 .Parameter OpamExe
     The location of a pre-existing opam.exe.
-.Parameter GlobalCompileDir
-    The directory containing global-compile.ci.txt and/or global-compile.full.txt.
-    They contain the opam package versions for each flavor (lowercase).
 .Parameter MSYS2Dir
     The MSYS2 installation directory.
 .Parameter DkmlHostAbi
@@ -153,7 +150,7 @@
 #     Target="CygwinPackagesArch")]
 [CmdletBinding()]
 param (
-    [ValidateSet("CI", "Full")]
+    [ValidateSet("Dune", "CI", "Full")]
     [string]
     $Flavor = 'Full',
     [ValidateSet("4.12.1", "4.14.0")]
@@ -165,9 +162,6 @@ param (
     [Parameter(Mandatory)]
     [string]
     $OpamExe,
-    [Parameter(Mandatory)]
-    [string]
-    $GlobalCompileDir,
     [Parameter(Mandatory)]
     [string]
     $MSYS2Dir,
@@ -1188,10 +1182,6 @@ try {
 
     # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
     if (!$global:SkipOpamSetup) {
-        # Parse global-compile.<flavor>.txt
-        [string[]]$GlobalCompileArray = Get-Content -Path "$GlobalCompileDir/global-compile.$($Flavor.ToLower()).txt"
-        [string[]]$GlobalCompileArgs = $GlobalCompileArray | ForEach-Object { @("-a", $_) }
-
         Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
             -Command $MSYS2Env `
             -ArgumentList (
@@ -1204,8 +1194,9 @@ try {
                   "-p"
                   "$DkmlHostAbi"
                   "-o"
-                  "$OpamExe") +
-                $GlobalCompileArgs)
+                  "$OpamExe"
+                  "-f"
+                  "$Flavor"))
         }
 
     # END opam switch create <dkml>
