@@ -57,8 +57,7 @@ build: [
   ["diskuvbox" "copy-file" "%{dkml-runtime-common:lib}%/template.dkmlroot" "dkmldir/.dkmlroot"]
 
   #   <dkmldir>/vendor/dkml-compiler/
-  ["install" "-d" "dkmldir/vendor/dkml-compiler/src"]
-  ["tar" "xCfz" "dkmldir/vendor/dkml-compiler" "dl/dkml-compiler.tar.gz" "--strip-components=1"]
+  ["diskuvbox" "copy-dir" "%{dkml-compiler-src:lib}%/src" "dkmldir/vendor/dkml-compiler"]
 
   # Build component
   [
@@ -122,11 +121,4 @@ extra-source "dl/ocaml.tar.gz" {
 extra-source "dl/flexdll.tar.gz" {
   src: "https://github.com/alainfrisch/flexdll/archive/0.42.tar.gz"
   checksum: "sha256=a2dce0a0d2f2c5c9f52f65e281db7405f51ff22dc71cdbf494eb241c8a4bdf0f"
-}
-# dkml-compiler managed by diskuv-ocaml's release.sh
-extra-source "dl/dkml-compiler.tar.gz" {
-  src: "https://github.com/diskuv/dkml-compiler/archive/refs/tags/1.2.1-prerel1.tar.gz"
-  checksum: [
-    "sha256=91680d52cfa009f2f94eb80b78c8a1be248a7d474dde3a64730dc99d65a55516"
-  ]
 }
