@@ -295,7 +295,6 @@ $OCamlLangGitCommit = switch ($OCamlLangVersion)
 # * Immutable git
 $NinjaVersion = "1.10.2"
 $CMakeVersion = "3.21.1"
-$InotifyTag = "36d18f3dfe042b21d7136a1479f08f0d8e30e2f9"
 $ListingPath = Join-Path $HereDir -ChildPath "files"
 $OCamlBinaries = Get-InstallationBinaries `
     -Part ocaml `
@@ -361,7 +360,7 @@ $BinHash = Get-Sha256Hex16OfText -Text ($FlavorBinaries -join ',')
 $StubHash = Get-Sha256Hex16OfText -Text ($FlavorStubs -join ',')
 $ToplevelsHash = Get-Sha256Hex16OfText -Text ($FlavorToplevels -join ',')
 $OpamHash = (& "$OpamExe" --version)
-$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;inotify-$InotifyTag;msys2-$MSYS2Hash;docker-$DockerHash;bins-$BinHash;stubs-$StubHash;toplevels-$ToplevelsHash"
+$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;msys2-$MSYS2Hash;docker-$DockerHash;bins-$BinHash;stubs-$StubHash;toplevels-$ToplevelsHash"
 if ($VcpkgCompatibility) {
     $DeploymentId += ";ninja-$NinjaVersion;cmake-$CMakeVersion"
 }
@@ -454,7 +453,7 @@ function Import-DiskuvOCamlAsset {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 10
+$ProgressTotalSteps = 9
 if (-not $SkipMSYS2Update) {
     $ProgressTotalSteps = $ProgressTotalSteps + 1
 }
@@ -831,32 +830,6 @@ function Invoke-MSYS2CommandWithProgress {
 
 $global:AdditionalDiagnostics = "`n`n"
 try {
-
-    # ----------------------------------------------------------------
-    # BEGIN inotify-win
-
-    $global:ProgressActivity = "Install inotify-win"
-    Write-ProgressStep
-
-    $Vcvars = "$($VisualStudioProps.InstallPath)\Common7\Tools\vsdevcmd.bat"
-    $InotifyCacheParentPath = "$TempPath"
-    $InotifyCachePath = "$InotifyCacheParentPath\inotify-win"
-    $InotifyExeBasename = "inotifywait.exe"
-    $InotifyToolDir = "$ProgramPath\tools\inotify-win"
-    $InotifyExe = "$InotifyToolDir\$InotifyExeBasename"
-    if (!(Test-Path -Path $InotifyExe)) {
-        if (!(Test-Path -Path $InotifyToolDir)) { New-Item -Path $InotifyToolDir -ItemType Directory | Out-Null }
-        Remove-DirectoryFully -Path $InotifyCachePath
-        Invoke-Win32CommandWithProgress -FilePath "$GitExe" -ArgumentList @("-C", "$InotifyCacheParentPath", "clone", "https://github.com/thekid/inotify-win.git")
-        Invoke-Win32CommandWithProgress -FilePath "$GitExe" -ArgumentList @("-C", "$InotifyCachePath", "-c", "advice.detachedHead=false", "checkout", "$InotifyTag")
-        Set-Content -Path "$InotifyCachePath\compile.bat" -Value "`"$Vcvars`" -no_logo -vcvars_ver=$($VisualStudioProps.VcVarsVer) -winsdk=$($VisualStudioProps.WinSdkVer) && csc.exe /nologo /target:exe `"/out:$InotifyCachePath\inotifywait.exe`" `"$InotifyCachePath\src\*.cs`""
-        Invoke-Win32CommandWithProgress -FilePath "$env:ComSpec" -ArgumentList @("/c", "call `"$InotifyCachePath\compile.bat`"")
-        Copy-Item -Path "$InotifyCachePath\$InotifyExeBasename" -Destination "$InotifyExe"
-        # if (-not $SkipProgress) { Clear-Host }
-    }
-
-    # END inotify-win
-    # ----------------------------------------------------------------
 
     if ($VcpkgCompatibility) {
         # ----------------------------------------------------------------
