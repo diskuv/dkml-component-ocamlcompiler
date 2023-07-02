@@ -31,7 +31,7 @@ depends: [
   "alcotest" {>= "1.4.0" & with-test}
   "odoc" {with-doc}
 ]
-depopts: ["dkml-option-vcpkg"]
+depopts: ["dkml-compiler-src" "dkml-option-vcpkg"]
 dev-repo:
   "git+https://gitlab.com/diskuv-ocaml/components/dkml-component-ocamlcompiler.git"
 build: [

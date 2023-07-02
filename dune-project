@@ -37,4 +37,7 @@
   (crunch                            (>= 3.3.1))
   (alcotest                          (and (>= 1.4.0) :with-test))
   )
- (depopts dkml-option-vcpkg))
+ (depopts
+  dkml-compiler-src
+  dkml-option-vcpkg)
+)
