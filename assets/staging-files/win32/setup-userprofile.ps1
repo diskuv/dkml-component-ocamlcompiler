@@ -473,7 +473,7 @@ function Import-DiskuvOCamlAsset {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 11
+$ProgressTotalSteps = 10
 if (-not $SkipMSYS2Update) {
     $ProgressTotalSteps = $ProgressTotalSteps + 1
 }
@@ -1107,27 +1107,6 @@ try {
     }
 
     # END Compile/install system ocaml.exe
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
-    # BEGIN Fetch/install fdopen-based ocaml/opam repository
-
-    $global:ProgressActivity = "Install fdopen-based ocaml/opam repository"
-    Write-ProgressStep
-
-    if ((Test-Path -Path "$ProgramPath\share\dkml\repro\$OCamlLangVersion\repo") -and (Test-Path -Path "$ProgramPath\share\dkml\repro\$OCamlLangVersion\pins.txt")) {
-        # Already installed
-    } elseif (Import-DiskuvOCamlAsset `
-            -PackageName "ocaml_opam_repo-reproducible" `
-            -ZipFile "ocaml-opam-repo-$OCamlLangVersion.zip" `
-            -TmpPath "$TempPath" `
-            -DestinationPath "$ProgramPath\share\dkml\repro\$OCamlLangVersion") {
-        # Successfully downloaded from asset
-    } else {
-        throw "The Diskuv OCaml $dkml_root_version asset ocaml_opam_repo-reproducible/ocaml-opam-repo-$OCamlLangVersion.zip has not been created"
-    }
-
-    # END Fetch/install fdopen-based ocaml/opam repository
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
