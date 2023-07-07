@@ -301,66 +301,14 @@ $OCamlBinaries = Get-InstallationBinaries `
     -ListingPath $ListingPath `
     -Abi $DkmlHostAbi `
     -OCamlVer $OCamlLangVersion
-$FlavorBinariesOnly = Get-InstallationBinaries `
-    -Part $Flavor.ToLower() `
-    -ListingPath $ListingPath `
-    -Abi $DkmlHostAbi `
-    -OCamlVer $OCamlLangVersion
-$FlavorBinaries = @(
-    $OCamlBinaries
-    $FlavorBinariesOnly)
 Write-Information "Setting up OCaml binaries: $OCamlBinaries"
-Write-Information "Setting up flavor binaries: $FlavorBinariesOnly"
-$CiFlavorStubs = @(
-    # Stubs are important if the binaries need them.
-    #   C:\Users\you>utop
-    #   Fatal error: cannot load shared library dlllambda_term_stubs
-    #   Reason: The specified module could not be found.
-)
-$CiFlavorToplevels = @(
-    # Special libs are important if the binaries need them.
-    # For example, lib/ocaml/topfind has hardcoded paths and will be auto-installed if not present (so auto-install
-    # can happen from a local project switch which hardcodes the system lib/ocaml/topfind to a local project
-    # switch that may be deleted later).
-    "topfind"
-)
-$FullFlavorStubs = @(
-    # Stubs are important if the binaries need them.
-    #   C:\Users\you>utop
-    #   Fatal error: cannot load shared library dlllambda_term_stubs
-    #   Reason: The specified module could not be found.
-
-    # ci
-    $CiFlavorStubs
-
-    # `utop` stubs
-    "dlllambda_term_stubs.dll"
-    "dlllwt_unix_stubs.dll"
-)
-$FullFlavorToplevels = @(
-    # Toplevels are important if the binaries need them.
-
-    # ci
-    $CiFlavorToplevels
-    # full
-)
-if ($Flavor -eq "Full") {
-    $FlavorStubs = $FullFlavorStubs
-    $FlavorToplevels = $FullFlavorToplevels
-} elseif ($Flavor -eq "CI") {
-    $FlavorStubs = $CiFlavorStubs
-    $FlavorToplevels = $CiFlavorToplevels
-}
 $AllMSYS2Packages = $DV_MSYS2Packages + (DV_MSYS2PackagesAbi -DkmlHostAbi $DkmlHostAbi)
 
 # Consolidate the magic constants into a single deployment id
 $MSYS2Hash = Get-Sha256Hex16OfText -Text ($AllMSYS2Packages -join ',')
 $DockerHash = Get-Sha256Hex16OfText -Text "$DV_WindowsMsvcDockerImage"
-$BinHash = Get-Sha256Hex16OfText -Text ($FlavorBinaries -join ',')
-$StubHash = Get-Sha256Hex16OfText -Text ($FlavorStubs -join ',')
-$ToplevelsHash = Get-Sha256Hex16OfText -Text ($FlavorToplevels -join ',')
 $OpamHash = (& "$OpamExe" --version)
-$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;msys2-$MSYS2Hash;docker-$DockerHash;bins-$BinHash;stubs-$StubHash;toplevels-$ToplevelsHash"
+$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;msys2-$MSYS2Hash;docker-$DockerHash"
 if ($VcpkgCompatibility) {
     $DeploymentId += ";ninja-$NinjaVersion;cmake-$CMakeVersion"
 }
@@ -453,7 +401,7 @@ function Import-DiskuvOCamlAsset {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 9
+$ProgressTotalSteps = 7
 if (-not $SkipMSYS2Update) {
     $ProgressTotalSteps = $ProgressTotalSteps + 1
 }
@@ -1103,39 +1051,6 @@ try {
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
-    # BEGIN opam switch create <dkml>
-
-    if ($StopBeforeInstallSystemSwitch) {
-        Write-Information "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
-        exit 0
-    }
-
-    $global:ProgressActivity = "Create 'dkml' opam local switch"
-    Write-ProgressStep
-
-    # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
-    if (!$global:SkipOpamSetup) {
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command $MSYS2Env `
-            -ArgumentList (
-                $UnixPlusPrecompleteVarsArray +
-                @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
-                  "$DkmlPath\vendor\drd\src\unix\private\create-tools-switch.sh"
-                  "-w"
-                  "-v"
-                  "$ProgramMSYS2AbsPath"
-                  "-p"
-                  "$DkmlHostAbi"
-                  "-o"
-                  "$OpamExe"
-                  "-f"
-                  "$Flavor"))
-        }
-
-    # END opam switch create <dkml>
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
     # BEGIN opam switch create playground
 
     if ($StopBeforeInstallSystemSwitch) {
@@ -1188,74 +1103,6 @@ try {
     }
 
     # END opam switch create playground
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
-    # BEGIN install `dkml` switch binaries to Programs
-
-    $global:ProgressActivity = "Install dkml binaries"
-    Write-ProgressStep
-
-    $DiskuvHostToolsDir = "$ProgramPath\dkml\_opam"
-    $ProgramLibOcamlDir = "$ProgramPath\lib\ocaml"
-    $ProgramStubsDir = "$ProgramPath\lib\ocaml\stublibs"
-
-    function Copy-DkmlFile {
-        param (
-            $OpamFile,
-            $Destination
-        )
-        # Don't copy unless the target file doesn't exist -or- the target file is different from the source file.
-        # This helps IncrementalDeployment installations, especially when a file is in use
-        # but hasn't changed (especially `dune.exe`, `ocamllsp.exe` which may be open in an IDE)
-        if (!(Test-Path "$DiskuvHostToolsDir\$OpamFile")) {
-            # no-op since the binary is not part of opam switch (we may have been installed manually like OCaml system compiler)
-            $what = "[Copy-DkmlFile] {missing} $DiskuvHostToolsDir\$OpamFile -> $Destination"
-            Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
-            Write-Information "$what"
-        } elseif (!(Test-Path -Path "$Destination")) {
-            $what = "[Copy-DkmlFile] {create}  $DiskuvHostToolsDir\$OpamFile -> $Destination"
-            Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
-            Write-Information "$what"
-
-            Copy-Item -Path "$DiskuvHostToolsDir\$OpamFile" -Destination $Destination
-        } elseif ((Get-FileHash "$Destination").hash -eq (Get-FileHash $DiskuvHostToolsDir\$OpamFile).hash) {
-            $what = "[Copy-DkmlFile] {present} $DiskuvHostToolsDir\$OpamFile -> $Destination"
-            Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
-            Write-Information "$what"
-        } else {
-            # hashes are not equal
-            $what = "[Copy-DkmlFile] {modify}  $DiskuvHostToolsDir\$OpamFile -> $Destination"
-            Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
-            Write-Information "$what"
-
-            Copy-Item -Path "$DiskuvHostToolsDir\$OpamFile" -Destination $Destination
-        }
-    }
-
-    # Flavor binaries
-    if (!(Test-Path -Path $ProgramGeneralBinDir)) { New-Item -Path $ProgramGeneralBinDir -ItemType Directory | Out-Null }
-    foreach ($binary in $FlavorBinariesOnly) {
-        Copy-DkmlFile -OpamFile "bin\$binary" -Destination "$ProgramGeneralBinDir\$binary"
-    }
-
-    # Stubs for ocamlrun bytecode
-    if (!(Test-Path -Path $ProgramStubsDir)) { New-Item -Path $ProgramStubsDir -ItemType Directory | Out-Null }
-    foreach ($stub in $FlavorStubs) {
-        Copy-DkmlFile -OpamFile "lib\stublibs\$stub" -Destination "$ProgramStubsDir\$stub"
-    }
-
-    # Toplevel files. opam sets OCAML_TOPLEVEL_PATH=lib/toplevel, but we should place them in lib/ocaml so we don't
-    # have to define our own system OCAML_TOPLEVEL_PATH which would interfere with opam. Besides, installing a toplevel
-    # containing package like "ocamlfind" in a local switch can autopopulate lib/ocaml anyway if we are using the
-    # OCaml system compiler (dkml switch, ocaml.exe binary). So place in lib/ocaml anyway.
-    if (!(Test-Path -Path $ProgramLibOcamlDir)) { New-Item -Path $ProgramLibOcamlDir -ItemType Directory | Out-Null }
-    foreach ($toplevel in $FlavorToplevels) {
-        # no-op since the speciallib is not part of opam switch (we may have been installed manually like OCaml system compiler)
-        Copy-DkmlFile -OpamFile "lib\toplevel\$toplevel" -Destination "$ProgramLibOcamlDir\$toplevel"
-    }
-
-    # END install `dkml` switch binaries to Programs
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
