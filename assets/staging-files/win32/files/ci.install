@@ -1,3 +1,5 @@
 # BINARY WITHOUT .EXE <TAB> EXTENSION ON WINDOWS <TAB> EXTENSION ON NON-WINDOWS <TAB> ABI REGEX <TAB> VERSION REGEX
 # Author Note: In Full we must include the CI files
-ocamlfind	.exe		.*	.*
+#
+# Note: dkml-component-desktop/src/installtime/install.ml provides shims for:
+# ocamlfind
