@@ -1,0 +1,92 @@
+build: [
+  # OCaml source code
+  ["install" "-d" "dl/ocaml/flexdll"]
+  ["tar" "xCfz" "dl/ocaml"          "dl/ocaml.tar.gz"   "--strip-components=1"]
+  ["tar" "xCfz" "dl/ocaml/flexdll"  "dl/flexdll.tar.gz" "--strip-components=1"]
+
+  # Portable shell scripts for OCaml compiling
+  #
+  # ** The only portable shell scripts needed are that that compile the bytecode
+  # ** interpreter for use in the dkml-component-staging-ocamlrun build:[] section.
+  # ** Any other logic needed for compiling the full native-code compiler
+  # ** can be done in OCaml bytecode. But since the portable shell scripts
+  # ** do 90% of the work needed for the native-code compiler, no strong
+  # ** reason (yet) to convert the native-code compiler installation into OCaml
+  # ** bytecode.
+  #
+  #   Create a minimal DKMLDIR (no dkml-runtime-distribution) that can build
+  #   the r-c-ocaml-* OCaml compiler. Its structure mimics a
+  #   git submodule setup.
+  #
+  #   <dkmldir>/vendor/drc/
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-common:lib}%/all" "dkmldir/vendor/drc/all"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-common:lib}%/unix" "dkmldir/vendor/drc/unix"]
+  #   <dkmldir>/.dkmlroot
+  ["diskuvbox" "copy-file" "%{dkml-runtime-common:lib}%/template.dkmlroot" "dkmldir/.dkmlroot"]
+
+  #   <dkmldir>/vendor/dkml-compiler/
+  ["diskuvbox" "copy-dir" "%{dkml-compiler-src:lib}%/src" "dkmldir/vendor/dkml-compiler"]
+
+  # Build component
+  ["dune" "subst"] {dev}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+    "@runtest" {with-test}
+    "@doc" {with-doc}
+  ]
+]
+install: [
+  #   Run r-c-ocaml-1-setup.sh ... just the OCaml runtime since not yet relocatable!
+  #   With an OCaml runtime that is the same version as the full OCaml system we want
+  #   to compile, the OCaml system should be compiled quicker (no bootstrap necessary).
+  #
+  #   ** It may seem redundant to recreate the same reproducible directory that
+  #   ** is available in ocamlrun. BUT ... it is a bad idea to couple the
+  #   ** bytecode interpreter that runs the installer plugins to the same
+  #   ** version as the OCaml compiler we are installing for the end-user.
+  [
+    "sh" "-eufc"
+    """
+    env TOPDIR=dkmldir/vendor/drc/all/emptytop \
+      dkmldir/vendor/dkml-compiler/src/r-c-ocaml-1-setup.sh \
+      -d dkmldir \
+      -t '%{_:share}%/staging-files/generic' \
+      -v dl/ocaml \
+      -r \
+      -z \
+      -k vendor/dkml-compiler/env/standard-compiler-env-to-ocaml-configure-env.sh
+    """
+  ]
+
+  # 2. Copy assets
+  ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86"]
+  ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86_64"]
+
+  # 3. Copy minimal dkmldir into staging, adding distribution which has
+  #    PowerShell scripts and other Unix scripts needed by setup-userprofile.ps1
+
+  #   Clone minimal dkmldir
+  ["diskuvbox" "copy-dir" "dkmldir" "%{_:share}%/staging-files/windows_x86/dkmldir"]
+  ["diskuvbox" "copy-dir" "dkmldir" "%{_:share}%/staging-files/windows_x86_64/dkmldir"]
+  #   Unpack runtime-distribution
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/none" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/none"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/none" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/none"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/unix" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/unix"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/unix" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/unix"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/windows" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/windows"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/windows" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/windows"]
+]
+extra-source "dl/ocaml.tar.gz" {
+  src: "https://github.com/ocaml/ocaml/archive/4.14.0.tar.gz"
+  checksum: "sha256=39f44260382f28d1054c5f9d8bf4753cb7ad64027da792f7938344544da155e8"
+}
+extra-source "dl/flexdll.tar.gz" {
+  src: "https://github.com/alainfrisch/flexdll/archive/0.42.tar.gz"
+  checksum: "sha256=a2dce0a0d2f2c5c9f52f65e281db7405f51ff22dc71cdbf494eb241c8a4bdf0f"
+}

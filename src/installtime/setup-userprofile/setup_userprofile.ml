@@ -4,7 +4,7 @@ module Cmd = Cmdliner.Cmd
 module Term = Cmdliner.Term
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
-    control_dir msys2_dir opam_exe vcpkg dkml_confdir_exe =
+    offline control_dir msys2_dir opam_exe vcpkg dkml_confdir_exe =
   let model_conf =
     Staging_dkmlconfdir_api.Conf_loader.create_from_system_confdir
       ~unit_name:"ocamlcompiler" ~dkml_confdir_exe
@@ -81,6 +81,7 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
         % Context.Abi_v2.to_canonical_string target_abi
         % "-TempParentPath" % temp_dir_83 % "-SkipProgress" % "-SkipMSYS2Update")
     in
+    let cmd = if offline then Bos.Cmd.(cmd % "-Offline") else cmd in
     let cmd = if vcpkg then Bos.Cmd.(cmd % "-VcpkgCompatibility") else cmd in
     let cmd =
       if Model_conf.feature_flag_imprecise_c99_float_ops model_conf then (
@@ -120,6 +121,8 @@ let target_abi_t =
 
 let vcpkg_t = Arg.(value & flag & info [ "vcpkg" ])
 
+let offline_t = Arg.(value & flag & info [ "offline" ])
+
 let dkml_confdir_exe_t =
   let doc = "The location of dkml-confdir.exe" in
   let v =
@@ -141,8 +144,8 @@ let () =
   let t =
     Term.(
       const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-      $ target_abi_t $ control_dir_t $ msys2_dir_t $ opam_exe_t $ vcpkg_t
-      $ dkml_confdir_exe_t)
+      $ target_abi_t $ offline_t $ control_dir_t $ msys2_dir_t $ opam_exe_t
+      $ vcpkg_t $ dkml_confdir_exe_t)
   in
   let info =
     Cmd.info "setup-userprofile.bc"

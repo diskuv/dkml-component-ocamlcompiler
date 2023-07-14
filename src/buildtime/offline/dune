@@ -1,6 +1,6 @@
 (library
- (public_name dkml-component-ocamlcompiler-network)
- (name dkml_component_network_ocamlcompiler)
+ (public_name dkml-component-ocamlcompiler-offline)
+ (name dkml_component_offline_ocamlcompiler)
  (libraries
   dkml-install.register
   dkml-component-staging-ocamlrun.api

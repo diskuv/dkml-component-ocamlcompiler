@@ -13,11 +13,11 @@
 (executable
  (name setup_userprofile)
  (public_name setup_userprofile)
- (package dkml-component-network-ocamlcompiler)
+ (package dkml-component-ocamlcompiler-network)
  (modes
   (byte exe))
  (libraries
-  dkml-component-network-ocamlcompiler.common
+  dkml-component-ocamlcompiler-common
   dkml-install.api
   dkml-component-staging-dkmlconfdir.api
   diskuvbox
@@ -37,6 +37,6 @@
 
 (install
  (section share)
- (package dkml-component-network-ocamlcompiler)
+ (package dkml-component-ocamlcompiler-network)
  (files
   (setup_userprofile.bc as staging-files/generic/setup_userprofile.bc)))

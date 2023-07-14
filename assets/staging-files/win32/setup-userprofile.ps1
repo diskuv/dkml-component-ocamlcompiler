@@ -70,7 +70,8 @@
 .Parameter OpamExe
     The location of a pre-existing opam.exe.
 .Parameter MSYS2Dir
-    The MSYS2 installation directory.
+    The MSYS2 installation directory. MSYS2Dir is required when not offline
+    but on a Win32 machine.
 .Parameter DkmlHostAbi
     Install a `windows_x86` or `windows_x86_64` distribution.
 
@@ -111,6 +112,9 @@
     Run as Administrator.
     We do not recommend you do this unless you are in continuous
     integration (CI) scenarios.
+.Parameter Offline
+    Setup the OCaml system in offline mode. No Git installation,
+    no playground switch and no opam repository.
 .Parameter VcpkgCompatibility
     Install Ninja and CMake to accompany Microsoft's
     vcpkg (the C package manager).
@@ -162,7 +166,6 @@ param (
     [Parameter(Mandatory)]
     [string]
     $OpamExe,
-    [Parameter(Mandatory)]
     [string]
     $MSYS2Dir,
     [string]
@@ -179,6 +182,8 @@ param (
     $SkipAutoUpgradeGitWhenOld,
     [switch]
     $AllowRunAsAdmin,
+    [switch]
+    $Offline,
     [switch]
     $VcpkgCompatibility,
     [switch]
@@ -286,6 +291,21 @@ $OCamlLangGitCommit = switch ($OCamlLangVersion)
         Write-Error ("`n`nThe OCaml version $OCamlLangVersion is not supported")
         # exit 1
     }
+}
+
+# D. MSYS2Dir is required when not offline but on Win32
+if($Offline) {
+    $UseMSYS2 = $False
+    $MSYS2Dir = $null
+} elseif ([System.Environment]::OSVersion.Platform -eq "Win32NT") {
+    $UseMSYS2 = $True
+    if(-not $MSYS2Dir) {
+        Write-Error ("`n`n-MSYS2Dir is required when not offline but on Win32")
+        exit 1
+    }
+} else {
+    $UseMSYS2 = $False
+    $MSYS2Dir = $null
 }
 
 # ----------------------------------------------------------------
@@ -402,6 +422,9 @@ function Import-DiskuvOCamlAsset {
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
 $ProgressTotalSteps = 7
+if ($Offline) {
+    $ProgressTotalSteps = 2
+}
 if (-not $SkipMSYS2Update) {
     $ProgressTotalSteps = $ProgressTotalSteps + 1
 }
@@ -454,25 +477,27 @@ if (!(Test-Path -Path $InstallationPrefix)) { New-Item -Path $InstallationPrefix
 # ----------------------------------------------------------------
 # BEGIN Visual Studio Setup PowerShell Module
 
-$global:ProgressActivity = "Install Visual Studio Setup PowerShell Module"
-Write-ProgressStep
+if (-not $Offline) {
+    $global:ProgressActivity = "Install Visual Studio Setup PowerShell Module"
+    Write-ProgressStep
 
-Import-VSSetup -TempPath "$env:TEMP\vssetup"
-$CompatibleVisualStudios = Get-CompatibleVisualStudios -ErrorIfNotFound -VcpkgCompatibility:$VcpkgCompatibility
-$ChosenVisualStudio = ($CompatibleVisualStudios | Select-Object -First 1)
-$VisualStudioProps = Get-VisualStudioProperties -VisualStudioInstallation $ChosenVisualStudio
-$VisualStudioDirPath = "$InstallationPrefix\vsstudio.dir.txt"
-$VisualStudioJsonPath = "$InstallationPrefix\vsstudio.json"
-$VisualStudioVcVarsVerPath = "$InstallationPrefix\vsstudio.vcvars_ver.txt"
-$VisualStudioWinSdkVerPath = "$InstallationPrefix\vsstudio.winsdk.txt"
-$VisualStudioMsvsPreferencePath = "$InstallationPrefix\vsstudio.msvs_preference.txt"
-$VisualStudioCMakeGeneratorPath = "$InstallationPrefix\vsstudio.cmake_generator.txt"
-[System.IO.File]::WriteAllText($VisualStudioDirPath, "$($VisualStudioProps.InstallPath)", $Utf8NoBomEncoding)
-[System.IO.File]::WriteAllText($VisualStudioJsonPath, ($CompatibleVisualStudios | ConvertTo-Json -Depth 5), $Utf8NoBomEncoding)
-[System.IO.File]::WriteAllText($VisualStudioVcVarsVerPath, "$($VisualStudioProps.VcVarsVer)", $Utf8NoBomEncoding)
-[System.IO.File]::WriteAllText($VisualStudioWinSdkVerPath, "$($VisualStudioProps.WinSdkVer)", $Utf8NoBomEncoding)
-[System.IO.File]::WriteAllText($VisualStudioMsvsPreferencePath, "$($VisualStudioProps.MsvsPreference)", $Utf8NoBomEncoding)
-[System.IO.File]::WriteAllText($VisualStudioCMakeGeneratorPath, "$($VisualStudioProps.CMakeGenerator)", $Utf8NoBomEncoding)
+    Import-VSSetup -TempPath "$env:TEMP\vssetup"
+    $CompatibleVisualStudios = Get-CompatibleVisualStudios -ErrorIfNotFound -VcpkgCompatibility:$VcpkgCompatibility
+    $ChosenVisualStudio = ($CompatibleVisualStudios | Select-Object -First 1)
+    $VisualStudioProps = Get-VisualStudioProperties -VisualStudioInstallation $ChosenVisualStudio
+    $VisualStudioDirPath = "$InstallationPrefix\vsstudio.dir.txt"
+    $VisualStudioJsonPath = "$InstallationPrefix\vsstudio.json"
+    $VisualStudioVcVarsVerPath = "$InstallationPrefix\vsstudio.vcvars_ver.txt"
+    $VisualStudioWinSdkVerPath = "$InstallationPrefix\vsstudio.winsdk.txt"
+    $VisualStudioMsvsPreferencePath = "$InstallationPrefix\vsstudio.msvs_preference.txt"
+    $VisualStudioCMakeGeneratorPath = "$InstallationPrefix\vsstudio.cmake_generator.txt"
+    [System.IO.File]::WriteAllText($VisualStudioDirPath, "$($VisualStudioProps.InstallPath)", $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($VisualStudioJsonPath, ($CompatibleVisualStudios | ConvertTo-Json -Depth 5), $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($VisualStudioVcVarsVerPath, "$($VisualStudioProps.VcVarsVer)", $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($VisualStudioWinSdkVerPath, "$($VisualStudioProps.WinSdkVer)", $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($VisualStudioMsvsPreferencePath, "$($VisualStudioProps.MsvsPreference)", $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($VisualStudioCMakeGeneratorPath, "$($VisualStudioProps.CMakeGenerator)", $Utf8NoBomEncoding)
+}
 
 # END Visual Studio Setup PowerShell Module
 # ----------------------------------------------------------------
@@ -486,108 +511,110 @@ $VisualStudioCMakeGeneratorPath = "$InstallationPrefix\vsstudio.cmake_generator.
 # OCaml. So we explicitly do version checks during the installation of
 # Git.
 
-$global:ProgressActivity = "Install Git for Windows"
-Write-ProgressStep
+if (-not $Offline) {
+    $global:ProgressActivity = "Install Git for Windows"
+    Write-ProgressStep
 
-$GitWindowsSetupAbsPath = "$env:TEMP\gitwindows"
+    $GitWindowsSetupAbsPath = "$env:TEMP\gitwindows"
 
-$GitOriginalVersion = @(0, 0, 0)
-$SkipGitForWindowsInstallBecauseNonGitForWindowsDetected = $false
-$GitExists = $false
+    $GitOriginalVersion = @(0, 0, 0)
+    $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected = $false
+    $GitExists = $false
 
-# NOTE: See runtime\windows\makeit.cmd for why we check for git-gui.exe first
-$GitGuiExe = Get-Command git-gui.exe -ErrorAction Ignore
-if ($null -eq $GitGuiExe) {
-    $GitExe = Get-Command git.exe -ErrorAction Ignore
-    if ($null -ne $GitExe) { $GitExe = $GitExe.Path }
-} else {
-    # Use git.exe in the same PATH as git-gui.exe.
-    # Ex. C:\Program Files\Git\cmd\git.exe not C:\Program Files\Git\bin\git.exe or C:\Program Files\Git\mingw\bin\git.exe
-    $GitExe = Join-Path -Path (Get-Item $GitGuiExe.Path).Directory.FullName -ChildPath "git.exe"
-}
-if ($null -ne $GitExe) {
-    $GitExists = $true
-    $GitResponse = & "$GitExe" --version
-    if ($LastExitCode -eq 0) {
-        # git version 2.32.0.windows.2 -> 2.32.0.windows.2
-        $GitResponseLast = $GitResponse.Split(" ")[-1]
-        # 2.32.0.windows.2 -> 2 32 0
-        $GitOriginalVersion = $GitResponseLast.Split(".")[0, 1, 2]
-        # check for '.windows.'
-        $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected = $GitResponse -notlike "*.windows.*"
-    }
-}
-if (-not $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected) {
-    # Less than 1.7.2?
-    $GitTooOld = ($GitOriginalVersion[0] -lt 1 -or
-        ($GitOriginalVersion[0] -eq 1 -and $GitOriginalVersion[1] -lt 7) -or
-        ($GitOriginalVersion[0] -eq 1 -and $GitOriginalVersion[1] -eq 7 -and $GitOriginalVersion[2] -lt 2))
-    if ((-not $GitExists) -or ($GitTooOld -and -not $SkipAutoUpgradeGitWhenOld)) {
-        # Install Git for Windows 2.36.1
-
-        $GitNewVer = "2.36.1"
-        if ([Environment]::Is64BitOperatingSystem) {
-            $GitWindowsBits = "64"
-            $GitSha256 = "08a0c20374d13d1b448d2c5713222ff55dd1f4bffa15093b85772cc0fc5f30e7"
-        } else {
-            $GitWindowsBits = "32"
-            $GitSha256 = "0a50735bd088698e6015265d9373cb0cc859f46a0689d3073f91da0dc0fe66aa"
-        }
-        if (!(Test-Path -Path "$GitWindowsSetupAbsPath")) { New-Item -Path "$GitWindowsSetupAbsPath" -ItemType Directory | Out-Null }
-        if (!(Test-Path -Path "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe")) {
-            Invoke-WebRequest `
-                -Uri https://github.com/git-for-windows/git/releases/download/v$GitNewVer.windows.1/Git-$GitNewVer-$GitWindowsBits-bit.exe `
-                -OutFile "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe"
-        }
-        $GitActualHash = (Get-FileHash -Algorithm SHA256 "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe").Hash
-        if ("$GitSha256" -ne "$GitActualHash") {
-            throw "The Git for Windows installer was corrupted. You will need to retry the installation. If this repeatedly occurs, please send an email to support@diskuv.com"
-        }
-
-        # You can see the arguments if you run: Git-$GitNewVer-$GitWindowsArch-bit.exe /?
-        # https://jrsoftware.org/ishelp/index.php?topic=setupcmdline has command line options.
-        # https://github.com/git-for-windows/build-extra/tree/main/installer has installer source code.
-        # https://github.com/chocolatey-community/chocolatey-coreteampackages/blob/master/automatic/git.install/tools/chocolateyInstall.ps1
-        # and https://github.com/chocolatey-community/chocolatey-coreteampackages/blob/master/automatic/git.install/tools/helpers.ps1 have
-        # options for silent install.
-        $res = "icons", "assoc", "assoc_sh"
-        $isSystem = ([System.Security.Principal.WindowsIdentity]::GetCurrent()).IsSystem
-        if ( !$isSystem ) { $res += "icons\quicklaunch" }
-        $proc = Start-Process -FilePath "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe" -NoNewWindow -Wait -PassThru `
-            -ArgumentList @("/CURRENTUSER",
-                "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/NOCANCEL", "/SP-", "/LOG",
-                ('/COMPONENTS="{0}"' -f ($res -join ",")) )
-        $exitCode = $proc.ExitCode
-        if ($exitCode -ne 0) {
-            if (-not $SkipProgress) { Write-Progress -Id $ProgressId -ParentId $ParentProgressId -Activity $global:ProgressActivity -Completed }
-            $ErrorActionPreference = "Continue"
-            Write-Error "Git installer failed"
-            Remove-DirectoryFully -Path "$GitWindowsSetupAbsPath"
-            Start-Sleep 5
-            Write-Information ''
-            Write-Information 'One reason why the Git installer will fail is because you did not'
-            Write-Information 'click "Yes" when it asks you to allow the installation.'
-            Write-Information 'You can try to rerun the script.'
-            Write-Information ''
-            Write-Information 'Press any key to exit this script...';
-            $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
-            throw "Git installer failed"
-        }
-
-        # Get new PATH so we can locate the new Git
-        $OldPath = $env:PATH
-        $env:PATH = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    # NOTE: See runtime\windows\makeit.cmd for why we check for git-gui.exe first
+    $GitGuiExe = Get-Command git-gui.exe -ErrorAction Ignore
+    if ($null -eq $GitGuiExe) {
         $GitExe = Get-Command git.exe -ErrorAction Ignore
-        if ($null -eq $GitExe) {
-            throw "DiskuvOCaml requires that Git is installed in the PATH. The Git installer failed to do so. Please install it manually from https://gitforwindows.org/"
-        }
-        $GitExe = $GitExe.Path
-        $env:PATH = $OldPath
+        if ($null -ne $GitExe) { $GitExe = $GitExe.Path }
+    } else {
+        # Use git.exe in the same PATH as git-gui.exe.
+        # Ex. C:\Program Files\Git\cmd\git.exe not C:\Program Files\Git\bin\git.exe or C:\Program Files\Git\mingw\bin\git.exe
+        $GitExe = Join-Path -Path (Get-Item $GitGuiExe.Path).Directory.FullName -ChildPath "git.exe"
     }
-}
-Remove-DirectoryFully -Path "$GitWindowsSetupAbsPath"
+    if ($null -ne $GitExe) {
+        $GitExists = $true
+        $GitResponse = & "$GitExe" --version
+        if ($LastExitCode -eq 0) {
+            # git version 2.32.0.windows.2 -> 2.32.0.windows.2
+            $GitResponseLast = $GitResponse.Split(" ")[-1]
+            # 2.32.0.windows.2 -> 2 32 0
+            $GitOriginalVersion = $GitResponseLast.Split(".")[0, 1, 2]
+            # check for '.windows.'
+            $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected = $GitResponse -notlike "*.windows.*"
+        }
+    }
+    if (-not $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected) {
+        # Less than 1.7.2?
+        $GitTooOld = ($GitOriginalVersion[0] -lt 1 -or
+            ($GitOriginalVersion[0] -eq 1 -and $GitOriginalVersion[1] -lt 7) -or
+            ($GitOriginalVersion[0] -eq 1 -and $GitOriginalVersion[1] -eq 7 -and $GitOriginalVersion[2] -lt 2))
+        if ((-not $GitExists) -or ($GitTooOld -and -not $SkipAutoUpgradeGitWhenOld)) {
+            # Install Git for Windows 2.36.1
 
-$GitPath = (get-item "$GitExe").Directory.FullName
+            $GitNewVer = "2.36.1"
+            if ([Environment]::Is64BitOperatingSystem) {
+                $GitWindowsBits = "64"
+                $GitSha256 = "08a0c20374d13d1b448d2c5713222ff55dd1f4bffa15093b85772cc0fc5f30e7"
+            } else {
+                $GitWindowsBits = "32"
+                $GitSha256 = "0a50735bd088698e6015265d9373cb0cc859f46a0689d3073f91da0dc0fe66aa"
+            }
+            if (!(Test-Path -Path "$GitWindowsSetupAbsPath")) { New-Item -Path "$GitWindowsSetupAbsPath" -ItemType Directory | Out-Null }
+            if (!(Test-Path -Path "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe")) {
+                Invoke-WebRequest `
+                    -Uri https://github.com/git-for-windows/git/releases/download/v$GitNewVer.windows.1/Git-$GitNewVer-$GitWindowsBits-bit.exe `
+                    -OutFile "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe"
+            }
+            $GitActualHash = (Get-FileHash -Algorithm SHA256 "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe").Hash
+            if ("$GitSha256" -ne "$GitActualHash") {
+                throw "The Git for Windows installer was corrupted. You will need to retry the installation. If this repeatedly occurs, please send an email to support@diskuv.com"
+            }
+
+            # You can see the arguments if you run: Git-$GitNewVer-$GitWindowsArch-bit.exe /?
+            # https://jrsoftware.org/ishelp/index.php?topic=setupcmdline has command line options.
+            # https://github.com/git-for-windows/build-extra/tree/main/installer has installer source code.
+            # https://github.com/chocolatey-community/chocolatey-coreteampackages/blob/master/automatic/git.install/tools/chocolateyInstall.ps1
+            # and https://github.com/chocolatey-community/chocolatey-coreteampackages/blob/master/automatic/git.install/tools/helpers.ps1 have
+            # options for silent install.
+            $res = "icons", "assoc", "assoc_sh"
+            $isSystem = ([System.Security.Principal.WindowsIdentity]::GetCurrent()).IsSystem
+            if ( !$isSystem ) { $res += "icons\quicklaunch" }
+            $proc = Start-Process -FilePath "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe" -NoNewWindow -Wait -PassThru `
+                -ArgumentList @("/CURRENTUSER",
+                    "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/NOCANCEL", "/SP-", "/LOG",
+                    ('/COMPONENTS="{0}"' -f ($res -join ",")) )
+            $exitCode = $proc.ExitCode
+            if ($exitCode -ne 0) {
+                if (-not $SkipProgress) { Write-Progress -Id $ProgressId -ParentId $ParentProgressId -Activity $global:ProgressActivity -Completed }
+                $ErrorActionPreference = "Continue"
+                Write-Error "Git installer failed"
+                Remove-DirectoryFully -Path "$GitWindowsSetupAbsPath"
+                Start-Sleep 5
+                Write-Information ''
+                Write-Information 'One reason why the Git installer will fail is because you did not'
+                Write-Information 'click "Yes" when it asks you to allow the installation.'
+                Write-Information 'You can try to rerun the script.'
+                Write-Information ''
+                Write-Information 'Press any key to exit this script...';
+                $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
+                throw "Git installer failed"
+            }
+
+            # Get new PATH so we can locate the new Git
+            $OldPath = $env:PATH
+            $env:PATH = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $GitExe = Get-Command git.exe -ErrorAction Ignore
+            if ($null -eq $GitExe) {
+                throw "DiskuvOCaml requires that Git is installed in the PATH. The Git installer failed to do so. Please install it manually from https://gitforwindows.org/"
+            }
+            $GitExe = $GitExe.Path
+            $env:PATH = $OldPath
+        }
+    }
+    Remove-DirectoryFully -Path "$GitWindowsSetupAbsPath"
+
+    $GitPath = (get-item "$GitExe").Directory.FullName
+}
 
 # END Git for Windows
 # ----------------------------------------------------------------
@@ -634,7 +661,7 @@ if (Test-Path -Path $AuditLog) {
     Rename-Item -Path $AuditLog -NewName "setup-userprofile.backup.$(Get-CurrentEpochMillis).log"
 }
 
-function Invoke-Win32CommandWithProgress {
+function Invoke-NativeCommandWithProgress {
     param (
         [Parameter(Mandatory=$true)]
         $FilePath,
@@ -643,7 +670,7 @@ function Invoke-Win32CommandWithProgress {
     if ($null -eq $ArgumentList) {  $ArgumentList = @() }
     # Append what we will do into $AuditLog
     $Command = "$FilePath $($ArgumentList -join ' ')"
-    $what = "[Win32] $Command"
+    $what = "$Command"
     Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
 
     if ($SkipProgress) {
@@ -654,7 +681,7 @@ function Invoke-Win32CommandWithProgress {
         & $FilePath @ArgumentList 2>&1 | ForEach-Object ToString | Tee-Object -FilePath $AuditLog -Append
         $ErrorActionPreference = $oldeap
         if ($LastExitCode -ne 0) {
-            throw "Win32 command failed! Exited with $LastExitCode. Command was: $Command."
+            throw "Command failed! Exited with $LastExitCode. Command was: $Command."
         }
     } else {
         Write-Progress -Id $ProgressId `
@@ -692,7 +719,7 @@ function Invoke-Win32CommandWithProgress {
             if ($exitCode -ne 0) {
                 $err = Get-Content -Path $RedirectStandardError -Raw -ErrorAction Ignore
                 if ($null -eq $err -or "" -eq $err) { $err = Get-Content -Path $RedirectStandardOutput -Tail 5 -ErrorAction Ignore }
-                throw "Win32 command failed! Exited with $exitCode. Command was: $Command.`nError was: $err"
+                throw "Command failed! Exited with $exitCode. Command was: $Command.`nError was: $err"
             }
         }
         finally {
@@ -707,13 +734,13 @@ function Invoke-Win32CommandWithProgress {
         }
     }
 }
-function Invoke-MSYS2CommandWithProgress {
+function Invoke-GenericCommandWithProgress {
     param (
         [Parameter(Mandatory=$true)]
         $Command,
         [string[]]
         $ArgumentList,
-        [Parameter(Mandatory=$true)]
+        [Parameter]
         $MSYS2Dir,
         [switch]
         $ForceConsole,
@@ -728,31 +755,51 @@ function Invoke-MSYS2CommandWithProgress {
     #    as the parent temp directory for DKML (so it gets cleaned up automatically).
     # 3. Always use full path to MSYS2 env, because Scoop and Chocolately can
     #    add their own Unix executables to the PATH
-    $MSYS2Env = Join-Path (Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin") -ChildPath "env.exe"
-    $MSYS2Cygpath = Join-Path (Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin") -ChildPath "cygpath.exe"
-    $GitMSYS2AbsPath = & $MSYS2Cygpath -au "$GitPath"
-    $TempMSYS2AbsPath = & $MSYS2Cygpath -au "$TempPath"
-    $Command = $MSYS2Env
-    $ArgumentList = @(
-        "PATH=${GitMSYS2AbsPath}:$INVOKER_MSYSTEM_PREFIX/bin:/usr/bin:/bin"
-        "DKML_TMP_PARENTDIR=$TempMSYS2AbsPath"
-        ) + @( $OrigCommand ) + $OrigArgumentList
+    if($UseMSYS2) {
+        $MSYS2Env = Join-Path (Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin") -ChildPath "env.exe"
+        $MSYS2Cygpath = Join-Path (Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin") -ChildPath "cygpath.exe"
+        $GitMSYS2AbsPath = & $MSYS2Cygpath -au "$"
+        $TempMSYS2AbsPath = & $MSYS2Cygpath -au "$TempPath"
+        $Command = $MSYS2Env
+        $ArgumentList = @(
+            "PATH=${GitMSYS2AbsPath}:$INVOKER_MSYSTEM_PREFIX/bin:/usr/bin:/bin"
+            "DKML_TMP_PARENTDIR=$TempMSYS2AbsPath"
+            ) + @( $OrigCommand ) + $OrigArgumentList    
+    } else {
+        $Command = "env"
+        $ArgumentList = @(
+            "PATH=${GitPath}:/usr/bin:/bin"
+            "DKML_TMP_PARENTDIR=$TempPath"
+            ) + @( $OrigCommand ) + $OrigArgumentList
+    }
 
     # Append what we will do into $AuditLog
-    $what = "[MSYS2] $OrigCommand $($OrigArgumentList -join ' ')"
+    if($UseMSYS2) {
+        $what = "[MSYS2] $OrigCommand $($OrigArgumentList -join ' ')"
+    } else {
+        $what = "$OrigCommand $($OrigArgumentList -join ' ')"
+    }
     Add-Content -Path $AuditLog -Value "$(Get-CurrentTimestamp) $what" -Encoding UTF8
 
     if ($ForceConsole) {
         if (-not $SkipProgress) {
             Write-Progress -Id $ProgressId -ParentId $ParentProgressId -Activity $global:ProgressActivity -Completed
         }
-        Invoke-MSYS2Command -Command $Command -ArgumentList $ArgumentList `
-            -MSYS2Dir $MSYS2Dir -IgnoreErrors:$IgnoreErrors
+        if($UseMSYS2) {
+            Invoke-MSYS2Command -Command $Command -ArgumentList $ArgumentList `
+                -MSYS2Dir $MSYS2Dir -IgnoreErrors:$IgnoreErrors
+        } else {
+            Invoke-NativeCommandWithProgress -FilePath $Command -ArgumentList $ArgumentList
+        }
     } elseif ($SkipProgress) {
         Write-ProgressCurrentOperation -CurrentOperation "$what"
-        Invoke-MSYS2Command -Command $Command -ArgumentList $ArgumentList `
-            -MSYS2Dir $MSYS2Dir -IgnoreErrors:$IgnoreErrors `
-            -AuditLog $AuditLog
+        if($UseMSYS2) {
+            Invoke-MSYS2Command -Command $Command -ArgumentList $ArgumentList `
+                -MSYS2Dir $MSYS2Dir -IgnoreErrors:$IgnoreErrors `
+                -AuditLog $AuditLog
+        } else {
+            Invoke-NativeCommandWithProgress -FilePath $Command -ArgumentList $ArgumentList
+        }
     } else {
         $global:ProgressStatus = $what
         Write-Progress -Id $ProgressId `
@@ -761,12 +808,16 @@ function Invoke-MSYS2CommandWithProgress {
             -Status $global:ProgressStatus `
             -CurrentOperation $Command `
             -PercentComplete (100 * ($global:ProgressStep / $ProgressTotalSteps))
-        Invoke-MSYS2Command -Command $Command `
-            -ArgumentList $ArgumentList `
-            -MSYS2Dir $MSYS2Dir `
-            -AuditLog $AuditLog `
-            -IgnoreErrors:$IgnoreErrors `
-            -TailFunction ${function:\Write-ProgressCurrentOperation}
+        if($UseMSYS2) {
+            Invoke-MSYS2Command -Command $Command `
+                -ArgumentList $ArgumentList `
+                -MSYS2Dir $MSYS2Dir `
+                -AuditLog $AuditLog `
+                -IgnoreErrors:$IgnoreErrors `
+                -TailFunction ${function:\Write-ProgressCurrentOperation}
+        } else {
+            Invoke-NativeCommandWithProgress -FilePath $Command -ArgumentList $ArgumentList
+        }
     }
 }
 
@@ -836,60 +887,72 @@ try {
     # ----------------------------------------------------------------
     # BEGIN MSYS2
 
-    $global:AdditionalDiagnostics += "[Advanced] MSYS2 commands can be run with: $MSYS2Dir\msys2_shell.cmd`n"
+    if ($UseMSYS2) {
+        $global:AdditionalDiagnostics += "[Advanced] MSYS2 commands can be run with: $MSYS2Dir\msys2_shell.cmd`n"
 
-    # Always use full path to MSYS2 executables, because Scoop and Chocolately can
-    # add their own Unix executables to the PATH
-    $MSYS2UsrBin = Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin"
-    $MSYS2Env = Join-Path $MSYS2UsrBin -ChildPath "env.exe"
-    $MSYS2Bash = Join-Path $MSYS2UsrBin -ChildPath "bash.exe"
-    $MSYS2Sh = Join-Path $MSYS2UsrBin -ChildPath "sh.exe"
-    $MSYS2Sed = Join-Path $MSYS2UsrBin -ChildPath "sed.exe"
-    $MSYS2Pacman = Join-Path $MSYS2UsrBin -ChildPath "pacman.exe"
-    $MSYS2Cygpath = Join-Path $MSYS2UsrBin -ChildPath "cygpath.exe"
+        # Always use full path to MSYS2 executables, because Scoop and Chocolately can
+        # add their own Unix executables to the PATH
+        $MSYS2UsrBin = Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin"
+        $MSYS2Env = Join-Path $MSYS2UsrBin -ChildPath "env.exe"
+        $MSYS2Bash = Join-Path $MSYS2UsrBin -ChildPath "bash.exe"
+        $ShExe = Join-Path $MSYS2UsrBin -ChildPath "sh.exe"
+        $MSYS2Sed = Join-Path $MSYS2UsrBin -ChildPath "sed.exe"
+        $MSYS2Pacman = Join-Path $MSYS2UsrBin -ChildPath "pacman.exe"
+        $MSYS2Cygpath = Join-Path $MSYS2UsrBin -ChildPath "cygpath.exe"
 
-    $HereDirMSYS2AbsPath = & $MSYS2Cygpath -au "$HereDir"
+        $HereDirNormalPath = & $MSYS2Cygpath -au "$HereDir"
 
-    # Synchronize packages
-    #
-    if (-not $SkipMSYS2Update) {
-        $global:ProgressActivity = "Update MSYS2"
-        Write-ProgressStep
+        # Synchronize packages
+        #
+        if (-not $SkipMSYS2Update) {
+            $global:ProgressActivity = "Update MSYS2"
+            Write-ProgressStep
 
-            # Create home directories and other files and settings
-        # A: Use patches from https://patchew.org/QEMU/20210709075218.1796207-1-thuth@redhat.com/
-        ((Get-Content -path $MSYS2Dir\etc\post-install\07-pacman-key.post -Raw) -replace '--refresh-keys', '--version') |
-            Set-Content -Path $MSYS2Dir\etc\post-install\07-pacman-key.post # A
-        #   the first time with a login will setup gpg keys but will exit with `mkdir: cannot change permissions of /dev/shm`
-        #   so we do -IgnoreErrors but will otherwise set all the directories correctly
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
-            -Command $MSYS2Bash -ArgumentList @("-lc", "true")
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command $MSYS2Sed -ArgumentList @("-i", "s/^CheckSpace/#CheckSpace/g", "/etc/pacman.conf") # A
+                # Create home directories and other files and settings
+            # A: Use patches from https://patchew.org/QEMU/20210709075218.1796207-1-thuth@redhat.com/
+            ((Get-Content -path $MSYS2Dir\etc\post-install\07-pacman-key.post -Raw) -replace '--refresh-keys', '--version') |
+                Set-Content -Path $MSYS2Dir\etc\post-install\07-pacman-key.post # A
+            #   the first time with a login will setup gpg keys but will exit with `mkdir: cannot change permissions of /dev/shm`
+            #   so we do -IgnoreErrors but will otherwise set all the directories correctly
+            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
+                -Command $MSYS2Bash -ArgumentList @("-lc", "true")
+            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+                -Command $MSYS2Sed -ArgumentList @("-i", "s/^CheckSpace/#CheckSpace/g", "/etc/pacman.conf") # A
 
-        if ($Flavor -ne "CI") {
-            # Pacman does not update individual packages but rather the full system is upgraded. We _must_
-            # upgrade the system before installing packages, except we allow CI systems to use whatever
-            # system was installed as part of the CI. Confer:
-            # https://wiki.archlinux.org/title/System_maintenance#Partial_upgrades_are_unsupported
-            # One more edge case ...
-            #   :: Processing package changes...
-            #   upgrading msys2-runtime...
-            #   upgrading pacman...
-            #   :: To complete this update all MSYS2 processes including this terminal will be closed. Confirm to proceed [Y/n] SUCCESS: The process with PID XXXXX has been terminated.
-            # ... when pacman decides to upgrade itself, it kills all the MSYS2 processes. So we need to run at least
-            # once and ignore any errors from forcible termination.
-            Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
-                -Command $MSYS2Pacman -ArgumentList @("-Syu", "--noconfirm")
-            Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command $MSYS2Pacman -ArgumentList @("-Syu", "--noconfirm")
+            if ($Flavor -ne "CI") {
+                # Pacman does not update individual packages but rather the full system is upgraded. We _must_
+                # upgrade the system before installing packages, except we allow CI systems to use whatever
+                # system was installed as part of the CI. Confer:
+                # https://wiki.archlinux.org/title/System_maintenance#Partial_upgrades_are_unsupported
+                # One more edge case ...
+                #   :: Processing package changes...
+                #   upgrading msys2-runtime...
+                #   upgrading pacman...
+                #   :: To complete this update all MSYS2 processes including this terminal will be closed. Confirm to proceed [Y/n] SUCCESS: The process with PID XXXXX has been terminated.
+                # ... when pacman decides to upgrade itself, it kills all the MSYS2 processes. So we need to run at least
+                # once and ignore any errors from forcible termination.
+                Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
+                    -Command $MSYS2Pacman -ArgumentList @("-Syu", "--noconfirm")
+                Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+                    -Command $MSYS2Pacman -ArgumentList @("-Syu", "--noconfirm")
+            }
+
+            # Install new packages and/or full system if any were not installed ("--needed")
+            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+                -Command $MSYS2Pacman -ArgumentList (
+                    @("-S", "--needed", "--noconfirm") +
+                    $AllMSYS2Packages)
         }
 
-        # Install new packages and/or full system if any were not installed ("--needed")
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command $MSYS2Pacman -ArgumentList (
-                @("-S", "--needed", "--noconfirm") +
-                $AllMSYS2Packages)
+        $DkmlNormalPath = & $MSYS2Cygpath -au "$DkmlPath"
+        $InstallationPrefixNormalPath = & $MSYS2Cygpath -au "$InstallationPrefix"
+        $ProgramNormalPath = & $MSYS2Cygpath -au "$ProgramPath"
+    } else {
+        $ShExe = "sh"
+        $HereDirNormalPath = "$HereDir"
+        $DkmlNormalPath = "$DkmlPath"
+        $InstallationPrefixNormalPath = "$InstallationPrefix"
+        $ProgramNormalPath = "$ProgramPath"
     }
 
     # END MSYS2
@@ -898,56 +961,83 @@ try {
     # ----------------------------------------------------------------
     # BEGIN Define dkmlvars
 
-    $DkmlMSYS2AbsPath = & $MSYS2Cygpath -au "$DkmlPath"
-    $InstallationPrefixMSYS2AbsPath = & $MSYS2Cygpath -au "$InstallationPrefix"
-    $ProgramMSYS2AbsPath = & $MSYS2Cygpath -au "$ProgramPath"
-
     # dkmlvars.* (DiskuvOCaml variables) are scripts that set variables about the deployment.
-    $UnixVarsArray = @(
-        "DiskuvOCamlVarsVersion=2",
-        "DiskuvOCamlHome='$ProgramMSYS2AbsPath'",
-        "DiskuvOCamlBinaryPaths='$ProgramMSYS2AbsPath/usr/bin:$ProgramMSYS2AbsPath/bin'",
-        "DiskuvOCamlMSYS2Dir='/'",
-        "DiskuvOCamlDeploymentId='$DeploymentId'",
-        "DiskuvOCamlVersion='$dkml_root_version'"
-    )
+    if ($UseMSYS2) {
+        $UnixVarsArray = @(
+            "DiskuvOCamlVarsVersion=2",
+            "DiskuvOCamlHome='$ProgramNormalPath'",
+            "DiskuvOCamlBinaryPaths='$ProgramNormalPath/usr/bin;$ProgramNormalPath/bin'",
+            "DiskuvOCamlMSYS2Dir='/'",
+            "DiskuvOCamlDeploymentId='$DeploymentId'",
+            "DiskuvOCamlVersion='$dkml_root_version'"
+        )    
+    } else {
+        $DkmlUsrPath = Join-Path -Path $DkmlPath -ChildPath "usr"
+        $DkmlUsrBinPath = Join-Path -Path $DkmlUsrPath -ChildPath "bin"
+        $DkmlBinPath = Join-Path -Path $DkmlPath -ChildPath "bin"
+        $UnixVarsArray = @(
+            "DiskuvOCamlVarsVersion=2",
+            "DiskuvOCamlHome='$DkmlPath'",
+            "DiskuvOCamlBinaryPaths='$DkmlUsrBinPath;$DkmlBinPath'",
+            "DiskuvOCamlDeploymentId='$DeploymentId'",
+            "DiskuvOCamlVersion='$dkml_root_version'"
+        )
+    }
+
     $UnixVarsContents = $UnixVarsArray -join [environment]::NewLine
+    $ProgramUsrPath = Join-Path -Path $ProgramPath -ChildPath "usr"
+    $ProgramUsrBinPath = Join-Path -Path $ProgramUsrPath -ChildPath "bin"
+    $ProgramBinPath = Join-Path -Path $ProgramPath -ChildPath "bin"
+
+    $ProgramPathDoubleSlashed = $ProgramPath.Replace('\', '\\')
+    $ProgramUsrBinPathDoubleSlashed = $ProgramUsrBinPath.Replace('\', '\\')
+    $ProgramBinPathDoubleSlashed = $ProgramBinPath.Replace('\', '\\')
+
     $PowershellVarsContents = @"
 `$env:DiskuvOCamlVarsVersion = 2
 `$env:DiskuvOCamlHome = '$ProgramPath'
-`$env:DiskuvOCamlBinaryPaths = '$ProgramPath\usr\bin;$ProgramPath\bin'
-`$env:DiskuvOCamlMSYS2Dir = '$MSYS2Dir'
+`$env:DiskuvOCamlBinaryPaths = '$ProgramUsrBinPath;$ProgramBinPath'
 `$env:DiskuvOCamlDeploymentId = '$DeploymentId'
 `$env:DiskuvOCamlVersion = '$dkml_root_version'
 "@
     $CmdVarsContents = @"
 `@SET DiskuvOCamlVarsVersion=2
 `@SET DiskuvOCamlHome=$ProgramPath
-`@SET DiskuvOCamlBinaryPaths=$ProgramPath\usr\bin;$ProgramPath\bin
-`@SET DiskuvOCamlMSYS2Dir=$MSYS2Dir
+`@SET DiskuvOCamlBinaryPaths=$ProgramUsrBinPath;$ProgramBinPath
 `@SET DiskuvOCamlDeploymentId=$DeploymentId
 `@SET DiskuvOCamlVersion=$dkml_root_version
 "@
     $CmakeVarsContents = @"
 `set(DiskuvOCamlVarsVersion 2)
 `cmake_path(SET DiskuvOCamlHome NORMALIZE [=====[$ProgramPath]=====])
-`cmake_path(CONVERT [=====[$ProgramPath\usr\bin;$ProgramPath\bin]=====] TO_CMAKE_PATH_LIST DiskuvOCamlBinaryPaths)
-`cmake_path(SET DiskuvOCamlMSYS2Dir NORMALIZE [=====[$MSYS2Dir]=====])
+`cmake_path(CONVERT [=====[$ProgramUsrBinPath;$ProgramBinPath]=====] TO_CMAKE_PATH_LIST DiskuvOCamlBinaryPaths)
 `set(DiskuvOCamlDeploymentId [=====[$DeploymentId]=====])
 `set(DiskuvOCamlVersion [=====[$dkml_root_version]=====])
 "@
-
-    $ProgramPathDoubleSlashed = $ProgramPath.Replace('\', '\\')
     $SexpVarsContents = @"
 `(
 `("DiskuvOCamlVarsVersion" ("2"))
 `("DiskuvOCamlHome" ("$ProgramPathDoubleSlashed"))
-`("DiskuvOCamlBinaryPaths" ("$ProgramPathDoubleSlashed\\usr\\bin" "$ProgramPathDoubleSlashed\\bin"))
-`("DiskuvOCamlMSYS2Dir" ("$($MSYS2Dir.Replace('\', '\\'))"))
+`("DiskuvOCamlBinaryPaths" ("$ProgramUsrBinPathDoubleSlashed" "$ProgramBinPathDoubleSlashed"))
 `("DiskuvOCamlDeploymentId" ("$DeploymentId"))
 `("DiskuvOCamlVersion" ("$dkml_root_version"))
 `)
 "@
+
+    if($UseMSYS2) {
+        $PowershellVarsContents += @"
+`$env:DiskuvOCamlMSYS2Dir = '$MSYS2Dir'
+"@
+        $CmdVarsContents += @"
+`@SET DiskuvOCamlMSYS2Dir=$MSYS2Dir
+"@
+        $CmakeVarsContents += @"
+`cmake_path(SET DiskuvOCamlMSYS2Dir NORMALIZE [=====[$MSYS2Dir]=====])
+"@
+        $SexpVarsContents += @"
+`("DiskuvOCamlMSYS2Dir" ("$($MSYS2Dir.Replace('\', '\\'))"))
+"@
+    }
 
     # Inside this script we environment variables that recognize that we have an uncompleted installation:
     # 1. dkmlvars-v2.sexp is non existent or old, so can't use with-dkml.exe. WITHDKML_ENABLE=OFF
@@ -961,49 +1051,55 @@ try {
     # ----------------------------------------------------------------
     # BEGIN Compile/install system ocaml.exe
 
-    $global:ProgressActivity = "Install native Windows ocaml.exe and related binaries"
-    Write-ProgressStep
+    if (-not $Offline) {
+        $global:ProgressActivity = "Install native Windows ocaml.exe and related binaries"
+        Write-ProgressStep
 
-    $ProgramGeneralBinMSYS2AbsPath = & $MSYS2Cygpath -au "$ProgramGeneralBinDir"
-
-    # Skip with ... $global:SkipOcamlSetup = $true ... remove it with ... Remove-Variable SkipOcamlSetup
-    if (!$global:SkipOcamlSetup) {
-        $OcamlInstalled = $true
-        foreach ($OcamlBinary in $OCamlBinaries) {
-            if (!(Test-Path -Path "$ProgramGeneralBinDir\$OcamlBinary")) {
-                $OcamlInstalled = $false
-                break
-            }
-        }
-        if ($OcamlInstalled) {
-            # okay. already installed
+        if($UseMSYS2) {
+            $ProgramGeneralBinUnixAbsPath = & $MSYS2Cygpath -au "$ProgramGeneralBinDir"
         } else {
-            # build into bin/
-            if ($ImpreciseC99FloatOps) {
-                $ConfigureArgs = "--enable-imprecise-c99-float-ops"
-            } else {
-                # We do not use an empty string since Powershell 5.1.19041.2364
-                # seems to erase empty arguments
-                $ConfigureArgs = "--disable-imprecise-c99-float-ops"
+            $ProgramGeneralBinUnixAbsPath = "$ProgramGeneralBinDir"
+        }
+
+        # Skip with ... $global:SkipOcamlSetup = $true ... remove it with ... Remove-Variable SkipOcamlSetup
+        if (!$global:SkipOcamlSetup) {
+            $OcamlInstalled = $true
+            foreach ($OcamlBinary in $OCamlBinaries) {
+                if (!(Test-Path -Path "$ProgramGeneralBinDir\$OcamlBinary")) {
+                    $OcamlInstalled = $false
+                    break
+                }
             }
-            Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command $MSYS2Env `
-                -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
-                    $MSYS2Sh
-                    "$HereDirMSYS2AbsPath/install-ocaml.sh"
-                    "$DkmlMSYS2AbsPath"
-                    "$OCamlLangGitCommit"
-                    "$DkmlHostAbi"
-                    "$ProgramMSYS2AbsPath"
-                    "$ConfigureArgs"))
-            # and move into usr/bin/
-            if ("$ProgramRelGeneralBinDir" -ne "bin") {
-                Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-                    -Command $MSYS2Sh -ArgumentList @(
-                        "-c",
-                        ("install -d '$ProgramGeneralBinMSYS2AbsPath' && " +
-                         "for b in $OCamlBinaries; do mv -v '$ProgramMSYS2AbsPath'/bin/`$b '$ProgramGeneralBinMSYS2AbsPath'/; done")
-                    )
+            if ($OcamlInstalled) {
+                # okay. already installed
+            } else {
+                # build into bin/
+                if ($ImpreciseC99FloatOps) {
+                    $ConfigureArgs = "--enable-imprecise-c99-float-ops"
+                } else {
+                    # We do not use an empty string since Powershell 5.1.19041.2364
+                    # seems to erase empty arguments
+                    $ConfigureArgs = "--disable-imprecise-c99-float-ops"
+                }
+                Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+                    -Command $MSYS2Env `
+                    -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
+                        $ShExe
+                        "$HereDirNormalPath/install-ocaml.sh"
+                        "$DkmlNormalPath"
+                        "$OCamlLangGitCommit"
+                        "$DkmlHostAbi"
+                        "$ProgramNormalPath"
+                        "$ConfigureArgs"))
+                # and move into usr/bin/
+                if ("$ProgramRelGeneralBinDir" -ne "bin") {
+                    Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+                        -Command $ShExe -ArgumentList @(
+                            "-c",
+                            ("install -d '$ProgramGeneralBinUnixAbsPath' && " +
+                            "for b in $OCamlBinaries; do mv -v '$ProgramNormalPath'/bin/`$b '$ProgramGeneralBinUnixAbsPath'/; done")
+                        )
+                }
             }
         }
     }
@@ -1019,32 +1115,34 @@ try {
         exit 0
     }
 
-    $global:ProgressActivity = "Initialize opam package manager"
-    Write-ProgressStep
+    if (-not $Offline) {
+        $global:ProgressActivity = "Initialize opam package manager"
+        Write-ProgressStep
 
-    # Upgrades. Possibly ask questions to delete things, so no progress indicator
-    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -ForceConsole `
-        -Command $MSYS2Env `
-        -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
-            "$HereDirMSYS2AbsPath/deinit-opam-root.sh"
-            "-d"
-            "$DkmlMSYS2AbsPath"
-            "-o"
-            "$OpamExe"))
-
-    # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
-    if (!$global:SkipOpamSetup) {
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
+        # Upgrades. Possibly ask questions to delete things, so no progress indicator
+        Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+            -ForceConsole `
             -Command $MSYS2Env `
-            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
-                "$DkmlPath\vendor\drd\src\unix\private\init-opam-root.sh"
-                "-p"
-                "$DkmlHostAbi"
+            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
+                "$HereDirNormalPath/deinit-opam-root.sh"
+                "-d"
+                "$DkmlNormalPath"
                 "-o"
-                "$OpamExe"
-                "-v"
-                "$ProgramMSYS2AbsPath"))
+                "$OpamExe"))
+
+        # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
+        if (!$global:SkipOpamSetup) {
+            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+                -Command $MSYS2Env `
+                -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
+                    "$DkmlPath\vendor\drd\src\unix\private\init-opam-root.sh"
+                    "-p"
+                    "$DkmlHostAbi"
+                    "-o"
+                    "$OpamExe"
+                    "-v"
+                    "$ProgramNormalPath"))
+        }
     }
 
     # END opam init
@@ -1058,48 +1156,56 @@ try {
         exit 0
     }
 
-    $global:ProgressActivity = "Create 'playground' opam global switch"
-    Write-ProgressStep
+    if (-not $Offline) {
+        $global:ProgressActivity = "Create 'playground' opam global switch"
+        Write-ProgressStep
 
-    # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
-    if (!$global:SkipOpamSetup) {
-        # Install the playground switch
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command $MSYS2Env `
-            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
-                "$DkmlPath\vendor\drd\src\unix\create-opam-switch.sh"
-                "-p"
-                "$DkmlHostAbi"
-                "-y"
-                "-w"
-                "-n"
-                "playground"
-                "-v"
-                "$ProgramMSYS2AbsPath"
-                "-o"
-                "$OpamExe"
-                # AUTHORITATIVE OPTIONS = dkml-runtime-apps's [cmd_init.ml]. Aka: [dkml init]
-                "-e"
-                "PKG_CONFIG_PATH=$MSYS2Dir\clang64\lib\pkgconfig"
-                "-e"
-                "PKG_CONFIG_SYSTEM_INCLUDE_PATH="
-                "-e"
-                "PKG_CONFIG_SYSTEM_LIBRARY_PATH="
-                "-m"
-                "conf-withdkml"))
+        # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
+        if (!$global:SkipOpamSetup) {
+            # Install the playground switch
+            if($UseMSYS2) {
+                $ExtraArgsArray = @( "-e"
+                "PKG_CONFIG_PATH=$MSYS2Dir\clang64\lib\pkgconfig")
+            } else {
+                $ExtraArgsArray = @()
+            }
+            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+                -Command $MSYS2Env `
+                -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
+                    "$DkmlPath\vendor\drd\src\unix\create-opam-switch.sh"
+                    "-p"
+                    "$DkmlHostAbi"
+                    "-y"
+                    "-w"
+                    "-n"
+                    "playground"
+                    "-v"
+                    "$ProgramNormalPath"
+                    "-o"
+                    "$OpamExe"
+                    # AUTHORITATIVE OPTIONS = dkml-runtime-apps's [cmd_init.ml]. Aka: [dkml init]
+                    "-e"
+                    "PKG_CONFIG_PATH=$MSYS2Dir\clang64\lib\pkgconfig"
+                    "-e"
+                    "PKG_CONFIG_SYSTEM_INCLUDE_PATH="
+                    "-e"
+                    "PKG_CONFIG_SYSTEM_LIBRARY_PATH="
+                    "-m"
+                    "conf-withdkml") + $ExtraArgsArray)
 
-        # Diagnostics: Display all the switches
-        Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-            -Command $MSYS2Env `
-            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlMSYS2AbsPath/vendor/drc/all/emptytop"
-                "$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh"
-                "-p"
-                "$DkmlHostAbi"
-                "-v"
-                "$ProgramMSYS2AbsPath"
-                "-o"
-                "$OpamExe"
-                "switch"))
+            # Diagnostics: Display all the switches
+            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+                -Command $MSYS2Env `
+                -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
+                    "$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh"
+                    "-p"
+                    "$DkmlHostAbi"
+                    "-v"
+                    "$ProgramNormalPath"
+                    "-o"
+                    "$OpamExe"
+                    "switch"))
+        }
     }
 
     # END opam switch create playground
@@ -1125,25 +1231,32 @@ try {
     # Since for Unix we should be writing BOM-less UTF-8 shell scripts, and PowerShell 5.1 (the default on Windows 10) writes
     # UTF-8 with BOM (cf. https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content?view=powershell-5.1)
     # we write to standard Windows encoding `Unicode` (UTF-16 LE with BOM) and then use dos2unix to convert it to UTF-8 with no BOM.
-    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.sh" -Value $UnixVarsContents -Encoding Unicode
-    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.cmd" -Value $CmdVarsContents -Encoding Unicode
-    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.cmake" -Value $CmakeVarsContents -Encoding Unicode
-    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.sexp" -Value $SexpVarsContents -Encoding Unicode
-    Set-Content -Path "$InstallationPrefix\dkmlvars.ps1" -Value $PowershellVarsContents -Encoding Unicode
+    if($PSVersionTable.PSVersion.Major -le 5) {
+        $Encoding = "Unicode"
+        $PreCommand = ("dos2unix --newfile '$InstallationPrefixNormalPath/dkmlvars.utf16le-bom.sh'   '$InstallationPrefixNormalPath/dkmlvars.tmp.sh' && " +
+            "dos2unix --newfile '$InstallationPrefixNormalPath/dkmlvars.utf16le-bom.cmd'  '$InstallationPrefixNormalPath/dkmlvars.tmp.cmd' && " +
+            "dos2unix --newfile '$InstallationPrefixNormalPath/dkmlvars.utf16le-bom.cmake'  '$InstallationPrefixNormalPath/dkmlvars.tmp.cmake' && " +
+            "dos2unix --newfile '$InstallationPrefixNormalPath/dkmlvars.utf16le-bom.sexp' '$InstallationPrefixNormalPath/dkmlvars.tmp.sexp' && ")
+    } else {
+        $Encoding = "UTF8NoBOM"
+        $PreCommand = ""
+    }
+    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.sh" -Value $UnixVarsContents -Encoding $Encoding
+    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.cmd" -Value $CmdVarsContents -Encoding $Encoding
+    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.cmake" -Value $CmakeVarsContents -Encoding $Encoding
+    Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.sexp" -Value $SexpVarsContents -Encoding $Encoding
+    Set-Content -Path "$InstallationPrefix\dkmlvars.ps1" -Value $PowershellVarsContents -Encoding $Encoding
 
-    Invoke-MSYS2CommandWithProgress -MSYS2Dir $MSYS2Dir `
-        -Command $MSYS2Sh `
+    Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+        -Command $ShExe `
         -ArgumentList @(
             "-eufcx",
-            ("dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sh'   '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sh' && " +
-             "dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmd'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmd' && " +
-             "dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmake'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmake' && " +
-             "dos2unix --newfile '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sexp' '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sexp' && " +
-             "rm -f '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sh' '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmd' '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.cmake' '$InstallationPrefixMSYS2AbsPath/dkmlvars.utf16le-bom.sexp' && " +
-             "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sh'   '$InstallationPrefixMSYS2AbsPath/dkmlvars.sh' && " +
-             "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmd'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.cmd' && " +
-             "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.cmake'  '$InstallationPrefixMSYS2AbsPath/dkmlvars.cmake' && " +
-             "mv '$InstallationPrefixMSYS2AbsPath/dkmlvars.tmp.sexp' '$InstallationPrefixMSYS2AbsPath/dkmlvars-v2.sexp'")
+            ("$PreCommand" +
+             "rm -f '$InstallationPrefixNormalPath/dkmlvars.utf16le-bom.sh' '$InstallationPrefixNormalPath/dkmlvars.utf16le-bom.cmd' '$InstallationPrefixNormalPath/dkmlvars.utf16le-bom.cmake' '$InstallationPrefixNormalPath/dkmlvars.utf16le-bom.sexp' && " +
+             "mv '$InstallationPrefixNormalPath/dkmlvars.tmp.sh'   '$InstallationPrefixNormalPath/dkmlvars.sh' && " +
+             "mv '$InstallationPrefixNormalPath/dkmlvars.tmp.cmd'  '$InstallationPrefixNormalPath/dkmlvars.cmd' && " +
+             "mv '$InstallationPrefixNormalPath/dkmlvars.tmp.cmake'  '$InstallationPrefixNormalPath/dkmlvars.cmake' && " +
+             "mv '$InstallationPrefixNormalPath/dkmlvars.tmp.sexp' '$InstallationPrefixNormalPath/dkmlvars-v2.sexp'")
         )
 
     # END Stop deployment. Write deployment vars.
@@ -1293,7 +1406,7 @@ Write-Information ""
 Write-Information ""
 Write-Information ""
 Write-Information "Setup is complete. Congratulations!"
-Write-Information "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/#introduction. Announcements will be available at https://twitter.com/diskuv"
+Write-Information "Enjoy DkML! Documentation can be found at https://diskuv.com/dkmlbook/. Announcements will be available at https://twitter.com/diskuv"
 Write-Information ""
 Write-Information "You will need to log out and log back in"
 Write-Information "-OR- (for advanced users) exit all of your Command Prompts, Windows Terminals,"

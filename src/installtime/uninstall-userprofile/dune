@@ -1,11 +1,11 @@
 (executable
  (name uninstall_userprofile)
  (public_name uninstall_userprofile)
- (package dkml-component-network-ocamlcompiler)
+ (package dkml-component-ocamlcompiler-network)
  (modes
   (byte exe))
  (libraries
-  dkml-component-network-ocamlcompiler.common
+  dkml-component-ocamlcompiler-common
   dkml-install.api
   diskuvbox
   bos
@@ -20,7 +20,7 @@
 
 (install
  (section share)
- (package dkml-component-network-ocamlcompiler)
+ (package dkml-component-ocamlcompiler-network)
  (files
   (uninstall_userprofile.bc
    as
