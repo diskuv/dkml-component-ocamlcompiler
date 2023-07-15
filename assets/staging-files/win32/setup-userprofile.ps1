@@ -740,8 +740,6 @@ function Invoke-GenericCommandWithProgress {
         $Command,
         [string[]]
         $ArgumentList,
-        [Parameter]
-        $MSYS2Dir,
         [switch]
         $ForceConsole,
         [switch]
@@ -758,17 +756,27 @@ function Invoke-GenericCommandWithProgress {
     if($UseMSYS2) {
         $MSYS2Env = Join-Path (Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin") -ChildPath "env.exe"
         $MSYS2Cygpath = Join-Path (Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin") -ChildPath "cygpath.exe"
-        $GitMSYS2AbsPath = & $MSYS2Cygpath -au "$"
+        if($Offline) {
+            $PrePATH = ""
+        } else {
+            $GitMSYS2AbsPath = & $MSYS2Cygpath -au "$GitPath"
+            $PrePATH = "${GitMSYS2AbsPath}:"
+        }
         $TempMSYS2AbsPath = & $MSYS2Cygpath -au "$TempPath"
         $Command = $MSYS2Env
         $ArgumentList = @(
-            "PATH=${GitMSYS2AbsPath}:$INVOKER_MSYSTEM_PREFIX/bin:/usr/bin:/bin"
+            "PATH=${PrePATH}$INVOKER_MSYSTEM_PREFIX/bin:/usr/bin:/bin"
             "DKML_TMP_PARENTDIR=$TempMSYS2AbsPath"
             ) + @( $OrigCommand ) + $OrigArgumentList    
     } else {
         $Command = "env"
+        if($Offline) {
+            $PrePATH = ""
+        } else {
+            $PrePATH = "${GitPath}:"
+        }
         $ArgumentList = @(
-            "PATH=${GitPath}:/usr/bin:/bin"
+            "PATH=${PrePATH}/usr/bin:/bin"
             "DKML_TMP_PARENTDIR=$TempPath"
             ) + @( $OrigCommand ) + $OrigArgumentList
     }
@@ -914,9 +922,9 @@ try {
                 Set-Content -Path $MSYS2Dir\etc\post-install\07-pacman-key.post # A
             #   the first time with a login will setup gpg keys but will exit with `mkdir: cannot change permissions of /dev/shm`
             #   so we do -IgnoreErrors but will otherwise set all the directories correctly
-            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
+            Invoke-GenericCommandWithProgress -IgnoreErrors `
                 -Command $MSYS2Bash -ArgumentList @("-lc", "true")
-            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+            Invoke-GenericCommandWithProgress `
                 -Command $MSYS2Sed -ArgumentList @("-i", "s/^CheckSpace/#CheckSpace/g", "/etc/pacman.conf") # A
 
             if ($Flavor -ne "CI") {
@@ -931,14 +939,14 @@ try {
                 #   :: To complete this update all MSYS2 processes including this terminal will be closed. Confirm to proceed [Y/n] SUCCESS: The process with PID XXXXX has been terminated.
                 # ... when pacman decides to upgrade itself, it kills all the MSYS2 processes. So we need to run at least
                 # once and ignore any errors from forcible termination.
-                Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir -IgnoreErrors `
+                Invoke-GenericCommandWithProgress -IgnoreErrors `
                     -Command $MSYS2Pacman -ArgumentList @("-Syu", "--noconfirm")
-                Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+                Invoke-GenericCommandWithProgress `
                     -Command $MSYS2Pacman -ArgumentList @("-Syu", "--noconfirm")
             }
 
             # Install new packages and/or full system if any were not installed ("--needed")
-            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+            Invoke-GenericCommandWithProgress `
                 -Command $MSYS2Pacman -ArgumentList (
                     @("-S", "--needed", "--noconfirm") +
                     $AllMSYS2Packages)
@@ -1081,8 +1089,8 @@ try {
                     # seems to erase empty arguments
                     $ConfigureArgs = "--disable-imprecise-c99-float-ops"
                 }
-                Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
-                    -Command $MSYS2Env `
+                Invoke-GenericCommandWithProgress `
+                    -Command "env" `
                     -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
                         $ShExe
                         "$HereDirNormalPath/install-ocaml.sh"
@@ -1093,7 +1101,7 @@ try {
                         "$ConfigureArgs"))
                 # and move into usr/bin/
                 if ("$ProgramRelGeneralBinDir" -ne "bin") {
-                    Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+                    Invoke-GenericCommandWithProgress `
                         -Command $ShExe -ArgumentList @(
                             "-c",
                             ("install -d '$ProgramGeneralBinUnixAbsPath' && " +
@@ -1120,9 +1128,9 @@ try {
         Write-ProgressStep
 
         # Upgrades. Possibly ask questions to delete things, so no progress indicator
-        Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+        Invoke-GenericCommandWithProgress `
             -ForceConsole `
-            -Command $MSYS2Env `
+            -Command "env" `
             -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
                 "$HereDirNormalPath/deinit-opam-root.sh"
                 "-d"
@@ -1132,8 +1140,8 @@ try {
 
         # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
         if (!$global:SkipOpamSetup) {
-            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command $MSYS2Env `
+            Invoke-GenericCommandWithProgress `
+                -Command "env" `
                 -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
                     "$DkmlPath\vendor\drd\src\unix\private\init-opam-root.sh"
                     "-p"
@@ -1169,8 +1177,8 @@ try {
             } else {
                 $ExtraArgsArray = @()
             }
-            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command $MSYS2Env `
+            Invoke-GenericCommandWithProgress `
+                -Command "env" `
                 -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
                     "$DkmlPath\vendor\drd\src\unix\create-opam-switch.sh"
                     "-p"
@@ -1194,8 +1202,8 @@ try {
                     "conf-withdkml") + $ExtraArgsArray)
 
             # Diagnostics: Display all the switches
-            Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
-                -Command $MSYS2Env `
+            Invoke-GenericCommandWithProgress `
+                -Command "env" `
                 -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
                     "$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh"
                     "-p"
@@ -1247,7 +1255,7 @@ try {
     Set-Content -Path "$InstallationPrefix\dkmlvars.utf16le-bom.sexp" -Value $SexpVarsContents -Encoding $Encoding
     Set-Content -Path "$InstallationPrefix\dkmlvars.ps1" -Value $PowershellVarsContents -Encoding $Encoding
 
-    Invoke-GenericCommandWithProgress -MSYS2Dir $MSYS2Dir `
+    Invoke-GenericCommandWithProgress `
         -Command $ShExe `
         -ArgumentList @(
             "-eufcx",
