@@ -77,7 +77,7 @@ let register () =
     (module struct
       include Default_component_config
 
-      let component_name = "offline-ocamlcompiler"
+      let component_name = "ocamlcompiler-offline"
 
       let install_depends_on =
         [

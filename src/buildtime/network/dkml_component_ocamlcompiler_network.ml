@@ -169,7 +169,7 @@ let register () =
       (* Even though this is "network" the components are "offline".
          It is the setup-machine.ps1 and setup-userprofile.ps1 that download
          from the network. *)
-      let component_name = "network-ocamlcompiler"
+      let component_name = "ocamlcompiler-network"
 
       let install_depends_on =
         [
