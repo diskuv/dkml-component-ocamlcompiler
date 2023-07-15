@@ -1029,7 +1029,6 @@ try {
 `("DiskuvOCamlBinaryPaths" ("$ProgramUsrBinPathDoubleSlashed" "$ProgramBinPathDoubleSlashed"))
 `("DiskuvOCamlDeploymentId" ("$DeploymentId"))
 `("DiskuvOCamlVersion" ("$dkml_root_version"))
-`)
 "@
 
     if($UseMSYS2) {
@@ -1046,6 +1045,11 @@ try {
 `("DiskuvOCamlMSYS2Dir" ("$($MSYS2Dir.Replace('\', '\\'))"))
 "@
     }
+
+    # end nesting
+    $SexpVarsContents += @"
+`)
+"@
 
     # Inside this script we environment variables that recognize that we have an uncompleted installation:
     # 1. dkmlvars-v2.sexp is non existent or old, so can't use with-dkml.exe. WITHDKML_ENABLE=OFF
