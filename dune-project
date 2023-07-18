@@ -18,7 +18,9 @@
  (name dkml-component-ocamlcompiler-common)
  (synopsis "DkML common code for ocamlcompiler")
  (depends
-  (dkml-install                      (>= 0.2.0))))
+  (dkml-install                      (>= 0.2.0))
+  (crunch                            (>= 3.3.1))
+  (re                                (>= 1.10.0))))
 
 (package
  (name dkml-component-ocamlcompiler-network)
@@ -40,7 +42,6 @@
   (diskuvbox                         (>= 0.1.0))
   (dkml-runtime-common               (>= 1.0.2~prerel9))
   (dkml-runtime-distribution         (>= 1.0.2~prerel9))
-  (crunch                            (>= 3.3.1))
   (alcotest                          (and (>= 1.4.0) :with-test))
   )
  (depopts
