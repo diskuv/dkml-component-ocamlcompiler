@@ -18,6 +18,7 @@
  (name dkml-component-ocamlcompiler-common)
  (synopsis "DkML common code for ocamlcompiler")
  (depends
+  dkml-component-staging-dkmlconfdir
   (dkml-install                      (>= 0.2.0))
   (crunch                            (>= 3.3.1))
   (re                                (>= 1.10.0))))
