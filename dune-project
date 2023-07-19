@@ -21,7 +21,8 @@
   dkml-component-staging-dkmlconfdir
   (dkml-install                      (>= 0.2.0))
   (crunch                            (>= 3.3.1))
-  (re                                (>= 1.10.0))))
+  (re                                (>= 1.10.0))
+  (alcotest                          (and (>= 1.4.0) :with-test))))
 
 (package
  (name dkml-component-ocamlcompiler-network)
@@ -42,9 +43,7 @@
   (base64                            (>= 3.5.0))
   (diskuvbox                         (>= 0.1.0))
   (dkml-runtime-common               (>= 1.0.2~prerel9))
-  (dkml-runtime-distribution         (>= 1.0.2~prerel9))
-  (alcotest                          (and (>= 1.4.0) :with-test))
-  )
+  (dkml-runtime-distribution         (>= 1.0.2~prerel9)))
  (depopts
   dkml-compiler-src
   dkml-option-vcpkg)
@@ -69,10 +68,7 @@
   (base64                            (>= 3.5.0))
   (diskuvbox                         (>= 0.1.0))
   (dkml-runtime-common               (>= 1.0.2~prerel9))
-  (dkml-runtime-distribution         (>= 1.0.2~prerel9))
-  (crunch                            (>= 3.3.1))
-  (alcotest                          (and (>= 1.4.0) :with-test))
-  )
+  (dkml-runtime-distribution         (>= 1.0.2~prerel9)))
  (depopts
   dkml-compiler-src
   dkml-option-vcpkg)

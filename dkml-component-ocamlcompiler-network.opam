@@ -27,7 +27,6 @@ depends: [
   "diskuvbox" {>= "0.1.0"}
   "dkml-runtime-common" {>= "1.0.2~prerel9"}
   "dkml-runtime-distribution" {>= "1.0.2~prerel9"}
-  "alcotest" {>= "1.4.0" & with-test}
   "odoc" {with-doc}
 ]
 depopts: ["dkml-compiler-src" "dkml-option-vcpkg"]
