@@ -1007,6 +1007,7 @@ try {
 `$env:DiskuvOCamlBinaryPaths = '$ProgramUsrBinPath;$ProgramBinPath'
 `$env:DiskuvOCamlDeploymentId = '$DeploymentId'
 `$env:DiskuvOCamlVersion = '$dkml_root_version'
+
 "@
     $CmdVarsContents = @"
 `@SET DiskuvOCamlVarsVersion=2
@@ -1014,6 +1015,7 @@ try {
 `@SET DiskuvOCamlBinaryPaths=$ProgramUsrBinPath;$ProgramBinPath
 `@SET DiskuvOCamlDeploymentId=$DeploymentId
 `@SET DiskuvOCamlVersion=$dkml_root_version
+
 "@
     $CmakeVarsContents = @"
 `set(DiskuvOCamlVarsVersion 2)
@@ -1021,6 +1023,7 @@ try {
 `cmake_path(CONVERT [=====[$ProgramUsrBinPath;$ProgramBinPath]=====] TO_CMAKE_PATH_LIST DiskuvOCamlBinaryPaths)
 `set(DiskuvOCamlDeploymentId [=====[$DeploymentId]=====])
 `set(DiskuvOCamlVersion [=====[$dkml_root_version]=====])
+
 "@
     $SexpVarsContents = @"
 `(
@@ -1029,20 +1032,25 @@ try {
 `("DiskuvOCamlBinaryPaths" ("$ProgramUsrBinPathDoubleSlashed" "$ProgramBinPathDoubleSlashed"))
 `("DiskuvOCamlDeploymentId" ("$DeploymentId"))
 `("DiskuvOCamlVersion" ("$dkml_root_version"))
+
 "@
 
     if($UseMSYS2) {
         $PowershellVarsContents += @"
 `$env:DiskuvOCamlMSYS2Dir = '$MSYS2Dir'
+
 "@
         $CmdVarsContents += @"
 `@SET DiskuvOCamlMSYS2Dir=$MSYS2Dir
+
 "@
         $CmakeVarsContents += @"
 `cmake_path(SET DiskuvOCamlMSYS2Dir NORMALIZE [=====[$MSYS2Dir]=====])
+
 "@
         $SexpVarsContents += @"
 `("DiskuvOCamlMSYS2Dir" ("$($MSYS2Dir.Replace('\', '\\'))"))
+
 "@
     }
 
