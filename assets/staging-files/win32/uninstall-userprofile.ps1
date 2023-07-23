@@ -119,10 +119,10 @@ $ProgramEssentialBinDir = "$ProgramPath\$ProgramRelEssentialBinDir"
 # ----------------------------------------------------------------
 # Enhanced Progress Reporting
 
-$AuditLog = Join-Path -Path $InstallationPrefix -ChildPath "uninstall-userprofile-$FixedSlotIdx.full.log"
+$AuditLog = Join-Path -Path $InstallationPrefix -ChildPath "uninstall-userprofile.full.log"
 if (Test-Path -Path $AuditLog) {
     # backup the original
-    Rename-Item -Path $AuditLog -NewName "uninstall-userprofile-$FixedSlotIdx.backup.$(Get-CurrentEpochMillis).log"
+    Rename-Item -Path $AuditLog -NewName "uninstall-userprofile.backup.$(Get-CurrentEpochMillis).log"
 } elseif (!(Test-Path -Path $InstallationPrefix)) {
     # Create the installation directory because that is where the audit log
     # will go.
