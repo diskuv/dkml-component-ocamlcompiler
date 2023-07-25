@@ -970,25 +970,30 @@ try {
     # BEGIN Define dkmlvars
 
     # dkmlvars.* (DiskuvOCaml variables) are scripts that set variables about the deployment.
+    if($Offline) {
+        $DiskuvOCamlMode = "byte"
+    } else {
+        $DiskuvOCamlMode = "native"
+    }
+    $UnixVarsArray = @(
+        "DiskuvOCamlVarsVersion=2",
+        "DiskuvOCamlDeploymentId='$DeploymentId'",
+        "DiskuvOCamlVersion='$dkml_root_version'",
+        "DiskuvOCamlMode='$DiskuvOCamlMode'"
+        )
     if ($UseMSYS2) {
-        $UnixVarsArray = @(
-            "DiskuvOCamlVarsVersion=2",
+        $UnixVarsArray += @(
             "DiskuvOCamlHome='$ProgramNormalPath'",
             "DiskuvOCamlBinaryPaths='$ProgramNormalPath/usr/bin;$ProgramNormalPath/bin'",
-            "DiskuvOCamlMSYS2Dir='/'",
-            "DiskuvOCamlDeploymentId='$DeploymentId'",
-            "DiskuvOCamlVersion='$dkml_root_version'"
+            "DiskuvOCamlMSYS2Dir='/'"
         )
     } else {
         $DkmlUsrPath = Join-Path -Path $DkmlPath -ChildPath "usr"
         $DkmlUsrBinPath = Join-Path -Path $DkmlUsrPath -ChildPath "bin"
         $DkmlBinPath = Join-Path -Path $DkmlPath -ChildPath "bin"
-        $UnixVarsArray = @(
-            "DiskuvOCamlVarsVersion=2",
+        $UnixVarsArray += @(
             "DiskuvOCamlHome='$DkmlPath'",
-            "DiskuvOCamlBinaryPaths='$DkmlUsrBinPath;$DkmlBinPath'",
-            "DiskuvOCamlDeploymentId='$DeploymentId'",
-            "DiskuvOCamlVersion='$dkml_root_version'"
+            "DiskuvOCamlBinaryPaths='$DkmlUsrBinPath;$DkmlBinPath'"
         )
     }
 
@@ -1007,6 +1012,7 @@ try {
 `$env:DiskuvOCamlBinaryPaths = '$ProgramUsrBinPath;$ProgramBinPath'
 `$env:DiskuvOCamlDeploymentId = '$DeploymentId'
 `$env:DiskuvOCamlVersion = '$dkml_root_version'
+`$env:DiskuvOCamlMode = '$DiskuvOCamlMode'
 
 "@
     $CmdVarsContents = @"
@@ -1015,6 +1021,7 @@ try {
 `@SET DiskuvOCamlBinaryPaths=$ProgramUsrBinPath;$ProgramBinPath
 `@SET DiskuvOCamlDeploymentId=$DeploymentId
 `@SET DiskuvOCamlVersion=$dkml_root_version
+`@SET DiskuvOCamlMode=$DiskuvOCamlMode
 
 "@
     $CmakeVarsContents = @"
@@ -1023,6 +1030,7 @@ try {
 `cmake_path(CONVERT [=====[$ProgramUsrBinPath;$ProgramBinPath]=====] TO_CMAKE_PATH_LIST DiskuvOCamlBinaryPaths)
 `set(DiskuvOCamlDeploymentId [=====[$DeploymentId]=====])
 `set(DiskuvOCamlVersion [=====[$dkml_root_version]=====])
+`set(DiskuvOCamlMode [=====[$DiskuvOCamlMode]=====])
 
 "@
     $SexpVarsContents = @"
@@ -1032,6 +1040,7 @@ try {
 `("DiskuvOCamlBinaryPaths" ("$ProgramUsrBinPathDoubleSlashed" "$ProgramBinPathDoubleSlashed"))
 `("DiskuvOCamlDeploymentId" ("$DeploymentId"))
 `("DiskuvOCamlVersion" ("$dkml_root_version"))
+`("DiskuvOCamlMode" ("$DiskuvOCamlMode"))
 
 "@
 
