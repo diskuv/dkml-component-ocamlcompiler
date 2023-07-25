@@ -25,8 +25,6 @@ depends: [
     {>= "2.2.0~" & < "2.2.0~dkml20220000" | > "2.2.0~dkml99999999"}
   "base64" {>= "3.5.0"}
   "diskuvbox" {>= "0.1.0"}
-  "dkml-runtime-common" {>= "1.0.2~prerel9"}
-  "dkml-runtime-distribution" {>= "1.0.2~prerel9"}
   "odoc" {with-doc}
 ]
 dev-repo:

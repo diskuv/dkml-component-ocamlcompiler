@@ -25,6 +25,8 @@
   (dkml-install                      (>= 0.2.0))
   (crunch                            (>= 3.3.1))
   (re                                (>= 1.10.0))
+  (dkml-runtime-common               (>= 2.0.2))
+  (dkml-runtime-distribution         (>= 2.0.2))
   (alcotest                          (and (>= 1.4.0) :with-test))))
 
 (package
@@ -44,9 +46,7 @@
   ; Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
   (dkml-component-offline-opamshim   (and (>= 2.2.0~) (or (< 2.2.0~dkml20220000) (> 2.2.0~dkml99999999))))
   (base64                            (>= 3.5.0))
-  (diskuvbox                         (>= 0.1.0))
-  (dkml-runtime-common               (>= 1.0.2~prerel9))
-  (dkml-runtime-distribution         (>= 1.0.2~prerel9))))
+  (diskuvbox                         (>= 0.1.0))))
 
 (package
  (name dkml-component-ocamlcompiler-offline)
@@ -65,6 +65,4 @@
   ; Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
   (dkml-component-offline-opamshim   (and (>= 2.2.0~) (or (< 2.2.0~dkml20220000) (> 2.2.0~dkml99999999))))
   (base64                            (>= 3.5.0))
-  (diskuvbox                         (>= 0.1.0))
-  (dkml-runtime-common               (>= 1.0.2~prerel9))
-  (dkml-runtime-distribution         (>= 1.0.2~prerel9))))
+  (diskuvbox                         (>= 0.1.0))))
