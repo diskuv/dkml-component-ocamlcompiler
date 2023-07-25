@@ -24,8 +24,7 @@ let execute_install_user ctx =
       let cmd =
         Cmd.(
           v (Fpath.to_string bytecode)
-          % "--offline"
-          % "--control-dir"
+          % "--offline" % "--control-dir"
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%")
           % "--msys2-dir"
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%/tools/MSYS2")
@@ -78,23 +77,15 @@ let register () =
       include Default_component_config
 
       let component_name = "ocamlcompiler-offline"
-
-      let install_depends_on =
-        [
-          "staging-ocamlrun";
-          "offline-unixutils";
-          "offline-opamshim";
-        ]
-
+      let install_depends_on = [ "staging-ocamlrun" ]
       let uninstall_depends_on = [ "staging-ocamlrun" ]
-
       let needs_install_admin ~ctx:_ = false
 
       let install_user_subcommand ~component_name:_ ~subcommand_name ~fl ~ctx_t
           =
         let doc =
-          "Install the offline OCaml compiler on Windows and install nothing on other \
-           operating systems"
+          "Install the offline OCaml compiler on Windows and install nothing \
+           on other operating systems"
         in
         Dkml_install_api.Forward_progress.Continue_progress
           ( Cmdliner.Cmd.v
@@ -105,8 +96,8 @@ let register () =
       let uninstall_user_subcommand ~component_name:_ ~subcommand_name ~fl
           ~ctx_t =
         let doc =
-          "Uninstall the offline OCaml compiler on Windows, and uninstall nothing on \
-           other operating systems"
+          "Uninstall the offline OCaml compiler on Windows, and uninstall \
+           nothing on other operating systems"
         in
         Dkml_install_api.Forward_progress.Continue_progress
           ( Cmdliner.Cmd.v
