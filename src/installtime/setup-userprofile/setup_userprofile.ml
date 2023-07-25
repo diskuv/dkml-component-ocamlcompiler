@@ -3,8 +3,8 @@ module Arg = Cmdliner.Arg
 module Cmd = Cmdliner.Cmd
 module Term = Cmdliner.Term
 
-let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
-    offline control_dir msys2_dir opam_exe vcpkg dkml_confdir_exe =
+let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
+    control_dir msys2_dir_opt opam_exe_opt vcpkg dkml_confdir_exe =
   let model_conf =
     Staging_dkmlconfdir_api.Conf_loader.create_from_system_confdir
       ~unit_name:"ocamlcompiler" ~dkml_confdir_exe
@@ -35,9 +35,7 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
     in
     let* control_dir = Fpath.of_string control_dir in
     let* temp_dir = Fpath.of_string temp_dir in
-    let* opam_exe = Fpath.of_string opam_exe in
     let* dkml_dir = Fpath.of_string dkml_dir in
-    let* msys2_dir = Fpath.of_string msys2_dir in
     (* Uninstall the old control directory. For now we don't have the
        formal concept of a data directory, although the default Opam root is
        the defacto data directory today. We do _not_ uninstall the
@@ -65,25 +63,49 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi
        so there are no spaces. *)
     let setup_bat = Fpath.(v scripts_dir / "setup-userprofile.bat") in
     let to83 = Ocamlcompiler_common.Os.Windows.get_dos83_short_path in
-    let* control_dir_83 = to83 control_dir in
-    let* msys2_dir_83 = to83 msys2_dir in
-    let* opam_exe_83 = to83 opam_exe in
-    let* dkml_path_83 = to83 dkml_dir in
-    let* temp_dir_83 = to83 temp_dir in
-    let cmd =
-      Bos.Cmd.(
-        v (Fpath.to_string setup_bat)
-        % "-AllowRunAsAdmin" % "-InstallationPrefix" % control_dir_83
-        % "-OCamlLangVersion" % Ocamlcompiler_common.ocaml_ver % "-MSYS2Dir"
-        % msys2_dir_83 % "-OpamExe" % opam_exe_83 % "-DkmlPath" % dkml_path_83
-        % "-NoDeploymentSlot"
-        % "-DkmlHostAbi"
-        % Context.Abi_v2.to_canonical_string target_abi
-        % "-TempParentPath" % temp_dir_83 % "-SkipProgress" % "-SkipMSYS2Update")
+    let* cmd =
+      (* Common setup-userprofile.bat arguments *)
+      let* control_dir_83 = to83 control_dir in
+      let* dkml_path_83 = to83 dkml_dir in
+      let* temp_dir_83 = to83 temp_dir in
+      Ok
+        Bos.Cmd.(
+          v (Fpath.to_string setup_bat)
+          % "-AllowRunAsAdmin" % "-InstallationPrefix" % control_dir_83
+          % "-OCamlLangVersion" % Ocamlcompiler_common.ocaml_ver % "-DkmlPath"
+          % dkml_path_83 % "-NoDeploymentSlot" % "-DkmlHostAbi"
+          % Context.Abi_v2.to_canonical_string target_abi
+          % "-TempParentPath" % temp_dir_83 % "-SkipProgress"
+          % "-SkipMSYS2Update")
     in
-    let cmd = if offline then Bos.Cmd.(cmd % "-Offline") else cmd in
-    let cmd = if vcpkg then Bos.Cmd.(cmd % "-VcpkgCompatibility") else cmd in
+    let* cmd =
+      (* Add -OpamExe *)
+      match opam_exe_opt with
+      | None -> Ok cmd
+      | Some opam_exe ->
+          let* opam_exe = Fpath.of_string opam_exe in
+          let* opam_exe_83 = to83 opam_exe in
+          Ok Bos.Cmd.(cmd % "-OpamExe" % opam_exe_83)
+    in
+    let* cmd =
+      (* Add -MSYS2Dir *)
+      match msys2_dir_opt with
+      | None -> Ok cmd
+      | Some msys2_dir ->
+          let* msys2_dir = Fpath.of_string msys2_dir in
+          let* msys2_dir_83 = to83 msys2_dir in
+          Ok Bos.Cmd.(cmd % "-MSYS2Dir" % msys2_dir_83)
+    in
     let cmd =
+      (* Add -Offline *)
+      if offline then Bos.Cmd.(cmd % "-Offline") else cmd
+    in
+    let cmd =
+      (* Add -VcpkgCompatibility *)
+      if vcpkg then Bos.Cmd.(cmd % "-VcpkgCompatibility") else cmd
+    in
+    let cmd =
+      (* Add -ImpreciseC99FloatOps *)
       if Model_conf.feature_flag_imprecise_c99_float_ops model_conf then (
         Logs.info (fun l -> l "Using [feature_flag_imprecise_c99_float_ops]");
         Bos.Cmd.(cmd % "-ImpreciseC99FloatOps"))
@@ -108,9 +130,8 @@ let tmp_dir_t = Arg.(required & opt (some dir) None & info [ "temp-dir" ])
 let control_dir_t =
   Arg.(required & opt (some string) None & info [ "control-dir" ])
 
-let msys2_dir_t = Arg.(required & opt (some dir) None & info [ "msys2-dir" ])
-
-let opam_exe_t = Arg.(required & opt (some file) None & info [ "opam-exe" ])
+let msys2_dir_opt_t = Arg.(value & opt (some dir) None & info [ "msys2-dir" ])
+let opam_exe_opt_t = Arg.(value & opt (some file) None & info [ "opam-exe" ])
 
 let target_abi_t =
   let open Context.Abi_v2 in
@@ -120,7 +141,6 @@ let target_abi_t =
   Arg.(required & opt (some (enum l)) None & info [ "target-abi" ])
 
 let vcpkg_t = Arg.(value & flag & info [ "vcpkg" ])
-
 let offline_t = Arg.(value & flag & info [ "offline" ])
 
 let dkml_confdir_exe_t =
@@ -144,8 +164,8 @@ let () =
   let t =
     Term.(
       const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-      $ target_abi_t $ offline_t $ control_dir_t $ msys2_dir_t $ opam_exe_t
-      $ vcpkg_t $ dkml_confdir_exe_t)
+      $ target_abi_t $ offline_t $ control_dir_t $ msys2_dir_opt_t
+      $ opam_exe_opt_t $ vcpkg_t $ dkml_confdir_exe_t)
   in
   let info =
     Cmd.info "setup-userprofile.bc"

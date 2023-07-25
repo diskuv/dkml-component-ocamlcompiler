@@ -1,11 +1,11 @@
 (executable
  (name setup_machine)
  (public_name setup_machine)
- (package dkml-component-ocamlcompiler-network)
+ (package dkml-component-ocamlcompiler-common)
  (modes
   (byte exe))
  (libraries
-  dkml-component-ocamlcompiler-common
+  dkml-component-ocamlcompiler-common.api
   dkml-install.api
   bos
   fpath
@@ -19,6 +19,6 @@
 
 (install
  (section share)
- (package dkml-component-ocamlcompiler-network)
+ (package dkml-component-ocamlcompiler-common)
  (files
   (setup_machine.bc as staging-files/generic/setup_machine.bc)))

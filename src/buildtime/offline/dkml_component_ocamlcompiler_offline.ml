@@ -10,8 +10,10 @@ type important_paths = {
 
 let get_important_paths ctx =
   let tmppath = ctx.Context.path_eval "%{tmp}%" in
-  let dkmlpath = ctx.Context.path_eval "%{_:share-abi}%/dkmldir" in
-  let scriptsdir = ctx.Context.path_eval "%{_:share-abi}%" in
+  let dkmlpath =
+    ctx.Context.path_eval "%{ocamlcompiler-common:share-abi}%/dkmldir"
+  in
+  let scriptsdir = ctx.Context.path_eval "%{ocamlcompiler-common:share-abi}%" in
   { tmppath; dkmlpath; scriptsdir }
 
 let execute_install_user ctx =
@@ -19,18 +21,14 @@ let execute_install_user ctx =
   | true ->
       let important_paths = get_important_paths ctx in
       let bytecode =
-        ctx.Context.path_eval "%{_:share-generic}%/setup_userprofile.bc"
+        ctx.Context.path_eval
+          "%{ocamlcompiler-common:share-generic}%/setup_userprofile.bc"
       in
       let cmd =
         Cmd.(
           v (Fpath.to_string bytecode)
           % "--offline" % "--control-dir"
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%")
-          % "--msys2-dir"
-          % Fpath.to_string (ctx.Context.path_eval "%{prefix}%/tools/MSYS2")
-          % "--opam-exe"
-          % Fpath.to_string
-              (ctx.Context.path_eval "%{prefix}%/bin/opam-real.exe")
           % "--target-abi"
           % Context.Abi_v2.to_canonical_string ctx.Context.target_abi_v2
           % "--dkml-dir"
@@ -43,9 +41,6 @@ let execute_install_user ctx =
           % Fpath.to_string (Staging_dkmlconfdir_api.dkml_confdir_exe ctx)
           %% of_list (Array.to_list (Log_config.to_args ctx.Context.log_config)))
       in
-      let cmd =
-        if Opts.option_vcpkg_available then Cmd.(cmd % "--vcpkg") else cmd
-      in
       Staging_ocamlrun_api.spawn_ocamlrun ctx cmd
   | false -> ()
 
@@ -54,7 +49,8 @@ let execute_uninstall_user ctx =
   | true ->
       let important_paths = get_important_paths ctx in
       let bytecode =
-        ctx.Context.path_eval "%{_:share-generic}%/uninstall_userprofile.bc"
+        ctx.Context.path_eval
+          "%{ocamlcompiler-common:share-generic}%/uninstall_userprofile.bc"
       in
       let cmd =
         Cmd.(
@@ -77,8 +73,8 @@ let register () =
       include Default_component_config
 
       let component_name = "ocamlcompiler-offline"
-      let install_depends_on = [ "staging-ocamlrun" ]
-      let uninstall_depends_on = [ "staging-ocamlrun" ]
+      let install_depends_on = [ "staging-ocamlrun"; "ocamlcompiler-common" ]
+      let uninstall_depends_on = [ "staging-ocamlrun"; "ocamlcompiler-common" ]
       let needs_install_admin ~ctx:_ = false
 
       let install_user_subcommand ~component_name:_ ~subcommand_name ~fl ~ctx_t

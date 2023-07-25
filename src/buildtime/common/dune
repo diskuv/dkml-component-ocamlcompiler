@@ -1,13 +1,13 @@
 (library
- (public_name dkml-component-ocamlcompiler-offline)
- (name dkml_component_ocamlcompiler_offline)
+ (public_name dkml-component-ocamlcompiler-common)
+ (name dkml_component_ocamlcompiler_common)
  (libraries
   dkml-install.register
+  dkml-component-ocamlcompiler-common.api
   dkml-component-staging-ocamlrun.api
-  dkml-component-staging-dkmlconfdir.api
+  dkml-component-staging-dkmlconfdir.api  
   bos
-  logs
-  dkml-component-ocamlcompiler-common.api))
+  logs))
 
 (rule
  (target opts.ml)

@@ -10,8 +10,8 @@ type important_paths = {
 
 let get_important_paths ctx =
   let tmppath = ctx.Context.path_eval "%{tmp}%" in
-  let dkmlpath = ctx.Context.path_eval "%{_:share-abi}%/dkmldir" in
-  let scriptsdir = ctx.Context.path_eval "%{_:share-abi}%" in
+  let dkmlpath = ctx.Context.path_eval "%{ocamlcompiler-common:share-abi}%/dkmldir" in
+  let scriptsdir = ctx.Context.path_eval "%{ocamlcompiler-common:share-abi}%" in
   { tmppath; dkmlpath; scriptsdir }
 
 (** [do_needs_install_admin_on_windows] defaults to [false], but if and only if
@@ -85,7 +85,8 @@ let execute_install_admin ctx =
   | true ->
       let important_paths = get_important_paths ctx in
       let bytecode =
-        ctx.Context.path_eval "%{_:share-generic}%/setup_machine.bc"
+        ctx.Context.path_eval
+          "%{ocamlcompiler-common:share-generic}%/setup_machine.bc"
       in
       let cmd =
         Cmd.(
@@ -109,7 +110,8 @@ let execute_install_user ctx =
   | true ->
       let important_paths = get_important_paths ctx in
       let bytecode =
-        ctx.Context.path_eval "%{_:share-generic}%/setup_userprofile.bc"
+        ctx.Context.path_eval
+          "%{ocamlcompiler-common:share-generic}%/setup_userprofile.bc"
       in
       let cmd =
         Cmd.(
@@ -144,7 +146,8 @@ let execute_uninstall_user ctx =
   | true ->
       let important_paths = get_important_paths ctx in
       let bytecode =
-        ctx.Context.path_eval "%{_:share-generic}%/uninstall_userprofile.bc"
+        ctx.Context.path_eval
+          "%{ocamlcompiler-common:share-generic}%/uninstall_userprofile.bc"
       in
       let cmd =
         Cmd.(
@@ -174,11 +177,12 @@ let register () =
       let install_depends_on =
         [
           "staging-ocamlrun";
+          "ocamlcompiler-common";
           "offline-unixutils";
           "offline-opamshim";
         ]
 
-      let uninstall_depends_on = [ "staging-ocamlrun" ]
+      let uninstall_depends_on = [ "staging-ocamlrun"; "ocamlcompiler-common" ]
 
       let needs_install_admin ~ctx =
         match Context.Abi_v2.is_windows ctx.Context.target_abi_v2 with

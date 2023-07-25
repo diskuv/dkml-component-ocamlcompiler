@@ -67,20 +67,6 @@ install: [
   # 2. Copy assets
   ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86"]
   ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86_64"]
-
-  # 3. Copy minimal dkmldir into staging, adding distribution which has
-  #    PowerShell scripts and other Unix scripts needed by setup-userprofile.ps1
-
-  #   Clone minimal dkmldir
-  ["diskuvbox" "copy-dir" "dkmldir" "%{_:share}%/staging-files/windows_x86/dkmldir"]
-  ["diskuvbox" "copy-dir" "dkmldir" "%{_:share}%/staging-files/windows_x86_64/dkmldir"]
-  #   Unpack runtime-distribution
-  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/none" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/none"]
-  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/none" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/none"]
-  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/unix" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/unix"]
-  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/unix" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/unix"]
-  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/windows" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/windows"]
-  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/windows" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/windows"]
 ]
 extra-source "dl/ocaml.tar.gz" {
   src: "https://github.com/ocaml/ocaml/archive/4.14.0.tar.gz"

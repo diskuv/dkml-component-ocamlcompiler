@@ -7,7 +7,7 @@
   dkml-component-staging-dkmlconfdir.api
   bos
   logs
-  dkml-component-ocamlcompiler-common))
+  dkml-component-ocamlcompiler-common.api))
 
 (rule
  (target opts.ml)
