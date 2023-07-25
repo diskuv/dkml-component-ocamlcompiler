@@ -17,6 +17,9 @@
 (package
  (name dkml-component-ocamlcompiler-common)
  (synopsis "DkML common code for ocamlcompiler")
+ (depopts
+  dkml-compiler-src
+  dkml-option-vcpkg)
  (depends
   dkml-component-staging-dkmlconfdir
   (dkml-install                      (>= 0.2.0))
@@ -43,11 +46,7 @@
   (base64                            (>= 3.5.0))
   (diskuvbox                         (>= 0.1.0))
   (dkml-runtime-common               (>= 1.0.2~prerel9))
-  (dkml-runtime-distribution         (>= 1.0.2~prerel9)))
- (depopts
-  dkml-compiler-src
-  dkml-option-vcpkg)
-)
+  (dkml-runtime-distribution         (>= 1.0.2~prerel9))))
 
 (package
  (name dkml-component-ocamlcompiler-offline)
@@ -68,8 +67,4 @@
   (base64                            (>= 3.5.0))
   (diskuvbox                         (>= 0.1.0))
   (dkml-runtime-common               (>= 1.0.2~prerel9))
-  (dkml-runtime-distribution         (>= 1.0.2~prerel9)))
- (depopts
-  dkml-compiler-src
-  dkml-option-vcpkg)
-)
+  (dkml-runtime-distribution         (>= 1.0.2~prerel9))))

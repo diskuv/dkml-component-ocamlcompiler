@@ -29,7 +29,6 @@ depends: [
   "dkml-runtime-distribution" {>= "1.0.2~prerel9"}
   "odoc" {with-doc}
 ]
-depopts: ["dkml-compiler-src" "dkml-option-vcpkg"]
 dev-repo:
   "git+https://gitlab.com/diskuv-ocaml/components/dkml-component-ocamlcompiler.git"
 build: [
