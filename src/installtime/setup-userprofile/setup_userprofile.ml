@@ -112,7 +112,9 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
       else cmd
     in
     Logs.info (fun l ->
-        l "Installing Git, OCaml and other tools with@ @[%a@]" Bos.Cmd.pp cmd);
+        l "Installing %s with@ @[%a@]"
+          (if offline then "OCaml" else "Git, OCaml and other tools")
+          Bos.Cmd.pp cmd);
     log_spawn_onerror_exit ~id:"a0d16230" cmd;
     Ok ()
   in
