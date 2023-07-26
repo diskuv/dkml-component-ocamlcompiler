@@ -67,10 +67,14 @@
     Either `4.12.1` or `4.14.0`.
 
     Defaults to 4.14.0
+.Parameter Offline
+    Setup the OCaml system in offline mode. No Git installation,
+    no playground switch and no opam repository.
 .Parameter OpamExe
-    The location of a pre-existing opam.exe.
+    The location of a pre-existing opam.exe. OpamExe is required when
+    not Offline.
 .Parameter MSYS2Dir
-    The MSYS2 installation directory. MSYS2Dir is required when not offline
+    The MSYS2 installation directory. MSYS2Dir is required when not Offline
     but on a Win32 machine.
 .Parameter DkmlHostAbi
     Install a `windows_x86` or `windows_x86_64` distribution.
@@ -112,9 +116,6 @@
     Run as Administrator.
     We do not recommend you do this unless you are in continuous
     integration (CI) scenarios.
-.Parameter Offline
-    Setup the OCaml system in offline mode. No Git installation,
-    no playground switch and no opam repository.
 .Parameter VcpkgCompatibility
     Install Ninja and CMake to accompany Microsoft's
     vcpkg (the C package manager).
@@ -163,7 +164,6 @@ param (
     [ValidateSet("windows_x86", "windows_x86_64")]
     [string]
     $DkmlHostAbi,
-    [Parameter(Mandatory)]
     [string]
     $OpamExe,
     [string]
@@ -293,19 +293,27 @@ $OCamlLangGitCommit = switch ($OCamlLangVersion)
     }
 }
 
-# D. MSYS2Dir is required when not offline but on Win32
+# D. MSYS2Dir is required when not Offline but on Win32
 if($Offline) {
     $UseMSYS2 = $False
     $MSYS2Dir = $null
 } elseif ([System.Environment]::OSVersion.Platform -eq "Win32NT") {
     $UseMSYS2 = $True
     if(-not $MSYS2Dir) {
-        Write-Error ("`n`n-MSYS2Dir is required when not offline but on Win32")
+        Write-Error ("`n`n-MSYS2Dir is required when not Offline but on Win32")
         exit 1
     }
 } else {
     $UseMSYS2 = $False
     $MSYS2Dir = $null
+}
+
+# E. OpamExe is required when not Offline
+if(-not $Offline) {
+    if(-not $OpamExe) {
+        Write-Error ("`n`OpamExe is required when not Offline")
+        exit 1
+    }
 }
 
 # ----------------------------------------------------------------
@@ -322,15 +330,20 @@ $OCamlBinaries = Get-InstallationBinaries `
     -Abi $DkmlHostAbi `
     -OCamlVer $OCamlLangVersion
 Write-Information "Setting up OCaml binaries: $OCamlBinaries"
-$AllMSYS2Packages = $DV_MSYS2Packages + (DV_MSYS2PackagesAbi -DkmlHostAbi $DkmlHostAbi)
 
 # Consolidate the magic constants into a single deployment id
-$MSYS2Hash = Get-Sha256Hex16OfText -Text ($AllMSYS2Packages -join ',')
-$DockerHash = Get-Sha256Hex16OfText -Text "$DV_WindowsMsvcDockerImage"
-$OpamHash = (& "$OpamExe" --version)
-$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion;opam-$OpamHash;msys2-$MSYS2Hash;docker-$DockerHash"
+$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion"
 if ($VcpkgCompatibility) {
     $DeploymentId += ";ninja-$NinjaVersion;cmake-$CMakeVersion"
+}
+if (-not $Offline) {
+    $OpamHash = (& "$OpamExe" --version)
+    $DeploymentId += ";opam-$OpamHash"
+}
+if ($UseMSYS2) {
+    $AllMSYS2Packages = $DV_MSYS2Packages + (DV_MSYS2PackagesAbi -DkmlHostAbi $DkmlHostAbi)
+    $MSYS2Hash = Get-Sha256Hex16OfText -Text ($AllMSYS2Packages -join ',')
+    $DeploymentId += ";msys2-$MSYS2Hash"
 }
 
 if ($OnlyOutputCacheKey) {
