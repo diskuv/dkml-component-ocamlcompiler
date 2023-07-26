@@ -218,25 +218,6 @@ if (!(Test-Path -Path $DkmlPath\.dkmlroot)) {
 $DkmlProps = ConvertFrom-StringData (Get-Content $DkmlPath\.dkmlroot -Raw)
 $dkml_root_version = $DkmlProps.dkml_root_version
 
-# Match set_dkmlparenthomedir() in
-# crossplatform-functions.sh
-if (-not $InstallationPrefix) {
-    if ($env:LOCALAPPDATA) {
-        $InstallationPrefix = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
-    } elseif ($env:XDG_DATA_HOME) {
-        $InstallationPrefix = "$env:XDG_DATA_HOME/diskuv-ocaml"
-    } elseif ($env:HOME) {
-        $InstallationPrefix = "$env:HOME/.local/share/diskuv-ocaml"
-    }
-}
-# Two birds with one stone:
-# 1. Create installation directory (parts of this script assume the
-#    directory exists).
-# 2. PowerShell 5's [System.IO.File]::WriteAllText() requires an absolute
-#    path. And getting an absolute path requires that the directory exist first.
-if (!(Test-Path -Path $InstallationPrefix)) { New-Item -Path $InstallationPrefix -ItemType Directory | Out-Null }
-$InstallationPrefix = (Resolve-Path -LiteralPath $InstallationPrefix).Path
-
 $PSDefaultParameterValues = @{'Out-File:Encoding' = 'utf8'} # for Tee-Object. https://stackoverflow.com/a/58920518
 
 $dsc = [System.IO.Path]::DirectorySeparatorChar
@@ -358,6 +339,35 @@ if ($OnlyOutputCacheKey) {
     Write-Output $DeploymentId
     return
 }
+
+# ----------------------------------------------------------------
+# Installation prefix
+
+# Match set_dkmlparenthomedir() in
+# crossplatform-functions.sh
+if (-not $InstallationPrefix) {
+    if ($env:LOCALAPPDATA) {
+        $InstallationPrefix = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
+    } elseif ($env:XDG_DATA_HOME) {
+        $InstallationPrefix = "$env:XDG_DATA_HOME/diskuv-ocaml"
+    } elseif ($env:HOME) {
+        $InstallationPrefix = "$env:HOME/.local/share/diskuv-ocaml"
+    }
+}
+
+# Two birds with one stone:
+# 1. Create installation directory (parts of this script assume the
+#    directory exists).
+# 2. PowerShell 5's [System.IO.File]::WriteAllText() requires an absolute
+#    path. And getting an absolute path requires that the directory exist first.
+if (!(Test-Path -Path $InstallationPrefix)) { New-Item -Path $InstallationPrefix -ItemType Directory | Out-Null }
+$InstallationPrefix = (Resolve-Path -LiteralPath $InstallationPrefix).Path
+
+# Make InstallationPrefix be a DOS 8.3 path if possible ... that reduces the
+# risk when $env:DiskuvOCamlHome and other related paths are used. Some users
+# have spaces in their username (ie. C:\Users\Jane Smith) which screws up many
+# OCaml tools.
+$InstallationPrefix = Get-Dos83ShortName $InstallationPrefix
 
 # ----------------------------------------------------------------
 # Set path to DiskuvOCaml; exit if already current version already deployed
