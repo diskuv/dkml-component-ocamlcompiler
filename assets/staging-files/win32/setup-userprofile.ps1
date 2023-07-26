@@ -49,6 +49,11 @@
     $env:LOCALAPPDATA\Programs\DiskuvOCaml on Windows. On macOS and Unix,
     defaults to $env:XDG_DATA_HOME/diskuv-ocaml if XDG_DATA_HOME defined,
     otherwise $env:HOME/.local/share/diskuv-ocaml.
+
+    If this parameter is set, the DkML variables files (ex. dkmlvars-v2.sexp)
+    will still be placed in the default installation directory so that
+    programs like with-dkml.exe can locate the custom installation
+    directory.
 .Parameter Flavor
     Which type of installation to perform.
 
@@ -343,16 +348,16 @@ if ($OnlyOutputCacheKey) {
 # ----------------------------------------------------------------
 # Installation prefix
 
-# Match set_dkmlparenthomedir() in
-# crossplatform-functions.sh
+# Match set_dkmlparenthomedir() in crossplatform-functions.sh
+if ($env:LOCALAPPDATA) {
+    $DkmlParentHomeDir = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
+} elseif ($env:XDG_DATA_HOME) {
+    $DkmlParentHomeDir = "$env:XDG_DATA_HOME/diskuv-ocaml"
+} elseif ($env:HOME) {
+    $DkmlParentHomeDir = "$env:HOME/.local/share/diskuv-ocaml"
+}
 if (-not $InstallationPrefix) {
-    if ($env:LOCALAPPDATA) {
-        $InstallationPrefix = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
-    } elseif ($env:XDG_DATA_HOME) {
-        $InstallationPrefix = "$env:XDG_DATA_HOME/diskuv-ocaml"
-    } elseif ($env:HOME) {
-        $InstallationPrefix = "$env:HOME/.local/share/diskuv-ocaml"
-    }
+    $InstallationPrefix = $DkmlParentHomeDir
 }
 
 # Two birds with one stone:
@@ -361,6 +366,7 @@ if (-not $InstallationPrefix) {
 # 2. PowerShell 5's [System.IO.File]::WriteAllText() requires an absolute
 #    path. And getting an absolute path requires that the directory exist first.
 if (!(Test-Path -Path $InstallationPrefix)) { New-Item -Path $InstallationPrefix -ItemType Directory | Out-Null }
+if (!(Test-Path -Path $DkmlParentHomeDir)) { New-Item -Path $DkmlParentHomeDir -ItemType Directory | Out-Null }
 $InstallationPrefix = (Resolve-Path -LiteralPath $InstallationPrefix).Path
 
 # Make InstallationPrefix be a DOS 8.3 path if possible ... that reduces the
@@ -368,6 +374,7 @@ $InstallationPrefix = (Resolve-Path -LiteralPath $InstallationPrefix).Path
 # have spaces in their username (ie. C:\Users\Jane Smith) which screws up many
 # OCaml tools.
 $InstallationPrefix = Get-Dos83ShortName $InstallationPrefix
+$DkmlParentHomeDir = Get-Dos83ShortName $DkmlParentHomeDir
 
 # ----------------------------------------------------------------
 # Set path to DiskuvOCaml; exit if already current version already deployed
@@ -982,13 +989,11 @@ try {
         }
 
         $DkmlNormalPath = & $MSYS2Cygpath -au "$DkmlPath"
-        $InstallationPrefixNormalPath = & $MSYS2Cygpath -au "$InstallationPrefix"
         $ProgramNormalPath = & $MSYS2Cygpath -au "$ProgramPath"
     } else {
         $ShExe = "sh"
         $HereDirNormalPath = "$HereDir"
         $DkmlNormalPath = "$DkmlPath"
-        $InstallationPrefixNormalPath = "$InstallationPrefix"
         $ProgramNormalPath = "$ProgramPath"
     }
 
@@ -1289,11 +1294,11 @@ try {
     # For files that will be seen in Unix (ex. MSYS2) we should be writing BOM-less UTF-8 files.
     # For .sh scripts, they need LF endings.
     $UnixVarsContents = $UnixVarsContents -replace "`r`n", "`n" # No CRLF (although WriteAllText does not inject CRLF)
-    [System.IO.File]::WriteAllText("$InstallationPrefix\dkmlvars.sh", "$UnixVarsContents", $Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText("$InstallationPrefix\dkmlvars.cmd", "$CmdVarsContents", $Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText("$InstallationPrefix\dkmlvars.cmake", "$CmakeVarsContents", $Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText("$InstallationPrefix\dkmlvars-v2.sexp", "$SexpVarsContents", $Utf8NoBomEncoding)
-    Set-Content -Path "$InstallationPrefix\dkmlvars.ps1" -Value $PowershellVarsContents
+    [System.IO.File]::WriteAllText("$DkmlParentHomeDir\dkmlvars.sh", "$UnixVarsContents", $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText("$DkmlParentHomeDir\dkmlvars.cmd", "$CmdVarsContents", $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText("$DkmlParentHomeDir\dkmlvars.cmake", "$CmakeVarsContents", $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText("$DkmlParentHomeDir\dkmlvars-v2.sexp", "$SexpVarsContents", $Utf8NoBomEncoding)
+    Set-Content -Path "$DkmlParentHomeDir\dkmlvars.ps1" -Value $PowershellVarsContents
 
     # END Stop deployment. Write deployment vars.
     # ----------------------------------------------------------------
@@ -1406,6 +1411,11 @@ try {
             $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
             $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
         }
+        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlParentHomeDir -SubPath $ProgramRelEssentialBinDir
+        foreach ($possibleDir in $PossibleDirs) {
+            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+        }        
         #   add new PATH entry
         $userpathentries = @( $ProgramEssentialBinDir ) + $userpathentries
 
