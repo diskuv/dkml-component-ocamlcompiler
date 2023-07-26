@@ -20,11 +20,11 @@
  (depopts
   dkml-option-vcpkg)
  (depends
-  dkml-component-staging-dkmlconfdir
   (dkml-install                      (>= 0.2.0))
   (crunch                            (>= 3.3.1))
   (re                                (>= 1.10.0))
   (dkml-compiler-src                 (>= 2.0.2))
+  (dkml-component-staging-dkmlconfdir     (>= 0.1.0))
   (dkml-component-staging-ocamlrun   (>= 4.12.1~))
   (dkml-runtime-common               (>= 2.0.2))
   (dkml-runtime-distribution         (>= 2.0.2))
@@ -41,7 +41,6 @@
   (dkml-compiler-src                 (>= 2.0.2))
   (dkml-component-ocamlcompiler-common (= :version))
   (dkml-component-offline-unixutils  (>= 0.1.0))
-  (dkml-component-staging-dkmlconfdir     (>= 0.1.0))
   ; The hole carved to exclude ~dkml is so that we use the unmodified, compiled-from-master-branch
   ; of opam with versions that aligns both the semver (needed for winget among others) and the
   ; Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
@@ -62,7 +61,6 @@
   (dkml-component-ocamlcompiler-common (= :version))
   (dkml-component-offline-unixutils  (>= 0.1.0))
   (dkml-component-staging-ocamlrun   (>= 4.12.1~))
-  (dkml-component-staging-dkmlconfdir     (>= 0.1.0))
   ; The hole carved to exclude ~dkml is so that we use the unmodified, compiled-from-master-branch
   ; of opam with versions that aligns both the semver (needed for winget among others) and the
   ; Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.

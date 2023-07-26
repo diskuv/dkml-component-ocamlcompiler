@@ -8,7 +8,7 @@ let register () =
       include Default_component_config
 
       let component_name = "ocamlcompiler-common"
-      let install_depends_on = [ "staging-ocamlrun" ]
+      let install_depends_on = [ "staging-ocamlrun"; "staging-dkmlconfdir" ]
       let uninstall_depends_on = [ "staging-ocamlrun" ]
       let needs_install_admin ~ctx:_ = false
     end)
