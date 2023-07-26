@@ -18,13 +18,13 @@
  (name dkml-component-ocamlcompiler-common)
  (synopsis "DkML common code for ocamlcompiler")
  (depopts
-  dkml-compiler-src
   dkml-option-vcpkg)
  (depends
   dkml-component-staging-dkmlconfdir
   (dkml-install                      (>= 0.2.0))
   (crunch                            (>= 3.3.1))
   (re                                (>= 1.10.0))
+  (dkml-compiler-src                 (>= 2.0.2))
   (dkml-component-staging-ocamlrun   (>= 4.12.1~))
   (dkml-runtime-common               (>= 2.0.2))
   (dkml-runtime-distribution         (>= 2.0.2))
@@ -37,7 +37,8 @@
   "Network installed component for OCaml bytecode and native compiler")
  (depends
   (dkml-install (>= 0.2.0))
-  (diskuvbox (>= 0.1.0))
+  (diskuvbox (>= 0.1.0))  
+  (dkml-compiler-src                 (>= 2.0.2))
   (dkml-component-ocamlcompiler-common (= :version))
   (dkml-component-offline-unixutils  (>= 0.1.0))
   (dkml-component-staging-dkmlconfdir     (>= 0.1.0))
@@ -45,6 +46,7 @@
   ; of opam with versions that aligns both the semver (needed for winget among others) and the
   ; Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
   (dkml-component-offline-opamshim   (and (>= 2.2.0~) (or (< 2.2.0~dkml20220000) (> 2.2.0~dkml99999999))))
+  (dkml-runtime-common               (>= 2.0.2))
   (base64                            (>= 3.5.0))
   (diskuvbox                         (>= 0.1.0))))
 
@@ -56,6 +58,7 @@
  (depends
   (dkml-install (>= 0.2.0))
   (diskuvbox (>= 0.1.0))
+  (dkml-compiler-src                 (>= 2.0.2))
   (dkml-component-ocamlcompiler-common (= :version))
   (dkml-component-offline-unixutils  (>= 0.1.0))
   (dkml-component-staging-ocamlrun   (>= 4.12.1~))
@@ -64,5 +67,6 @@
   ; of opam with versions that aligns both the semver (needed for winget among others) and the
   ; Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
   (dkml-component-offline-opamshim   (and (>= 2.2.0~) (or (< 2.2.0~dkml20220000) (> 2.2.0~dkml99999999))))
+  (dkml-runtime-common               (>= 2.0.2))
   (base64                            (>= 3.5.0))
   (diskuvbox                         (>= 0.1.0))))
