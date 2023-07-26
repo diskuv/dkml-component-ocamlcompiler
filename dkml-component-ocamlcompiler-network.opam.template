@@ -63,10 +63,6 @@ install: [
       -k vendor/dkml-compiler/env/standard-compiler-env-to-ocaml-configure-env.sh
     """
   ]
-
-  # 2. Copy assets
-  ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86"]
-  ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86_64"]
 ]
 extra-source "dl/ocaml.tar.gz" {
   src: "https://github.com/ocaml/ocaml/archive/4.14.0.tar.gz"

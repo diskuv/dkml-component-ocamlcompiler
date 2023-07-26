@@ -96,10 +96,6 @@ install: [
     """
   ]
 
-  # 2. Copy assets
-  ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86"]
-  ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86_64"]
-
   # 1b. Remove unnecessary generic/src/ocaml which is only needed for debugging
   #     native code, and generic/share which is also a waste since bytecode
   #     edition is full of binaries that can't be reproduced (missing a C
