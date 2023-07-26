@@ -3,8 +3,18 @@ module Arg = Cmdliner.Arg
 module Cmd = Cmdliner.Cmd
 module Term = Cmdliner.Term
 
+let install_vc_redist ~vc_redist_exe =
+  let cmd =
+    Bos.Cmd.(v (Fpath.to_string vc_redist_exe) % "/install" % "/passive")
+  in
+  Logs.info (fun l ->
+      l "Installing Visual C++ Redistributables with@ @[%a@]" Bos.Cmd.pp cmd);
+  log_spawn_onerror_exit ~id:"61c89c1e" cmd;
+  Ok ()
+
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
-    control_dir msys2_dir_opt opam_exe_opt vcpkg dkml_confdir_exe =
+    control_dir msys2_dir_opt opam_exe_opt vcpkg dkml_confdir_exe
+    vc_redist_exe_opt =
   let model_conf =
     Staging_dkmlconfdir_api.Conf_loader.create_from_system_confdir
       ~unit_name:"ocamlcompiler" ~dkml_confdir_exe
@@ -15,6 +25,16 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
     @@ Rresult.R.reword_error (Fmt.str "%a" Rresult.R.pp_msg)
     @@
     let ( let* ) = Rresult.R.bind in
+    let* () =
+      match vc_redist_exe_opt with
+      | None -> Ok ()
+      | Some vc_redist_exe ->
+          (* When we don't install Visual Studio (ex. Offline), we need
+             to manually install Visual C++ Redistributables (in case the
+             end-user has a new Windows PC). *)
+          install_vc_redist ~vc_redist_exe
+    in
+
     let* cygpath_opt = Bos.OS.Cmd.find_tool (Bos.Cmd.v "cygpath") in
     let* () =
       match cygpath_opt with
@@ -152,6 +172,16 @@ let dkml_confdir_exe_t =
   in
   Term.(const Fpath.v $ v)
 
+let vc_redist_exe_opt_t =
+  let doc =
+    "The location of Visual C++ Redistributables (vc_redist.x64.exe or a \
+     similar name specific to this machine's architecture)"
+  in
+  let v_opt =
+    Arg.(value & opt (some file) None & info ~doc [ "vc-redist-exe" ])
+  in
+  Term.(const (Option.map Fpath.v) $ v_opt)
+
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
   Logs.set_level level;
@@ -167,7 +197,7 @@ let () =
     Term.(
       const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
       $ target_abi_t $ offline_t $ control_dir_t $ msys2_dir_opt_t
-      $ opam_exe_opt_t $ vcpkg_t $ dkml_confdir_exe_t)
+      $ opam_exe_opt_t $ vcpkg_t $ dkml_confdir_exe_t $ vc_redist_exe_opt_t)
   in
   let info =
     Cmd.info "setup-userprofile.bc"

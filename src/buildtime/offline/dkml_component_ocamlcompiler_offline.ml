@@ -39,6 +39,9 @@ let execute_install_user ctx =
           % Fpath.to_string important_paths.scriptsdir
           % "--dkml-confdir-exe"
           % Fpath.to_string (Staging_dkmlconfdir_api.dkml_confdir_exe ctx)
+          % "--vc-redist-exe"
+          % Fpath.to_string
+              (ctx.Context.path_eval "%{archive}%/vc_redist.dkml-target-abi.exe")
           %% of_list (Array.to_list (Log_config.to_args ctx.Context.log_config)))
       in
       Staging_ocamlrun_api.spawn_ocamlrun ctx cmd
