@@ -218,8 +218,9 @@ if (!(Test-Path -Path $DkmlPath\.dkmlroot)) {
 $DkmlProps = ConvertFrom-StringData (Get-Content $DkmlPath\.dkmlroot -Raw)
 $dkml_root_version = $DkmlProps.dkml_root_version
 
-# Match set_dkmlparenthomedir() in crossplatform-functions.sh
-if (!$InstallationPrefix) {
+# Match set_dkmlparenthomedir() in
+# crossplatform-functions.sh
+if (-not $InstallationPrefix) {
     if ($env:LOCALAPPDATA) {
         $InstallationPrefix = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
     } elseif ($env:XDG_DATA_HOME) {
@@ -228,6 +229,13 @@ if (!$InstallationPrefix) {
         $InstallationPrefix = "$env:HOME/.local/share/diskuv-ocaml"
     }
 }
+# Two birds with one stone:
+# 1. Create installation directory (parts of this script assume the
+#    directory exists).
+# 2. PowerShell 5's [System.IO.File]::WriteAllText() requires an absolute
+#    path. And getting an absolute path requires that the directory exist first.
+if (!(Test-Path -Path $InstallationPrefix)) { New-Item -Path $InstallationPrefix -ItemType Directory | Out-Null }
+$InstallationPrefix = (Resolve-Path -LiteralPath $InstallationPrefix).Path
 
 $PSDefaultParameterValues = @{'Out-File:Encoding' = 'utf8'} # for Tee-Object. https://stackoverflow.com/a/58920518
 
@@ -365,6 +373,9 @@ if (!$IncrementalDeployment -and $finished) {
 # ----------------------------------------------------------------
 # Utilities
 
+# PowerShell 5.1 (the default on Windows 10) writes UTF-8 with BOM.
+# Confer: https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content?view=powershell-5.1
+# https://stackoverflow.com/a/5596984 is a solution.
 $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 
 if($null -eq $DkmlHostAbi -or "" -eq $DkmlHostAbi) {
@@ -481,11 +492,6 @@ function Write-Error($message) {
     [Console]::Error.WriteLine($message)
     [Console]::ResetColor()
 }
-
-# ----------------------------------------------------------------
-# Initialize directories
-
-if (!(Test-Path -Path $InstallationPrefix)) { New-Item -Path $InstallationPrefix -ItemType Directory | Out-Null }
 
 # ----------------------------------------------------------------
 # BEGIN Visual Studio Setup PowerShell Module
@@ -1270,58 +1276,14 @@ try {
 
     # dkmlvars.* (DiskuvOCaml variables)
     #
-    # Since for Unix we should be writing BOM-less UTF-8 shell scripts, and PowerShell 5.1 (the default on Windows 10) writes
-    # UTF-8 with BOM (cf. https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content?view=powershell-5.1)
-    # we write to standard Windows encoding `Unicode` (UTF-16 LE with BOM) and then use dos2unix to convert it to UTF-8 with no BOM.
-    if($PSVersionTable.PSVersion.Major -le 5) {
-        $Encoding = "Unicode"
-        $EncodeTerm = ".utf16le-bom"
-    } else {
-        $Encoding = "UTF8NoBOM"
-        $EncodeTerm = ""
-    }
-    Set-Content -Path "$InstallationPrefix\dkmlvars$EncodeTerm.sh" -Value $UnixVarsContents -Encoding $Encoding
-    Set-Content -Path "$InstallationPrefix\dkmlvars$EncodeTerm.cmd" -Value $CmdVarsContents -Encoding $Encoding
-    Set-Content -Path "$InstallationPrefix\dkmlvars$EncodeTerm.cmake" -Value $CmakeVarsContents -Encoding $Encoding
-    Set-Content -Path "$InstallationPrefix\dkmlvars$EncodeTerm-v2.sexp" -Value $SexpVarsContents -Encoding $Encoding
-    Set-Content -Path "$InstallationPrefix\dkmlvars.ps1" -Value $PowershellVarsContents -Encoding $Encoding
-
-    if($PSVersionTable.PSVersion.Major -le 5) {
-        # PowerShell 5 or less
-        # Use dos2unix for Unicode translation
-        Invoke-GenericCommandWithProgress `
-            -Command $ShExe `
-            -ArgumentList @(
-                "-eufcx",
-                ("dos2unix --newfile '$InstallationPrefixNormalPath/dkmlvars$EncodeTerm.sh'   '$InstallationPrefixNormalPath/dkmlvars.tmp.sh' && " +
-                "dos2unix --newfile '$InstallationPrefixNormalPath/dkmlvars$EncodeTerm.cmd'  '$InstallationPrefixNormalPath/dkmlvars.tmp.cmd' && " +
-                "dos2unix --newfile '$InstallationPrefixNormalPath/dkmlvars$EncodeTerm.cmake'  '$InstallationPrefixNormalPath/dkmlvars.tmp.cmake' && " +
-                "dos2unix --newfile '$InstallationPrefixNormalPath/dkmlvars$EncodeTerm-v2.sexp' '$InstallationPrefixNormalPath/dkmlvars-v2.tmp.sexp' && " +
-                "rm -f " +
-                "'$InstallationPrefixNormalPath/dkmlvars$EncodeTerm.sh' " +
-                "'$InstallationPrefixNormalPath/dkmlvars$EncodeTerm.cmd' " +
-                "'$InstallationPrefixNormalPath/dkmlvars$EncodeTerm.cmake' " +
-                "'$InstallationPrefixNormalPath/dkmlvars$EncodeTerm-v2.sexp' && " +
-                "mv '$InstallationPrefixNormalPath/dkmlvars.tmp.sh'   '$InstallationPrefixNormalPath/dkmlvars.sh' && " +
-                "mv '$InstallationPrefixNormalPath/dkmlvars.tmp.cmd'  '$InstallationPrefixNormalPath/dkmlvars.cmd' && " +
-                "mv '$InstallationPrefixNormalPath/dkmlvars.tmp.cmake'  '$InstallationPrefixNormalPath/dkmlvars.cmake' && " +
-                "mv '$InstallationPrefixNormalPath/dkmlvars-v2.tmp.sexp' '$InstallationPrefixNormalPath/dkmlvars-v2.sexp'")
-            )
-    } else {
-        # PowerShell 6 or more
-        Invoke-GenericCommandWithProgress `
-            -Command $ShExe `
-            -ArgumentList @(
-                "-eufcx",
-                ("dos2unix " +
-                # nit: We don't need dos2unix for [dkmlvars.cmd]. In fact, only [dkmlvars.sh] needs LF endings.
-                # However, we keep consistency with PowerShell 5 or less (which uses dos2unix for Unicode translation)
-                 "'$InstallationPrefixNormalPath/dkmlvars.cmd' " +
-                 "'$InstallationPrefixNormalPath/dkmlvars.sh' " +
-                 "'$InstallationPrefixNormalPath/dkmlvars.cmake' " +
-                 "'$InstallationPrefixNormalPath/dkmlvars-v2.sexp'")
-            )
-    }
+    # For files that will be seen in Unix (ex. MSYS2) we should be writing BOM-less UTF-8 files.
+    # For .sh scripts, they need LF endings.
+    $UnixVarsContents = $UnixVarsContents -replace "`r`n", "`n" # No CRLF (although WriteAllText does not inject CRLF)
+    [System.IO.File]::WriteAllText("$InstallationPrefix\dkmlvars.sh", "$UnixVarsContents", $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText("$InstallationPrefix\dkmlvars.cmd", "$CmdVarsContents", $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText("$InstallationPrefix\dkmlvars.cmake", "$CmakeVarsContents", $Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText("$InstallationPrefix\dkmlvars-v2.sexp", "$SexpVarsContents", $Utf8NoBomEncoding)
+    Set-Content -Path "$InstallationPrefix\dkmlvars.ps1" -Value $PowershellVarsContents
 
     # END Stop deployment. Write deployment vars.
     # ----------------------------------------------------------------
