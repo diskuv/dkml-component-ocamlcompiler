@@ -521,12 +521,12 @@ if (-not $Offline) {
     $CompatibleVisualStudios = Get-CompatibleVisualStudios -ErrorIfNotFound -VcpkgCompatibility:$VcpkgCompatibility
     $ChosenVisualStudio = ($CompatibleVisualStudios | Select-Object -First 1)
     $VisualStudioProps = Get-VisualStudioProperties -VisualStudioInstallation $ChosenVisualStudio
-    $VisualStudioDirPath = "$InstallationPrefix\vsstudio.dir.txt"
-    $VisualStudioJsonPath = "$InstallationPrefix\vsstudio.json"
-    $VisualStudioVcVarsVerPath = "$InstallationPrefix\vsstudio.vcvars_ver.txt"
-    $VisualStudioWinSdkVerPath = "$InstallationPrefix\vsstudio.winsdk.txt"
-    $VisualStudioMsvsPreferencePath = "$InstallationPrefix\vsstudio.msvs_preference.txt"
-    $VisualStudioCMakeGeneratorPath = "$InstallationPrefix\vsstudio.cmake_generator.txt"
+    $VisualStudioDirPath = "$DkmlParentHomeDir\vsstudio.dir.txt"
+    $VisualStudioJsonPath = "$DkmlParentHomeDir\vsstudio.json"
+    $VisualStudioVcVarsVerPath = "$DkmlParentHomeDir\vsstudio.vcvars_ver.txt"
+    $VisualStudioWinSdkVerPath = "$DkmlParentHomeDir\vsstudio.winsdk.txt"
+    $VisualStudioMsvsPreferencePath = "$DkmlParentHomeDir\vsstudio.msvs_preference.txt"
+    $VisualStudioCMakeGeneratorPath = "$DkmlParentHomeDir\vsstudio.cmake_generator.txt"
     [System.IO.File]::WriteAllText($VisualStudioDirPath, "$($VisualStudioProps.InstallPath)", $Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($VisualStudioJsonPath, ($CompatibleVisualStudios | ConvertTo-Json -Depth 5), $Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($VisualStudioVcVarsVerPath, "$($VisualStudioProps.VcVarsVer)", $Utf8NoBomEncoding)

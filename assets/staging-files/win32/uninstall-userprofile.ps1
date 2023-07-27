@@ -47,17 +47,6 @@ $InformationPreference = "Continue"
 $HereScript = $MyInvocation.MyCommand.Path
 $HereDir = (get-item $HereScript).Directory
 
-# Match set_dkmlparenthomedir() in crossplatform-functions.sh
-if (!$InstallationPrefix) {
-    if ($env:LOCALAPPDATA) {
-        $InstallationPrefix = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
-    } elseif ($env:XDG_DATA_HOME) {
-        $InstallationPrefix = "$env:XDG_DATA_HOME/diskuv-ocaml"
-    } elseif ($env:HOME) {
-        $InstallationPrefix = "$env:HOME/.local/share/diskuv-ocaml"
-    }
-}
-
 $PSDefaultParameterValues = @{'Out-File:Encoding' = 'utf8'} # for Tee-Object. https://stackoverflow.com/a/58920518
 
 $dsc = [System.IO.Path]::DirectorySeparatorChar
@@ -67,6 +56,21 @@ Import-Module Deployers
 # Older versions of PowerShell and Windows Server use SSL 3 / TLS 1.0 while our sites
 # (especially gitlab assets) may require the use of TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# ----------------------------------------------------------------
+# Installation prefix
+
+# Match set_dkmlparenthomedir() in crossplatform-functions.sh
+if ($env:LOCALAPPDATA) {
+    $DkmlParentHomeDir = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
+} elseif ($env:XDG_DATA_HOME) {
+    $DkmlParentHomeDir = "$env:XDG_DATA_HOME/diskuv-ocaml"
+} elseif ($env:HOME) {
+    $DkmlParentHomeDir = "$env:HOME/.local/share/diskuv-ocaml"
+}
+if (-not $InstallationPrefix) {
+    $InstallationPrefix = $DkmlParentHomeDir
+}
 
 # ----------------------------------------------------------------
 # Progress declarations
@@ -233,11 +237,21 @@ try {
         $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
         $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
     }
+    $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlParentHomeDir -SubPath $ProgramRelGeneralBinDir
+    foreach ($possibleDir in $PossibleDirs) {
+        $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+        $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+    }
 
     # Remove bin\ entries in the User's PATH
     $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramEssentialBinDir}
     $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramEssentialBinDir)}
     $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelEssentialBinDir
+    foreach ($possibleDir in $PossibleDirs) {
+        $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+        $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+    }
+    $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlParentHomeDir -SubPath $ProgramRelEssentialBinDir
     foreach ($possibleDir in $PossibleDirs) {
         $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
         $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
@@ -255,13 +269,13 @@ try {
     $global:ProgressActivity = "Uninstall deployment variables"
     Write-ProgressStep
 
-    Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars-v2.sexp"
-    Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.cmake"
-    Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.cmd"
-    Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.sh"
-    Remove-ItemQuietly -Path "$InstallationPrefix\dkmlvars.ps1"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\dkmlvars-v2.sexp"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\dkmlvars.cmake"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\dkmlvars.cmd"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\dkmlvars.sh"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\dkmlvars.ps1"
 
-    Remove-ItemQuietly -Path "$InstallationPrefix\deploy-state-v1.json"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\deploy-state-v1.json"
 
     # END Uninstall deployment vars.
     # ----------------------------------------------------------------
@@ -272,12 +286,12 @@ try {
     $global:ProgressActivity = "Uninstall Visual Studio Setup PowerShell Module"
     Write-ProgressStep
 
-    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.cmake_generator.txt"
-    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.dir.txt"
-    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.json"
-    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.msvs_preference.txt"
-    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.vcvars_ver.txt"
-    Remove-ItemQuietly -Path "$InstallationPrefix\vsstudio.winsdk.txt"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.cmake_generator.txt"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.dir.txt"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.json"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.msvs_preference.txt"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.vcvars_ver.txt"
+    Remove-ItemQuietly -Path "$DkmlParentHomeDir\vsstudio.winsdk.txt"
 
     # END Visual Studio Setup PowerShell Module
     # ----------------------------------------------------------------
