@@ -579,8 +579,10 @@ function Remove-DirectoryFully {
                 $sofar = $timer.elapsed.totalseconds
                 #   don't overwhelm display or PowerShell if lots of errors
                 $errcontent = Get-Content -TotalCount 5 $stderr | Out-String
-                Write-Host ($StuckMessageFormatInfo -f @($sofar, $errcontent)) -NoNewline # Write-Information is missing -NoNewline
-                Write-Information ($StuckMessageFormatCritical -f @($sofar, $errcontent)) -ForegroundColor Red -BackgroundColor Black
+		#   Write-Information is missing -NoNewline and -ForegroundColor
+		#   so we use Write-Host
+                Write-Host ($StuckMessageFormatInfo -f @($sofar, $errcontent)) -NoNewline
+                Write-Host ($StuckMessageFormatCritical -f @($sofar, $errcontent)) -ForegroundColor Red -BackgroundColor Black
                 Start-Sleep -Seconds 5
             } while ($timer.elapsed.totalseconds -lt $WaitSecondsIfStuck)
             Remove-Item $stderr
