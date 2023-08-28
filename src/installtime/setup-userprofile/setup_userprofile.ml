@@ -9,7 +9,19 @@ let install_vc_redist ~vc_redist_exe =
   in
   Logs.info (fun l ->
       l "Installing Visual C++ Redistributables with@ @[%a@]" Bos.Cmd.pp cmd);
-  log_spawn_onerror_exit ~id:"61c89c1e" cmd;
+  (* Allow exit code 1638 which is the code that a newer vcredist is already
+     installed. https://github.com/diskuv/dkml-installer-ocaml/issues/60
+
+     The "correct" way is to check through
+     reg query HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x64 /V Version
+     (etc.) if there is a newer version. Confer
+     https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170#install-the-redistributable-packages
+     For that to work, we need to know which version of vcredist we are about
+     to run ... which today is not captured anywhere.
+    *)
+  log_spawn_onerror_exit ~id:"61c89c1e"
+    ~success_exitcodes:(fun i -> i == 0 || i == 1638)
+    cmd;
   Ok ()
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
