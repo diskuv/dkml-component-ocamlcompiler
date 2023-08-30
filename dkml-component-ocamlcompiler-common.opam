@@ -5,8 +5,7 @@ synopsis: "DkML common code for ocamlcompiler"
 maintainer: ["opensource+diskuv-ocaml@support.diskuv.com"]
 authors: ["Diskuv, Inc. <opensource+diskuv-ocaml@support.diskuv.com>"]
 license: "Apache-2.0"
-homepage:
-  "https://gitlab.com/dkml/components/dkml-component-ocamlcompiler"
+homepage: "https://gitlab.com/dkml/components/dkml-component-ocamlcompiler"
 doc:
   "https://gitlab.com/dkml/components/dkml-component-ocamlcompiler/-/blob/main/README.md"
 bug-reports:
