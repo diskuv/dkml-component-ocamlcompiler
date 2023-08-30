@@ -8,11 +8,11 @@ maintainer: ["opensource+diskuv-ocaml@support.diskuv.com"]
 authors: ["Diskuv, Inc. <opensource+diskuv-ocaml@support.diskuv.com>"]
 license: "Apache-2.0"
 homepage:
-  "https://gitlab.com/diskuv-ocaml/components/dkml-component-ocamlcompiler"
+  "https://gitlab.com/dkml/components/dkml-component-ocamlcompiler"
 doc:
-  "https://gitlab.com/diskuv-ocaml/components/dkml-component-ocamlcompiler/-/blob/main/README.md"
+  "https://gitlab.com/dkml/components/dkml-component-ocamlcompiler/-/blob/main/README.md"
 bug-reports:
-  "https://gitlab.com/diskuv-ocaml/components/dkml-component-ocamlcompiler/-/issues"
+  "https://gitlab.com/dkml/components/dkml-component-ocamlcompiler/-/issues"
 depends: [
   "dune" {>= "3.6"}
   "dkml-install" {>= "0.2.0"}
@@ -28,7 +28,7 @@ depends: [
   "odoc" {with-doc}
 ]
 dev-repo:
-  "git+https://gitlab.com/diskuv-ocaml/components/dkml-component-ocamlcompiler.git"
+  "git+https://gitlab.com/dkml/components/dkml-component-ocamlcompiler.git"
 build: [
   # OCaml source code
   ["install" "-d" "dl/ocaml/flexdll"]

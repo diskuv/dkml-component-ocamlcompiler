@@ -6,10 +6,10 @@
 (generate_opam_files true)
 
 (source
- (uri "git+https://gitlab.com/diskuv-ocaml/components/dkml-component-ocamlcompiler.git"))
-(homepage "https://gitlab.com/diskuv-ocaml/components/dkml-component-ocamlcompiler")
-(documentation "https://gitlab.com/diskuv-ocaml/components/dkml-component-ocamlcompiler/-/blob/main/README.md")
-(bug_reports "https://gitlab.com/diskuv-ocaml/components/dkml-component-ocamlcompiler/-/issues")
+ (uri "git+https://gitlab.com/dkml/components/dkml-component-ocamlcompiler.git"))
+(homepage "https://gitlab.com/dkml/components/dkml-component-ocamlcompiler")
+(documentation "https://gitlab.com/dkml/components/dkml-component-ocamlcompiler/-/blob/main/README.md")
+(bug_reports "https://gitlab.com/dkml/components/dkml-component-ocamlcompiler/-/issues")
 (license Apache-2.0)
 (authors "Diskuv, Inc. <opensource+diskuv-ocaml@support.diskuv.com>")
 (maintainers "opensource+diskuv-ocaml@support.diskuv.com")

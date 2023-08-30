@@ -17,8 +17,8 @@ On Windows, assuming you already have installed a DKML distribution, run:
 ```powershell
 # Use an Opam install which will download supporting files
 opam install ./dkml-component-network-ocamlcompiler.opam
-opam pin dkml-component-staging-desktop-full git+https://gitlab.com/diskuv-ocaml/components/dkml-component-desktop.git --yes
-opam pin dkml-component-staging-withdkml git+https://gitlab.com/diskuv-ocaml/components/dkml-component-desktop.git --yes
+opam pin dkml-component-staging-desktop-full git+https://gitlab.com/dkml/components/dkml-component-desktop.git --yes
+opam pin dkml-component-staging-withdkml git+https://gitlab.com/dkml/components/dkml-component-desktop.git --yes
 
 # Set vars we will use below
 $ocshare = opam var dkml-component-network-ocamlcompiler:share
