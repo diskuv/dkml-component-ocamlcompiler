@@ -48,8 +48,9 @@ Describe 'Get-InstallationBinaries' {
     It 'Given -Part ci when -Abi darwin_x86_64 then not includes ocamlc.opt' {
         Get-InstallationBinaries -Part ci -ListingPath $ListingPath -Abi "darwin_x86_64" -OCamlVer "y" | Should -Not -Contain "ocamlc.opt"
     }
-    It 'Given -Part full when -Abi darwin_x86_64 then includes utop' {
-        Get-InstallationBinaries -Part full -ListingPath $ListingPath -Abi "darwin_x86_64" -OCamlVer "y" | Should -Contain "utop"
+    It 'Given -Part full when -Abi darwin_x86_64 then not includes utop' {
+        # dkml-component-desktop/src/installtime/install.ml provides a shim for utop
+        Get-InstallationBinaries -Part full -ListingPath $ListingPath -Abi "darwin_x86_64" -OCamlVer "y" | Should -Not -Contain "utop"
     }
     It 'Given -Part ocaml when -Abi windows_x86_64 then includes ocamlc.opt.exe' {
         Get-InstallationBinaries -Part ocaml -ListingPath $ListingPath -Abi "windows_x86_64" -OCamlVer "y" | Should -Contain "ocamlc.opt.exe"

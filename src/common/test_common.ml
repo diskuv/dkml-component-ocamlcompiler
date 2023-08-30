@@ -24,8 +24,8 @@ let () =
             (test_not_contains ~part:"ci" ~target_abi:Darwin_x86_64
                ~ocaml_ver:"y" ~contains:"ocamlc.opt");
           test_case "full-darwin_x86_64-includes-utop" `Quick
-            (test_contains ~part:"full" ~target_abi:Darwin_x86_64 ~ocaml_ver:"y"
-               ~contains:"utop");
+            (test_not_contains ~part:"full" ~target_abi:Darwin_x86_64
+               ~ocaml_ver:"y" ~contains:"utop");
           test_case "ocaml-windows_x86_64-includes-ocamlc.opt.exe" `Quick
             (test_contains ~part:"ocaml" ~target_abi:Windows_x86_64
                ~ocaml_ver:"y" ~contains:"ocamlc.opt.exe");
