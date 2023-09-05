@@ -72,6 +72,21 @@ build: [
   ]
 ]
 install: [
+  # Needed for [get_needs_install_admin_important_paths] when it calls setup-machine.ps1
+  #   Clone minimal dkmldir
+  ["diskuvbox" "copy-dir" "dkmldir" "%{_:share}%/staging-files/windows_x86/dkmldir"]
+  ["diskuvbox" "copy-dir" "dkmldir" "%{_:share}%/staging-files/windows_x86_64/dkmldir"]
+  #   Unpack runtime-distribution
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/none" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/none"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/none" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/none"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/unix" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/unix"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/unix" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/unix"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/windows" "%{_:share}%/staging-files/windows_x86/dkmldir/vendor/drd/src/windows"]
+  ["diskuvbox" "copy-dir" "%{dkml-runtime-distribution:lib}%/src/windows" "%{_:share}%/staging-files/windows_x86_64/dkmldir/vendor/drd/src/windows"]
+  #   Copy assets
+  ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86"]
+  ["diskuvbox" "copy-dir" "assets/staging-files/win32" "%{_:share}%/staging-files/windows_x86_64"]
+
   #   Run r-c-ocaml-1-setup.sh ... just the OCaml runtime since not yet relocatable!
   #   With an OCaml runtime that is the same version as the full OCaml system we want
   #   to compile, the OCaml system should be compiled quicker (no bootstrap necessary).

@@ -8,6 +8,14 @@ type important_paths = {
   scriptsdir : Fpath.t;
 }
 
+(** During the check for admin access, there are no contexts available except
+    our own. *)
+let get_needs_install_admin_important_paths ctx =
+  let tmppath = ctx.Context.path_eval "%{tmp}%" in
+  let dkmlpath = ctx.Context.path_eval "%{_:share-abi}%/dkmldir" in
+  let scriptsdir = ctx.Context.path_eval "%{_:share-abi}%" in
+  { tmppath; dkmlpath; scriptsdir }
+
 let get_important_paths ctx =
   let tmppath = ctx.Context.path_eval "%{tmp}%" in
   let dkmlpath =
@@ -40,7 +48,7 @@ let do_needs_install_admin_on_windows ~ctx =
           Cmd.pp cmd);
     OS.Cmd.run_status cmd
   in
-  let important_paths = get_important_paths ctx in
+  let important_paths = get_needs_install_admin_important_paths ctx in
   match
     check_res ~scripts_dir:important_paths.scriptsdir
       ~dkml_dir:important_paths.dkmlpath ~temp_dir:important_paths.tmppath
