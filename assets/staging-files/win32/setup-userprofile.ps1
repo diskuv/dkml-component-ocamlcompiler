@@ -383,7 +383,11 @@ $DkmlParentHomeDir = Get-Dos83ShortName $DkmlParentHomeDir
 $finished = Get-BlueGreenDeployIsFinished -ParentPath $InstallationPrefix -DeploymentId $DeploymentId
 if (!$IncrementalDeployment -and $finished) {
     Write-Information "$DeploymentId already deployed."
-    Write-Information "Enjoy Diskuv OCaml! Documentation can be found at https://diskuv.gitlab.io/diskuv-ocaml/#introduction"
+    Write-Information ""
+    Write-Information "Enjoy DkML!"
+    Write-Information "  Documentation: https://diskuv.com/dkmlbook/"
+    Write-Information "  Announcements: https://twitter.com/diskuv"
+    Write-Information "  DkSDK:         https://diskuv.com/cmake/help/latest"
     return
 }
 
@@ -1452,7 +1456,11 @@ Write-Information ""
 Write-Information ""
 Write-Information ""
 Write-Information "Setup is complete. Congratulations!"
-Write-Information "Enjoy DkML! Documentation can be found at https://diskuv.com/dkmlbook/. Announcements will be available at https://twitter.com/diskuv"
+Write-Information ""
+Write-Information "Enjoy DkML!"
+Write-Information "  Documentation: https://diskuv.com/dkmlbook/"
+Write-Information "  Announcements: https://twitter.com/diskuv"
+Write-Information "  DkSDK:         https://diskuv.com/cmake/help/latest"
 Write-Information ""
 Write-Information "You will need to log out and log back in"
 Write-Information "-OR- (for advanced users) exit all of your Command Prompts, Windows Terminals,"
