@@ -21,6 +21,7 @@
   dkml-option-vcpkg)
  (depends
   (dkml-install                      (>= 0.2.0))
+  (base64                            (>= 3.5.0))
   (crunch                            (>= 3.3.1))
   (re                                (>= 1.10.0))
   (dkml-compiler-src                 (>= 2.0.2))
@@ -46,7 +47,6 @@
   ; Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
   (dkml-component-offline-opamshim   (and (>= 2.2.0~) (or (< 2.2.0~dkml20220000) (> 2.2.0~dkml99999999))))
   (dkml-runtime-common               (>= 2.0.2))
-  (base64                            (>= 3.5.0))
   (diskuvbox                         (>= 0.1.0))))
 
 (package
@@ -66,5 +66,4 @@
   ; Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
   (dkml-component-offline-opamshim   (and (>= 2.2.0~) (or (< 2.2.0~dkml20220000) (> 2.2.0~dkml99999999))))
   (dkml-runtime-common               (>= 2.0.2))
-  (base64                            (>= 3.5.0))
   (diskuvbox                         (>= 0.1.0))))
