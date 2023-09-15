@@ -387,7 +387,7 @@ if (!$IncrementalDeployment -and $finished) {
     Write-Information "Enjoy DkML!"
     Write-Information "  Documentation: https://diskuv.com/dkmlbook/"
     Write-Information "  Announcements: https://twitter.com/diskuv"
-    Write-Information "  DkSDK:         https://diskuv.com/cmake/help/latest"
+    Write-Information "  DkSDK:         https://diskuv.com/pricing"
     return
 }
 
@@ -1460,7 +1460,7 @@ Write-Information ""
 Write-Information "Enjoy DkML!"
 Write-Information "  Documentation: https://diskuv.com/dkmlbook/"
 Write-Information "  Announcements: https://twitter.com/diskuv"
-Write-Information "  DkSDK:         https://diskuv.com/cmake/help/latest"
+Write-Information "  DkSDK:         https://diskuv.com/pricing"
 Write-Information ""
 Write-Information "You will need to log out and log back in"
 Write-Information "-OR- (for advanced users) exit all of your Command Prompts, Windows Terminals,"
