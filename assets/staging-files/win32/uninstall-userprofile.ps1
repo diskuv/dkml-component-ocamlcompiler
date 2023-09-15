@@ -314,7 +314,7 @@ if (-not $SkipProgress) {
 Write-Information ""
 Write-Information ""
 Write-Information ""
-Write-Information "Thanks for using Diskuv OCaml!"
+Write-Information "Thanks for using DkML!"
 Write-Information ""
 Write-Information ""
 Write-Information ""
