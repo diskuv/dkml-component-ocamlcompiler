@@ -25,7 +25,7 @@ let install_vc_redist ~vc_redist_exe =
   Ok ()
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
-    control_dir msys2_dir_opt opam_exe_opt vcpkg dkml_confdir_exe
+    control_dir msys2_dir_opt opam_exe_opt opamroot_dir_opt vcpkg dkml_confdir_exe
     vc_redist_exe_opt =
   let model_conf =
     Staging_dkmlconfdir_api.Conf_loader.create_from_system_confdir
@@ -120,6 +120,13 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
           Ok Bos.Cmd.(cmd % "-OpamExe" % opam_exe_83)
     in
     let* cmd =
+      (* Add -OpamRoot *)
+      match opamroot_dir_opt with
+      | None -> Ok cmd
+      | Some opamroot_dir ->
+          Ok Bos.Cmd.(cmd % "-OpamRoot" % opamroot_dir)
+    in
+    let* cmd =
       (* Add -MSYS2Dir *)
       match msys2_dir_opt with
       | None -> Ok cmd
@@ -166,6 +173,7 @@ let control_dir_t =
 
 let msys2_dir_opt_t = Arg.(value & opt (some dir) None & info [ "msys2-dir" ])
 let opam_exe_opt_t = Arg.(value & opt (some file) None & info [ "opam-exe" ])
+let opamroot_dir_opt_t = Arg.(value & opt (some dir) (Sys.getenv_opt "OPAMROOT") & info [ "opam-root" ])
 
 let target_abi_t =
   let open Context.Abi_v2 in
@@ -209,7 +217,7 @@ let () =
     Term.(
       const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
       $ target_abi_t $ offline_t $ control_dir_t $ msys2_dir_opt_t
-      $ opam_exe_opt_t $ vcpkg_t $ dkml_confdir_exe_t $ vc_redist_exe_opt_t)
+      $ opam_exe_opt_t $ opamroot_dir_opt_t $ vcpkg_t $ dkml_confdir_exe_t $ vc_redist_exe_opt_t)
   in
   let info =
     Cmd.info "setup-userprofile.bc"
