@@ -78,6 +78,10 @@
 .Parameter OpamExe
     The location of a pre-existing opam.exe. OpamExe is required when
     not Offline.
+.Parameter OpamRoot
+    The opam root directory.
+
+    Defaults to the opam's built-in default root directory.
 .Parameter MSYS2Dir
     The MSYS2 installation directory. MSYS2Dir is required when not Offline
     but on a Win32 machine.
@@ -171,6 +175,8 @@ param (
     $DkmlHostAbi,
     [string]
     $OpamExe,
+    [string]
+    $OpamRootDir,
     [string]
     $MSYS2Dir,
     [string]
@@ -331,8 +337,9 @@ if ($VcpkgCompatibility) {
     $DeploymentId += ";ninja-$NinjaVersion;cmake-$CMakeVersion"
 }
 if (-not $Offline) {
-    $OpamHash = (& "$OpamExe" --version)
-    $DeploymentId += ";opam-$OpamHash"
+    $OpamVersion = (& "$OpamExe" --version)
+    $OpamRootHash = Get-Sha256Hex16OfText -Text "$OpamRootDir"
+    $DeploymentId += ";opam-$OpamVersion;opamroot-$OpamRootHash"
 }
 if ($UseMSYS2) {
     $AllMSYS2Packages = $DV_MSYS2Packages + (DV_MSYS2PackagesAbi -DkmlHostAbi $DkmlHostAbi)
@@ -1207,6 +1214,8 @@ try {
                     "$DkmlHostAbi"
                     "-o"
                     "$OpamExe"
+                    "-r"
+                    "$OpamRootDir"
                     "-v"
                     "$ProgramNormalPath"))
         }
@@ -1250,6 +1259,8 @@ try {
                     "$ProgramNormalPath"
                     "-o"
                     "$OpamExe"
+                    "-r"
+                    "$OpamRootDir"
                     # AUTHORITATIVE OPTIONS = dkml-runtime-apps's [cmd_init.ml]. Aka: [dkml init]
                     "-e"
                     "PKG_CONFIG_PATH=$MSYS2Dir\clang64\lib\pkgconfig"
@@ -1271,6 +1282,8 @@ try {
                     "$ProgramNormalPath"
                     "-o"
                     "$OpamExe"
+                    "-r"
+                    "$OpamRootDir"
                     "switch"))
         }
     }
