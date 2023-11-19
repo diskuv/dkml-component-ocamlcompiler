@@ -62,11 +62,18 @@ Import-Module Deployers
 
 # Match set_dkmlparenthomedir() in crossplatform-functions.sh
 if ($env:LOCALAPPDATA) {
-    $DkmlParentHomeDir = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
+    $DkmlLegacyParentHomeDir = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
 } elseif ($env:XDG_DATA_HOME) {
-    $DkmlParentHomeDir = "$env:XDG_DATA_HOME/diskuv-ocaml"
+    $DkmlLegacyParentHomeDir = "$env:XDG_DATA_HOME/diskuv-ocaml"
 } elseif ($env:HOME) {
-    $DkmlParentHomeDir = "$env:HOME/.local/share/diskuv-ocaml"
+    $DkmlLegacyParentHomeDir = "$env:HOME/.local/share/diskuv-ocaml"
+}
+if ($env:LOCALAPPDATA) {
+    $DkmlParentHomeDir = "$env:LOCALAPPDATA\Programs\DkML"
+} elseif ($env:XDG_DATA_HOME) {
+    $DkmlParentHomeDir = "$env:XDG_DATA_HOME/dkml"
+} elseif ($env:HOME) {
+    $DkmlParentHomeDir = "$env:HOME/.local/share/dkml"
 }
 if (-not $InstallationPrefix) {
     $InstallationPrefix = $DkmlParentHomeDir
@@ -77,7 +84,7 @@ if (-not $InstallationPrefix) {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 4
+$ProgressTotalSteps = 5
 $ProgressId = $ParentProgressId + 1
 $global:ProgressStatus = $null
 
@@ -242,6 +249,11 @@ try {
         $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
         $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
     }
+    $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlLegacyParentHomeDir -SubPath $ProgramRelGeneralBinDir
+    foreach ($possibleDir in $PossibleDirs) {
+        $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+        $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+    }
 
     # Remove bin\ entries in the User's PATH
     $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramEssentialBinDir}
@@ -256,11 +268,27 @@ try {
         $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
         $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
     }
+    $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlLegacyParentHomeDir -SubPath $ProgramRelEssentialBinDir
+    foreach ($possibleDir in $PossibleDirs) {
+        $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+        $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+    }
 
     # modify PATH
     Set-UserEnvironmentVariable -Name "PATH" -Value ($userpathentries -join $splitter)
 
     # END Modify User's environment variables
+    # ----------------------------------------------------------------
+
+    # ----------------------------------------------------------------
+    # BEGIN Remove legacy DiskuvOCaml
+
+    $global:ProgressActivity = "Remove legacy DiskuvOCaml"
+    Write-ProgressStep
+
+    Remove-ItemQuietly -Path "$DkmlLegacyParentHomeDir"
+
+    # END Remove legacy DiskuvOCaml
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------

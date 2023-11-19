@@ -46,9 +46,9 @@
     & $env:DiskuvOCamlHome\tools\MSYS2\msys2_shell.cmd
 .Parameter InstallationPrefix
     The installation directory. Defaults to
-    $env:LOCALAPPDATA\Programs\DiskuvOCaml on Windows. On macOS and Unix,
-    defaults to $env:XDG_DATA_HOME/diskuv-ocaml if XDG_DATA_HOME defined,
-    otherwise $env:HOME/.local/share/diskuv-ocaml.
+    $env:LOCALAPPDATA\Programs\DkML on Windows. On macOS and Unix,
+    defaults to $env:XDG_DATA_HOME/dkml if XDG_DATA_HOME defined,
+    otherwise $env:HOME/.local/share/dkml.
 
     If this parameter is set, the DkML variables files (ex. dkmlvars-v2.sexp)
     will still be placed in the default installation directory so that
@@ -257,7 +257,7 @@ if ([System.Environment]::OSVersion.Platform -eq "Win32NT") {
 if (!$global:Skip64BitCheck -and ![Environment]::Is64BitOperatingSystem) {
     # This might work on 32-bit Windows, but that hasn't been tested.
     # One missing item is whether there are 32-bit Windows ocaml/opam Docker images
-    throw "DiskuvOCaml is only supported on 64-bit Windows"
+    throw "DkML is only supported on 64-bit Windows"
 }
 
 # B. Make sure OCaml variables not in Machine environment variables, which require Administrator access
@@ -353,11 +353,18 @@ if ($OnlyOutputCacheKey) {
 
 # Match set_dkmlparenthomedir() in crossplatform-functions.sh
 if ($env:LOCALAPPDATA) {
-    $DkmlParentHomeDir = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
+    $DkmlLegacyParentHomeDir = "$env:LOCALAPPDATA\Programs\DiskuvOCaml"
 } elseif ($env:XDG_DATA_HOME) {
-    $DkmlParentHomeDir = "$env:XDG_DATA_HOME/diskuv-ocaml"
+    $DkmlLegacyParentHomeDir = "$env:XDG_DATA_HOME/diskuv-ocaml"
 } elseif ($env:HOME) {
-    $DkmlParentHomeDir = "$env:HOME/.local/share/diskuv-ocaml"
+    $DkmlLegacyParentHomeDir = "$env:HOME/.local/share/diskuv-ocaml"
+}
+if ($env:LOCALAPPDATA) {
+    $DkmlParentHomeDir = "$env:LOCALAPPDATA\Programs\DkML"
+} elseif ($env:XDG_DATA_HOME) {
+    $DkmlParentHomeDir = "$env:XDG_DATA_HOME/dkml"
+} elseif ($env:HOME) {
+    $DkmlParentHomeDir = "$env:HOME/.local/share/dkml"
 }
 if (-not $InstallationPrefix) {
     $InstallationPrefix = $DkmlParentHomeDir
@@ -626,7 +633,7 @@ if ($NoDeploymentSlot) {
 # deployment process handles an aborted setup and the necessary cleaning up of disk
 # space (eventually).
 if (!$TempParentPath) {
-    $TempParentPath = "$Env:temp\diskuvocaml\setupuserprofile"
+    $TempParentPath = "$Env:temp\dkml\setupuserprofile"
 }
 $TempPath = Start-BlueGreenDeploy -ParentPath $TempParentPath `
     -DeploymentId $DeploymentId `
@@ -1248,6 +1255,16 @@ try {
             $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
             $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
         }
+        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlParentHomeDir -SubPath $ProgramRelGeneralBinDir
+        foreach ($possibleDir in $PossibleDirs) {
+            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+        }
+        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlLegacyParentHomeDir -SubPath $ProgramRelGeneralBinDir
+        foreach ($possibleDir in $PossibleDirs) {
+            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+        }
         #   add new PATH entry
         $userpathentries = @( $ProgramGeneralBinDir ) + $userpathentries
 
@@ -1264,7 +1281,12 @@ try {
         foreach ($possibleDir in $PossibleDirs) {
             $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
             $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
-        }        
+        }
+        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlLegacyParentHomeDir -SubPath $ProgramRelEssentialBinDir
+        foreach ($possibleDir in $PossibleDirs) {
+            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+        }
         #   add new PATH entry
         $userpathentries = @( $ProgramEssentialBinDir ) + $userpathentries
 
