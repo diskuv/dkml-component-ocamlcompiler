@@ -210,8 +210,6 @@ param (
     [switch]
     $StopBeforeInitOpam,
     [switch]
-    $StopBeforeInstallSystemSwitch,
-    [switch]
     $AuditOnly
 )
 
@@ -473,7 +471,7 @@ function Import-DiskuvOCamlAsset {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 7
+$ProgressTotalSteps = 6
 if ($Offline) {
     $ProgressTotalSteps = 2
 }
@@ -1222,73 +1220,6 @@ try {
     }
 
     # END opam init
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
-    # BEGIN opam switch create playground
-
-    if ($StopBeforeInstallSystemSwitch) {
-        Write-Information "Stopping before being completed finished due to -StopBeforeInstallSystemSwitch switch"
-        exit 0
-    }
-
-    if (-not $Offline) {
-        $global:ProgressActivity = "Create 'playground' opam global switch"
-        Write-ProgressStep
-
-        # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
-        if (!$global:SkipOpamSetup) {
-            # Install the playground switch
-            if($UseMSYS2) {
-                $ExtraArgsArray = @( "-e"
-                "PKG_CONFIG_PATH=$MSYS2Dir\clang64\lib\pkgconfig")
-            } else {
-                $ExtraArgsArray = @()
-            }
-            Invoke-GenericCommandWithProgress `
-                -Command "env" `
-                -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
-                    "$DkmlPath\vendor\drd\src\unix\create-opam-switch.sh"
-                    "-p"
-                    "$DkmlHostAbi"
-                    "-y"
-                    "-w"
-                    "-n"
-                    "playground"
-                    "-v"
-                    "$ProgramNormalPath"
-                    "-o"
-                    "$OpamExe"
-                    "-r"
-                    "$OpamRootDir"
-                    # AUTHORITATIVE OPTIONS = dkml-runtime-apps's [cmd_init.ml]. Aka: [dkml init]
-                    "-e"
-                    "PKG_CONFIG_PATH=$MSYS2Dir\clang64\lib\pkgconfig"
-                    "-e"
-                    "PKG_CONFIG_SYSTEM_INCLUDE_PATH="
-                    "-e"
-                    "PKG_CONFIG_SYSTEM_LIBRARY_PATH="
-                    "-m"
-                    "conf-withdkml") + $ExtraArgsArray)
-
-            # Diagnostics: Display all the switches
-            Invoke-GenericCommandWithProgress `
-                -Command "env" `
-                -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
-                    "$DkmlPath\vendor\drd\src\unix\private\platform-opam-exec.sh"
-                    "-p"
-                    "$DkmlHostAbi"
-                    "-v"
-                    "$ProgramNormalPath"
-                    "-o"
-                    "$OpamExe"
-                    "-r"
-                    "$OpamRootDir"
-                    "switch"))
-        }
-    }
-
-    # END opam switch create playground
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
