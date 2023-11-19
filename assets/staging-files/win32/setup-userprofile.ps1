@@ -208,8 +208,6 @@ param (
     [switch]
     $IncrementalDeployment,
     [switch]
-    $StopBeforeInitOpam,
-    [switch]
     $AuditOnly
 )
 
@@ -412,66 +410,12 @@ if($null -eq $DkmlHostAbi -or "" -eq $DkmlHostAbi) {
     }
 }
 
-function Import-DiskuvOCamlAsset {
-    param (
-        [Parameter(Mandatory)]
-        $PackageName,
-        [Parameter(Mandatory)]
-        $ZipFile,
-        [Parameter(Mandatory)]
-        $TmpPath,
-        [Parameter(Mandatory)]
-        $DestinationPath
-    )
-    try {
-        $uri = "https://gitlab.com/api/v4/projects/diskuv-ocaml%2Fdistributions%2Fdkml/packages/generic/$PackageName/$dkml_root_version/$ZipFile"
-        Write-ProgressCurrentOperation -CurrentOperation "Downloading asset $uri"
-        Invoke-WebRequest -Uri "$uri" -OutFile "$TmpPath\$ZipFile"
-    }
-    catch {
-        $StatusCode = $_.Exception.Response.StatusCode.value__
-        Write-ProgressCurrentOperation -CurrentOperation "HTTP ${StatusCode}: $uri"
-        if ($StatusCode -ne 404) {
-            throw "HTTP ${StatusCode}: $uri"
-        }
-        # 404 Not Found. The asset may not have been uploaded / built yet so this is not a fatal error.
-        # HOWEVER ... there is a nasty bug for older PowerShell + .NET versions with incorrect escape encoding.
-        # Confer: https://github.com/googleapis/google-api-dotnet-client/issues/643 and
-        # https://stackoverflow.com/questions/25596564/percent-encoded-slash-is-decoded-before-the-request-dispatch
-        function UrlFix([Uri]$url) {
-            $url.PathAndQuery | Out-Null
-            $m_Flags = [Uri].GetField("m_Flags", $([Reflection.BindingFlags]::Instance -bor [Reflection.BindingFlags]::NonPublic))
-            if ($null -ne $m_Flags) {
-                [uint64]$flags = $m_Flags.GetValue($url)
-                $m_Flags.SetValue($url, $($flags -bxor 0x30))
-            }
-        }
-        $fixedUri = New-Object System.Uri -ArgumentList ($uri)
-        UrlFix $fixedUri
-        try {
-            Write-ProgressCurrentOperation -CurrentOperation "Downloading asset $fixedUri"
-            Invoke-WebRequest -Uri "$fixedUri" -OutFile "$TmpPath\$ZipFile"
-        }
-        catch {
-            $StatusCode = $_.Exception.Response.StatusCode.value__
-            Write-ProgressCurrentOperation -CurrentOperation "HTTP ${StatusCode}: $fixedUri"
-            if ($StatusCode -ne 404) {
-                throw "HTTP ${StatusCode}: $fixedUri"
-            }
-            # 404 Not Found. Not a fatal error
-            return $false
-        }
-    }
-    Expand-Archive -Path "$TmpPath\$ZipFile" -DestinationPath $DestinationPath -Force
-    $true
-}
-
 # ----------------------------------------------------------------
 # Progress declarations
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 6
+$ProgressTotalSteps = 5
 if ($Offline) {
     $ProgressTotalSteps = 2
 }
@@ -1177,49 +1121,6 @@ try {
     }
 
     # END Compile/install system ocaml.exe
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
-    # BEGIN opam init
-
-    if ($StopBeforeInitOpam) {
-        Write-Information "Stopping before being completed finished due to -StopBeforeInitOpam switch"
-        exit 0
-    }
-
-    if (-not $Offline) {
-        $global:ProgressActivity = "Initialize opam package manager"
-        Write-ProgressStep
-
-        # Upgrades. Possibly ask questions to delete things, so no progress indicator
-        Invoke-GenericCommandWithProgress `
-            -ForceConsole `
-            -Command "env" `
-            -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
-                "$HereDirNormalPath/deinit-opam-root.sh"
-                "-d"
-                "$DkmlNormalPath"
-                "-o"
-                "$OpamExe"))
-
-        # Skip with ... $global:SkipOpamSetup = $true ... remove it with ... Remove-Variable SkipOpamSetup
-        if (!$global:SkipOpamSetup) {
-            Invoke-GenericCommandWithProgress `
-                -Command "env" `
-                -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
-                    "$DkmlPath\vendor\drd\src\unix\private\init-opam-root.sh"
-                    "-p"
-                    "$DkmlHostAbi"
-                    "-o"
-                    "$OpamExe"
-                    "-r"
-                    "$OpamRootDir"
-                    "-v"
-                    "$ProgramNormalPath"))
-        }
-    }
-
-    # END opam init
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
