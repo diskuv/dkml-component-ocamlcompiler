@@ -18,15 +18,14 @@ let install_vc_redist ~vc_redist_exe =
      https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170#install-the-redistributable-packages
      For that to work, we need to know which version of vcredist we are about
      to run ... which today is not captured anywhere.
-    *)
+  *)
   log_spawn_onerror_exit ~id:"61c89c1e"
     ~success_exitcodes:(fun i -> i == 0 || i == 1638)
     cmd;
   Ok ()
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
-    control_dir msys2_dir_opt opam_exe_opt opamroot_dir_opt vcpkg dkml_confdir_exe
-    vc_redist_exe_opt =
+    control_dir msys2_dir_opt vcpkg dkml_confdir_exe vc_redist_exe_opt =
   let model_conf =
     Staging_dkmlconfdir_api.Conf_loader.create_from_system_confdir
       ~unit_name:"ocamlcompiler" ~dkml_confdir_exe
@@ -111,22 +110,6 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
           % "-SkipMSYS2Update")
     in
     let* cmd =
-      (* Add -OpamExe *)
-      match opam_exe_opt with
-      | None -> Ok cmd
-      | Some opam_exe ->
-          let* opam_exe = Fpath.of_string opam_exe in
-          let* opam_exe_83 = to83 opam_exe in
-          Ok Bos.Cmd.(cmd % "-OpamExe" % opam_exe_83)
-    in
-    let* cmd =
-      (* Add -OpamRoot *)
-      match opamroot_dir_opt with
-      | None -> Ok cmd
-      | Some opamroot_dir ->
-          Ok Bos.Cmd.(cmd % "-OpamRoot" % opamroot_dir)
-    in
-    let* cmd =
       (* Add -MSYS2Dir *)
       match msys2_dir_opt with
       | None -> Ok cmd
@@ -172,8 +155,6 @@ let control_dir_t =
   Arg.(required & opt (some string) None & info [ "control-dir" ])
 
 let msys2_dir_opt_t = Arg.(value & opt (some dir) None & info [ "msys2-dir" ])
-let opam_exe_opt_t = Arg.(value & opt (some file) None & info [ "opam-exe" ])
-let opamroot_dir_opt_t = Arg.(value & opt (some dir) (Sys.getenv_opt "OPAMROOT") & info [ "opam-root" ])
 
 let target_abi_t =
   let open Context.Abi_v2 in
@@ -216,8 +197,8 @@ let () =
   let t =
     Term.(
       const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-      $ target_abi_t $ offline_t $ control_dir_t $ msys2_dir_opt_t
-      $ opam_exe_opt_t $ opamroot_dir_opt_t $ vcpkg_t $ dkml_confdir_exe_t $ vc_redist_exe_opt_t)
+      $ target_abi_t $ offline_t $ control_dir_t $ msys2_dir_opt_t $ vcpkg_t
+      $ dkml_confdir_exe_t $ vc_redist_exe_opt_t)
   in
   let info =
     Cmd.info "setup-userprofile.bc"

@@ -75,13 +75,6 @@
 .Parameter Offline
     Setup the OCaml system in offline mode. No Git installation,
     no playground switch and no opam repository.
-.Parameter OpamExe
-    The location of a pre-existing opam.exe. OpamExe is required when
-    not Offline.
-.Parameter OpamRoot
-    The opam root directory.
-
-    Defaults to the opam's built-in default root directory.
 .Parameter MSYS2Dir
     The MSYS2 installation directory. MSYS2Dir is required when not Offline
     but on a Win32 machine.
@@ -173,10 +166,6 @@ param (
     [ValidateSet("windows_x86", "windows_x86_64")]
     [string]
     $DkmlHostAbi,
-    [string]
-    $OpamExe,
-    [string]
-    $OpamRootDir,
     [string]
     $MSYS2Dir,
     [string]
@@ -304,14 +293,6 @@ if($Offline) {
     $MSYS2Dir = $null
 }
 
-# E. OpamExe is required when not Offline
-if(-not $Offline) {
-    if(-not $OpamExe) {
-        Write-Error ("`n`OpamExe is required when not Offline")
-        exit 1
-    }
-}
-
 # ----------------------------------------------------------------
 # Calculate deployment id, and exit if -OnlyOutputCacheKey switch
 
@@ -331,11 +312,6 @@ Write-Information "Setting up OCaml binaries: $OCamlBinaries"
 $DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion"
 if ($VcpkgCompatibility) {
     $DeploymentId += ";ninja-$NinjaVersion;cmake-$CMakeVersion"
-}
-if (-not $Offline) {
-    $OpamVersion = (& "$OpamExe" --version)
-    $OpamRootHash = Get-Sha256Hex16OfText -Text "$OpamRootDir"
-    $DeploymentId += ";opam-$OpamVersion;opamroot-$OpamRootHash"
 }
 if ($UseMSYS2) {
     $AllMSYS2Packages = $DV_MSYS2Packages + (DV_MSYS2PackagesAbi -DkmlHostAbi $DkmlHostAbi)
