@@ -35,7 +35,6 @@ $confshare = opam var dkml-component-staging-dkmlconfdir:share
 
 # Same help if you build directly
 dune build
-& "_build\default\src\installtime\setup-machine\setup_machine.exe" --help
 & "_build\default\src\installtime\setup-userprofile\setup_userprofile.exe" --help
 
 # After opam install we mimic the placing of binaries that
@@ -51,13 +50,6 @@ opam exec -- diskuvbox copy-file `
     "$env:TEMP\ocamlcompiler-up\tools\fswatch\fswatch.exe"
 
 # After opam install that you can run either of them properly ...
-
-opam exec -- dune build src/installtime/setup-machine/setup_machine.exe
-_build/default/src/installtime/setup-machine/setup_machine.exe `
-    --scripts-dir assets/staging-files/win32 `
-    --temp-dir "$env:TEMP\ocamlcompiler-t" `
-    --dkml-dir "$ocshare\staging-files\windows_x86_64\dkmldir" `
-    -v -v
 
 opam exec -- dune build src/installtime/setup-userprofile/setup_userprofile.exe
 _build/default/src/installtime/setup-userprofile/setup_userprofile.exe `
@@ -78,20 +70,6 @@ _build/default/src/installtime/uninstall-userprofile/uninstall_userprofile.exe `
     --scripts-dir=assets/staging-files/win32 `
     --control-dir="$env:TEMP\ocamlcompiler-up" `
     -v -v
-```
-
-For Unix operating systems, including macOS, run:
-
-```bash
-# Use an Opam install which include supporting files
-opam install ./dkml-component-network-ocamlcompiler.opam
-"$(opam var dkml-component-network-ocamlcompiler:share)"/staging-files/generic/install.bc.exe
-
-# Directly run without any supporting files
-dune exec -- src/installtime/setup-machine/setup_machine.exe \
-    --scripts-dir assets/staging-files/win32 \
-    --temp-dir /tmp/ocamlcompiler \
-    --dkml-dir {specify a DKML directory containing .dkmlroot}
 ```
 
 ## Contributing

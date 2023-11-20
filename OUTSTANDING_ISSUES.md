@@ -7,7 +7,6 @@ Everything in PowerShell could have been done in OCaml.
 ## Components that should exist
 
 * Git installed in `setup-userprofile.ps1` should be its own component.
-* Visual Studio installed in `setup-machine.ps1` should be its own component.
 * VcpkgCompatibility (or DKSDK?) should be its own component, which installs
   Ninja and CMake but also ensure Visual Studio has language pack.
 * CI or Full should be different components ([+] or make some cross-installer

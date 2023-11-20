@@ -78,7 +78,6 @@ let register () =
       let component_name = "ocamlcompiler-offline"
       let install_depends_on = [ "staging-ocamlrun"; "ocamlcompiler-common" ]
       let uninstall_depends_on = [ "staging-ocamlrun"; "ocamlcompiler-common" ]
-      let needs_install_admin ~ctx:_ = false
 
       let install_user_subcommand ~component_name:_ ~subcommand_name ~fl ~ctx_t
           =
