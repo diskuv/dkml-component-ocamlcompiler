@@ -25,11 +25,7 @@ let install_vc_redist ~vc_redist_exe =
   Ok ()
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
-    control_dir msys2_dir_opt vcpkg dkml_confdir_exe vc_redist_exe_opt =
-  let model_conf =
-    Staging_dkmlconfdir_api.Conf_loader.create_from_system_confdir
-      ~unit_name:"ocamlcompiler" ~dkml_confdir_exe
-  in
+    control_dir msys2_dir_opt vc_redist_exe_opt =
   let res =
     Dkml_install_api.Forward_progress.lift_result __POS__ Fmt.lines
       Dkml_install_api.Forward_progress.stderr_fatallog
@@ -103,8 +99,7 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
         Bos.Cmd.(
           v (Fpath.to_string setup_bat)
           % "-AllowRunAsAdmin" % "-InstallationPrefix" % control_dir_83
-          % "-OCamlLangVersion" % Ocamlcompiler_common.ocaml_ver % "-DkmlPath"
-          % dkml_path_83 % "-NoDeploymentSlot" % "-DkmlHostAbi"
+          % "-DkmlPath" % dkml_path_83 % "-NoDeploymentSlot" % "-DkmlHostAbi"
           % Context.Abi_v2.to_canonical_string target_abi
           % "-TempParentPath" % temp_dir_83 % "-SkipProgress"
           % "-SkipMSYS2Update")
@@ -122,20 +117,10 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
       (* Add -Offline *)
       if offline then Bos.Cmd.(cmd % "-Offline") else cmd
     in
-    let cmd =
-      (* Add -VcpkgCompatibility *)
-      if vcpkg then Bos.Cmd.(cmd % "-VcpkgCompatibility") else cmd
-    in
-    let cmd =
-      (* Add -ImpreciseC99FloatOps *)
-      if Model_conf.feature_flag_imprecise_c99_float_ops model_conf then (
-        Logs.info (fun l -> l "Using [feature_flag_imprecise_c99_float_ops]");
-        Bos.Cmd.(cmd % "-ImpreciseC99FloatOps"))
-      else cmd
-    in
     Logs.info (fun l ->
         l "Installing %s with@ @[%a@]"
-          (if offline then "OCaml" else "Git, OCaml and other tools")
+          (if offline then "DkML configuration profile"
+           else "MSYS2 and DkML configuration profile")
           Bos.Cmd.pp cmd);
     log_spawn_onerror_exit ~id:"a0d16230" cmd;
     Ok ()
@@ -163,15 +148,7 @@ let target_abi_t =
   in
   Arg.(required & opt (some (enum l)) None & info [ "target-abi" ])
 
-let vcpkg_t = Arg.(value & flag & info [ "vcpkg" ])
 let offline_t = Arg.(value & flag & info [ "offline" ])
-
-let dkml_confdir_exe_t =
-  let doc = "The location of dkml-confdir.exe" in
-  let v =
-    Arg.(required & opt (some file) None & info ~doc [ "dkml-confdir-exe" ])
-  in
-  Term.(const Fpath.v $ v)
 
 let vc_redist_exe_opt_t =
   let doc =
@@ -197,13 +174,13 @@ let () =
   let t =
     Term.(
       const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
-      $ target_abi_t $ offline_t $ control_dir_t $ msys2_dir_opt_t $ vcpkg_t
-      $ dkml_confdir_exe_t $ vc_redist_exe_opt_t)
+      $ target_abi_t $ offline_t $ control_dir_t $ msys2_dir_opt_t
+      $ vc_redist_exe_opt_t)
   in
   let info =
     Cmd.info "setup-userprofile.bc"
       ~doc:
-        "Install Git for Windows and Opam, and compiles OCaml and some useful \
-         OCaml programs"
+        "Install the Visual Studio redistributables and DkML configuration \
+         profile on Windows"
   in
   exit (Cmd.eval (Cmd.v info t))

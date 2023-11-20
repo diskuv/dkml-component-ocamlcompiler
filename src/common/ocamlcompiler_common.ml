@@ -37,8 +37,6 @@ module Os = struct
   end
 end
 
-let ocaml_ver = "4.14.0"
-
 let get_install_files ~part ~target_abi ~ocaml_ver =
   match Installation_files.read (part ^ ".install") with
   | None ->
@@ -128,7 +126,7 @@ let uninstall_controldir ~control_dir ~target_abi =
       "share";
       "src";
       "tools/inotify-win";
-      (* Only present with setup-userprofile.ps1 -VcpkgCompatibility *)
+      (* Legacy. Only present with legacy setup-userprofile.ps1 -VcpkgCompatibility *)
       "tools/ninja";
       "tools/cmake";
       (* DKML custom opam repositories *)

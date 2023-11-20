@@ -39,13 +39,8 @@ let execute_install_user ctx =
           % Fpath.to_string important_paths.tmppath
           % "--scripts-dir"
           % Fpath.to_string important_paths.scriptsdir
-          % "--dkml-confdir-exe"
-          % Fpath.to_string (Staging_dkmlconfdir_api.dkml_confdir_exe ctx)
           (* No --vc-redist-exe since Visual Studio will be installed instead! *)
           %% of_list (Array.to_list (Log_config.to_args ctx.Context.log_config)))
-      in
-      let cmd =
-        if Opts.option_vcpkg_available then Cmd.(cmd % "--vcpkg") else cmd
       in
       Staging_ocamlrun_api.spawn_ocamlrun ctx cmd
   | false -> ()

@@ -1,10 +1,9 @@
 <#
 .Synopsis
-    Install OCaml.
+    Install DkML configuration profile and optionally MSYS2.
 .Description
-    Installs Git for Windows 2.36.1, compiles OCaml and install several useful
-    OCaml programs. It also modifies PATH and sets DiskuvOCaml* environment
-    variables.
+    Install DkML configuration profile and optionally MSYS2. It also modifies PATH
+    and sets DiskuvOCaml* environment variables.
 
     Interactive Terminals
     ---------------------
@@ -13,30 +12,6 @@
     encounter `Exception setting "CursorPosition"`. That means a command designed
     for user interaction was run in this script; use -SkipProgress to disable
     the need for an interactive terminal.
-
-    Blue Green Deployments
-    ----------------------
-
-    OCaml package directories, C header "include" directories and other critical locations are hardcoded
-    into essential OCaml executables like `ocamlc.exe` during `opam switch create` and `opam install`.
-    We are forced to create the opam switch in its final resting place. But now we have a problem since
-    we can never install a new opam switch; it would have to be on top of the existing "final" opam switch, right?
-    Wrong, as long as we have two locations ... one to compile any new opam switch and another to run
-    user software; once the compilation is done we can change the PATH, OPAMSWITCH, etc. to use the new opam switch.
-    That old opam switch can still be used; in fact OCaml applications like the OCaml Language Server may still
-    be running. But once you logout all new OCaml applications will be launched using the new PATH environment
-    variables, and it is safe to use that old location for the next compile.
-    The technique above where we swap locations is called Blue Green deployments.
-
-    We would use Blue Green deployments even if we didn't have that hard requirement because it is
-    safe for you (the system is treated as one atomic whole).
-
-    A side benefit is that the new system can be compiled while you are still working. Since
-    new systems can take hours to build this is an important benefit.
-
-    One last complication. opam global switches are subdirectories of the opam root; we cannot change their location
-    use the swapping Blue Green deployment technique. So we _do not_ use an opam global switch for `dkml`.
-    We use external (aka local) opam switches instead.
 
     MSYS2
     -----
@@ -58,23 +33,12 @@
     Which type of installation to perform.
 
     The `CI` flavor:
-    * Installs the minimal applications that are necessary
-    for a functional (though limited) Diskuv OCaml system. Today that is
-    only `dune` and `opam`, but that may change in the future.
     * Does not modify the User environment variables.
     * Does not do a system upgrade of MSYS2
 
     Choose the `CI` flavor if you have continuous integration tests.
-
-    The `Full` flavor installs everything, including human-centric applications
-    like `utop`.
-.Parameter OCamlLangVersion
-    Either `4.12.1` or `4.14.0`.
-
-    Defaults to 4.14.0
 .Parameter Offline
-    Setup the OCaml system in offline mode. No Git installation,
-    no playground switch and no opam repository.
+    Setup the OCaml system in offline mode. Will not install MSYS2.
 .Parameter MSYS2Dir
     The MSYS2 installation directory. MSYS2Dir is required when not Offline
     but on a Win32 machine.
@@ -91,36 +55,11 @@
     The PowerShell progress identifier. Optional, defaults to -1.
     Use when embedding this script within another setup program
     that reports its own progress.
-.Parameter ImpreciseC99FloatOps
-    Compile OCaml with --enable-imprecise-c99-float-ops for floating-point
-    operation emulation. Often needed when running inside VirtualBox on
-    macOS hardware.
-.Parameter SkipAutoUpgradeGitWhenOld
-    Ordinarily if Git for Windows is installed on the machine but
-    it is less than version 1.7.2 then Git for Windows 2.36.1 is
-    installed which will replace the old version.
-
-    Git 1.7.2 includes supports for git submodules that are necessary
-    for Diskuv OCaml to work.
-
-    Git for Windows is detected by running `git --version` from the
-    PATH and checking to see if the version contains ".windows."
-    like "git version 2.32.0.windows.2". Without this switch
-    this script may detect a Git installation that is not Git for
-    Windows, and you will end up installing an extra Git for Windows
-    2.36.1 installation instead of upgrading the existing Git for
-    Windows to 2.36.1.
-
-    Even with this switch is selected, Git 2.36.1 will be installed
-    if there is no Git available on the PATH.
 .Parameter AllowRunAsAdmin
     When specified you will be allowed to run this script using
     Run as Administrator.
     We do not recommend you do this unless you are in continuous
     integration (CI) scenarios.
-.Parameter VcpkgCompatibility
-    Install Ninja and CMake to accompany Microsoft's
-    vcpkg (the C package manager).
 .Parameter SkipProgress
     Do not use the progress user interface.
 .Parameter SkipMSYS2Update
@@ -160,9 +99,6 @@ param (
     [ValidateSet("Dune", "CI", "Full")]
     [string]
     $Flavor = 'Full',
-    [ValidateSet("4.12.1", "4.14.0")]
-    [string]
-    $OCamlLangVersion = "4.14.0",
     [ValidateSet("windows_x86", "windows_x86_64")]
     [string]
     $DkmlHostAbi,
@@ -177,15 +113,9 @@ param (
     [string]
     $InstallationPrefix,
     [switch]
-    $ImpreciseC99FloatOps,
-    [switch]
-    $SkipAutoUpgradeGitWhenOld,
-    [switch]
     $AllowRunAsAdmin,
     [switch]
     $Offline,
-    [switch]
-    $VcpkgCompatibility,
     [switch]
     $SkipProgress,
     [switch]
@@ -265,20 +195,7 @@ $OcamlNonDKMLEnvKeys | ForEach-Object {
     }
 }
 
-# C. Make sure we know a git commit for the OCaml version
-$OCamlLangGitCommit = switch ($OCamlLangVersion)
-{
-    "4.12.1" {"46c947827ec2f6d6da7fe5e195ae5dda1d2ad0c5"; Break}
-    "4.13.1" {"ab626576eee205615a9d7c5a66c2cb2478f1169c"; Break}
-    "4.14.0" {"15553b77175270d987058b386d737ccb939e8d5a"; Break}
-    "5.00.0+dev0-2021-11-05" {"284834d31767d323aae1cee4ed719cc36aa1fb2c"; Break}
-    default {
-        Write-Error ("`n`nThe OCaml version $OCamlLangVersion is not supported")
-        # exit 1
-    }
-}
-
-# D. MSYS2Dir is required when not Offline but on Win32
+# C. MSYS2Dir is required when not Offline but on Win32
 if($Offline) {
     $UseMSYS2 = $False
     $MSYS2Dir = $null
@@ -297,22 +214,9 @@ if($Offline) {
 # Calculate deployment id, and exit if -OnlyOutputCacheKey switch
 
 # Magic constants that will identify new and existing deployments:
-# * Immutable git
-$NinjaVersion = "1.10.2"
-$CMakeVersion = "3.21.1"
-$ListingPath = Join-Path $HereDir -ChildPath "files"
-$OCamlBinaries = Get-InstallationBinaries `
-    -Part ocaml `
-    -ListingPath $ListingPath `
-    -Abi $DkmlHostAbi `
-    -OCamlVer $OCamlLangVersion
-Write-Information "Setting up OCaml binaries: $OCamlBinaries"
 
 # Consolidate the magic constants into a single deployment id
-$DeploymentId = "v-$dkml_root_version;ocaml-$OCamlLangVersion"
-if ($VcpkgCompatibility) {
-    $DeploymentId += ";ninja-$NinjaVersion;cmake-$CMakeVersion"
-}
+$DeploymentId = "v-$dkml_root_version"
 if ($UseMSYS2) {
     $AllMSYS2Packages = $DV_MSYS2Packages + (DV_MSYS2PackagesAbi -DkmlHostAbi $DkmlHostAbi)
     $MSYS2Hash = Get-Sha256Hex16OfText -Text ($AllMSYS2Packages -join ',')
@@ -398,15 +302,12 @@ if($null -eq $DkmlHostAbi -or "" -eq $DkmlHostAbi) {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 5
+$ProgressTotalSteps = 2
 if ($Offline) {
-    $ProgressTotalSteps = 2
+    $ProgressTotalSteps = 1
 }
 if (-not $SkipMSYS2Update) {
     $ProgressTotalSteps = $ProgressTotalSteps + 1
-}
-if ($VcpkgCompatibility) {
-    $ProgressTotalSteps = $ProgressTotalSteps + 2
 }
 $ProgressId = $ParentProgressId + 1
 $global:ProgressStatus = $null
@@ -445,151 +346,6 @@ function Write-Error($message) {
     [Console]::Error.WriteLine($message)
     [Console]::ResetColor()
 }
-
-# ----------------------------------------------------------------
-# BEGIN Visual Studio Setup PowerShell Module
-
-if (-not $Offline) {
-    $global:ProgressActivity = "Install Visual Studio Setup PowerShell Module"
-    Write-ProgressStep
-
-    Import-VSSetup -TempPath "$env:TEMP\vssetup"
-    $CompatibleVisualStudios = Get-CompatibleVisualStudios -ErrorIfNotFound -VcpkgCompatibility:$VcpkgCompatibility
-    $ChosenVisualStudio = ($CompatibleVisualStudios | Select-Object -First 1)
-    $VisualStudioProps = Get-VisualStudioProperties -VisualStudioInstallation $ChosenVisualStudio
-    $VisualStudioDirPath = "$DkmlParentHomeDir\vsstudio.dir.txt"
-    $VisualStudioJsonPath = "$DkmlParentHomeDir\vsstudio.json"
-    $VisualStudioVcVarsVerPath = "$DkmlParentHomeDir\vsstudio.vcvars_ver.txt"
-    $VisualStudioWinSdkVerPath = "$DkmlParentHomeDir\vsstudio.winsdk.txt"
-    $VisualStudioMsvsPreferencePath = "$DkmlParentHomeDir\vsstudio.msvs_preference.txt"
-    $VisualStudioCMakeGeneratorPath = "$DkmlParentHomeDir\vsstudio.cmake_generator.txt"
-    [System.IO.File]::WriteAllText($VisualStudioDirPath, "$($VisualStudioProps.InstallPath)", $Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText($VisualStudioJsonPath, ($CompatibleVisualStudios | ConvertTo-Json -Depth 5), $Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText($VisualStudioVcVarsVerPath, "$($VisualStudioProps.VcVarsVer)", $Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText($VisualStudioWinSdkVerPath, "$($VisualStudioProps.WinSdkVer)", $Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText($VisualStudioMsvsPreferencePath, "$($VisualStudioProps.MsvsPreference)", $Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText($VisualStudioCMakeGeneratorPath, "$($VisualStudioProps.CMakeGenerator)", $Utf8NoBomEncoding)
-}
-
-# END Visual Studio Setup PowerShell Module
-# ----------------------------------------------------------------
-
-# ----------------------------------------------------------------
-# BEGIN Git for Windows
-
-# Git is _not_ part of the Diskuv OCaml distribution per se; it is
-# is a prerequisite that gets auto-installed. Said another way,
-# it does not get a versioned installation like the rest of Diskuv
-# OCaml. So we explicitly do version checks during the installation of
-# Git.
-
-if (-not $Offline) {
-    $global:ProgressActivity = "Install Git for Windows"
-    Write-ProgressStep
-
-    $GitWindowsSetupAbsPath = "$env:TEMP\gitwindows"
-
-    $GitOriginalVersion = @(0, 0, 0)
-    $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected = $false
-    $GitExists = $false
-
-    # NOTE: See runtime\windows\makeit.cmd for why we check for git-gui.exe first
-    $GitGuiExe = Get-Command git-gui.exe -ErrorAction Ignore
-    if ($null -eq $GitGuiExe) {
-        $GitExe = Get-Command git.exe -ErrorAction Ignore
-        if ($null -ne $GitExe) { $GitExe = $GitExe.Path }
-    } else {
-        # Use git.exe in the same PATH as git-gui.exe.
-        # Ex. C:\Program Files\Git\cmd\git.exe not C:\Program Files\Git\bin\git.exe or C:\Program Files\Git\mingw\bin\git.exe
-        $GitExe = Join-Path -Path (Get-Item $GitGuiExe.Path).Directory.FullName -ChildPath "git.exe"
-    }
-    if ($null -ne $GitExe) {
-        $GitExists = $true
-        $GitResponse = & "$GitExe" --version
-        if ($LastExitCode -eq 0) {
-            # git version 2.32.0.windows.2 -> 2.32.0.windows.2
-            $GitResponseLast = $GitResponse.Split(" ")[-1]
-            # 2.32.0.windows.2 -> 2 32 0
-            $GitOriginalVersion = $GitResponseLast.Split(".")[0, 1, 2]
-            # check for '.windows.'
-            $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected = $GitResponse -notlike "*.windows.*"
-        }
-    }
-    if (-not $SkipGitForWindowsInstallBecauseNonGitForWindowsDetected) {
-        # Less than 1.7.2?
-        $GitTooOld = ($GitOriginalVersion[0] -lt 1 -or
-            ($GitOriginalVersion[0] -eq 1 -and $GitOriginalVersion[1] -lt 7) -or
-            ($GitOriginalVersion[0] -eq 1 -and $GitOriginalVersion[1] -eq 7 -and $GitOriginalVersion[2] -lt 2))
-        if ((-not $GitExists) -or ($GitTooOld -and -not $SkipAutoUpgradeGitWhenOld)) {
-            # Install Git for Windows 2.36.1
-
-            $GitNewVer = "2.36.1"
-            if ([Environment]::Is64BitOperatingSystem) {
-                $GitWindowsBits = "64"
-                $GitSha256 = "08a0c20374d13d1b448d2c5713222ff55dd1f4bffa15093b85772cc0fc5f30e7"
-            } else {
-                $GitWindowsBits = "32"
-                $GitSha256 = "0a50735bd088698e6015265d9373cb0cc859f46a0689d3073f91da0dc0fe66aa"
-            }
-            if (!(Test-Path -Path "$GitWindowsSetupAbsPath")) { New-Item -Path "$GitWindowsSetupAbsPath" -ItemType Directory | Out-Null }
-            if (!(Test-Path -Path "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe")) {
-                Invoke-WebRequest `
-                    -Uri https://github.com/git-for-windows/git/releases/download/v$GitNewVer.windows.1/Git-$GitNewVer-$GitWindowsBits-bit.exe `
-                    -OutFile "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe"
-            }
-            $GitActualHash = (Get-FileHash -Algorithm SHA256 "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe").Hash
-            if ("$GitSha256" -ne "$GitActualHash") {
-                throw "The Git for Windows installer was corrupted. You will need to retry the installation. If this repeatedly occurs, please send an email to support@diskuv.com"
-            }
-
-            # You can see the arguments if you run: Git-$GitNewVer-$GitWindowsArch-bit.exe /?
-            # https://jrsoftware.org/ishelp/index.php?topic=setupcmdline has command line options.
-            # https://github.com/git-for-windows/build-extra/tree/main/installer has installer source code.
-            # https://github.com/chocolatey-community/chocolatey-coreteampackages/blob/master/automatic/git.install/tools/chocolateyInstall.ps1
-            # and https://github.com/chocolatey-community/chocolatey-coreteampackages/blob/master/automatic/git.install/tools/helpers.ps1 have
-            # options for silent install.
-            $res = "icons", "assoc", "assoc_sh"
-            $isSystem = ([System.Security.Principal.WindowsIdentity]::GetCurrent()).IsSystem
-            if ( !$isSystem ) { $res += "icons\quicklaunch" }
-            $proc = Start-Process -FilePath "$GitWindowsSetupAbsPath\Git-$GitNewVer-$GitWindowsBits-bit.exe" -NoNewWindow -Wait -PassThru `
-                -ArgumentList @("/CURRENTUSER",
-                    "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/NOCANCEL", "/SP-", "/LOG",
-                    ('/COMPONENTS="{0}"' -f ($res -join ",")) )
-            $exitCode = $proc.ExitCode
-            if ($exitCode -ne 0) {
-                if (-not $SkipProgress) { Write-Progress -Id $ProgressId -ParentId $ParentProgressId -Activity $global:ProgressActivity -Completed }
-                $ErrorActionPreference = "Continue"
-                Write-Error "Git installer failed"
-                Remove-DirectoryFully -Path "$GitWindowsSetupAbsPath"
-                Start-Sleep 5
-                Write-Information ''
-                Write-Information 'One reason why the Git installer will fail is because you did not'
-                Write-Information 'click "Yes" when it asks you to allow the installation.'
-                Write-Information 'You can try to rerun the script.'
-                Write-Information ''
-                Write-Information 'Press any key to exit this script...';
-                $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
-                throw "Git installer failed"
-            }
-
-            # Get new PATH so we can locate the new Git
-            $OldPath = $env:PATH
-            $env:PATH = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $GitExe = Get-Command git.exe -ErrorAction Ignore
-            if ($null -eq $GitExe) {
-                throw "DiskuvOCaml requires that Git is installed in the PATH. The Git installer failed to do so. Please install it manually from https://gitforwindows.org/"
-            }
-            $GitExe = $GitExe.Path
-            $env:PATH = $OldPath
-        }
-    }
-    Remove-DirectoryFully -Path "$GitWindowsSetupAbsPath"
-
-    $GitPath = (get-item "$GitExe").Directory.FullName
-}
-
-# END Git for Windows
-# ----------------------------------------------------------------
 
 # ----------------------------------------------------------------
 # BEGIN Start deployment
@@ -809,61 +565,6 @@ function Invoke-GenericCommandWithProgress {
 
 $global:AdditionalDiagnostics = "`n`n"
 try {
-
-    if ($VcpkgCompatibility) {
-        # ----------------------------------------------------------------
-        # BEGIN Ninja
-
-        $global:ProgressActivity = "Install Ninja"
-        Write-ProgressStep
-
-        $NinjaCachePath = "$TempPath\ninja"
-        $NinjaZip = "$NinjaCachePath\ninja-win.zip"
-        $NinjaExeBasename = "ninja.exe"
-        $NinjaToolDir = "$ProgramPath\tools\ninja"
-        $NinjaExe = "$NinjaToolDir\$NinjaExeBasename"
-        if (!(Test-Path -Path $NinjaExe)) {
-            if (!(Test-Path -Path $NinjaToolDir)) { New-Item -Path $NinjaToolDir -ItemType Directory | Out-Null }
-            if (!(Test-Path -Path $NinjaCachePath)) { New-Item -Path $NinjaCachePath -ItemType Directory | Out-Null }
-            Invoke-WebRequest -Uri "https://github.com/ninja-build/ninja/releases/download/v$NinjaVersion/ninja-win.zip" -OutFile "$NinjaZip"
-            Expand-Archive -Path $NinjaZip -DestinationPath $NinjaCachePath -Force
-            Remove-Item -Path $NinjaZip -Force
-            Copy-Item -Path "$NinjaCachePath\$NinjaExeBasename" -Destination "$NinjaExe"
-        }
-
-        # END Ninja
-        # ----------------------------------------------------------------
-
-        # ----------------------------------------------------------------
-        # BEGIN CMake
-
-        $global:ProgressActivity = "Install CMake"
-        Write-ProgressStep
-
-        $CMakeCachePath = "$TempPath\cmake"
-        $CMakeZip = "$CMakeCachePath\cmake.zip"
-        $CMakeToolDir = "$ProgramPath\tools\cmake"
-        if (!(Test-Path -Path "$CMakeToolDir\bin\cmake.exe")) {
-            if (!(Test-Path -Path $CMakeToolDir)) { New-Item -Path $CMakeToolDir -ItemType Directory | Out-Null }
-            if (!(Test-Path -Path $CMakeCachePath)) { New-Item -Path $CMakeCachePath -ItemType Directory | Out-Null }
-            if ([Environment]::Is64BitOperatingSystem) {
-                $CMakeDistType = "x86_64"
-            } else {
-                $CMakeDistType = "i386"
-            }
-            Invoke-WebRequest -Uri "https://github.com/Kitware/CMake/releases/download/v$CMakeVersion/cmake-$CMakeVersion-windows-$CMakeDistType.zip" -OutFile "$CMakeZip"
-            Expand-Archive -Path $CMakeZip -DestinationPath $CMakeCachePath -Force
-            Remove-Item -Path $CMakeZip -Force
-            Copy-Item -Path "$CMakeCachePath\cmake-$CMakeVersion-windows-$CMakeDistType\*" `
-                -Recurse `
-                -Destination $CMakeToolDir
-        }
-
-
-        # END CMake
-        # ----------------------------------------------------------------
-    }
-
     # ----------------------------------------------------------------
     # BEGIN MSYS2
 
@@ -875,12 +576,9 @@ try {
         $MSYS2UsrBin = Join-Path (Join-Path $MSYS2Dir -ChildPath "usr") -ChildPath "bin"
         $MSYS2Env = Join-Path $MSYS2UsrBin -ChildPath "env.exe"
         $MSYS2Bash = Join-Path $MSYS2UsrBin -ChildPath "bash.exe"
-        $ShExe = Join-Path $MSYS2UsrBin -ChildPath "sh.exe"
         $MSYS2Sed = Join-Path $MSYS2UsrBin -ChildPath "sed.exe"
         $MSYS2Pacman = Join-Path $MSYS2UsrBin -ChildPath "pacman.exe"
         $MSYS2Cygpath = Join-Path $MSYS2UsrBin -ChildPath "cygpath.exe"
-
-        $HereDirNormalPath = & $MSYS2Cygpath -au "$HereDir"
 
         # Synchronize packages
         #
@@ -924,12 +622,8 @@ try {
                     $AllMSYS2Packages)
         }
 
-        $DkmlNormalPath = & $MSYS2Cygpath -au "$DkmlPath"
         $ProgramNormalPath = & $MSYS2Cygpath -au "$ProgramPath"
     } else {
-        $ShExe = "sh"
-        $HereDirNormalPath = "$HereDir"
-        $DkmlNormalPath = "$DkmlPath"
         $ProgramNormalPath = "$ProgramPath"
     }
 
@@ -1038,72 +732,7 @@ try {
 `)
 "@
 
-    # Inside this script we environment variables that recognize that we have an uncompleted installation:
-    # 1. dkmlvars-v2.sexp is non existent or old, so can't use with-dkml.exe. WITHDKML_ENABLE=OFF
-    # 2. This .ps1 module is typically called from an staging-ocamlrun environment which sets OCAMLLIB.
-    #    Unset it so it does not interfere with the OCaml compiler we are building.
-    $UnixPlusPrecompleteVarsArray = $UnixVarsArray + @("WITHDKML_ENABLE=OFF", "OCAMLLIB=")
-
     # END Define dkmlvars
-    # ----------------------------------------------------------------
-
-    # ----------------------------------------------------------------
-    # BEGIN Compile/install system ocaml.exe
-
-    if (-not $Offline) {
-        $global:ProgressActivity = "Install native Windows ocaml.exe and related binaries"
-        Write-ProgressStep
-
-        if($UseMSYS2) {
-            $ProgramGeneralBinUnixAbsPath = & $MSYS2Cygpath -au "$ProgramGeneralBinDir"
-        } else {
-            $ProgramGeneralBinUnixAbsPath = "$ProgramGeneralBinDir"
-        }
-
-        # Skip with ... $global:SkipOcamlSetup = $true ... remove it with ... Remove-Variable SkipOcamlSetup
-        if (!$global:SkipOcamlSetup) {
-            $OcamlInstalled = $true
-            foreach ($OcamlBinary in $OCamlBinaries) {
-                if (!(Test-Path -Path "$ProgramGeneralBinDir\$OcamlBinary")) {
-                    $OcamlInstalled = $false
-                    break
-                }
-            }
-            if ($OcamlInstalled) {
-                # okay. already installed
-            } else {
-                # build into bin/
-                if ($ImpreciseC99FloatOps) {
-                    $ConfigureArgs = "--enable-imprecise-c99-float-ops"
-                } else {
-                    # We do not use an empty string since Powershell 5.1.19041.2364
-                    # seems to erase empty arguments
-                    $ConfigureArgs = "--disable-imprecise-c99-float-ops"
-                }
-                Invoke-GenericCommandWithProgress `
-                    -Command "env" `
-                    -ArgumentList ( $UnixPlusPrecompleteVarsArray + @("TOPDIR=$DkmlNormalPath/vendor/drc/all/emptytop"
-                        $ShExe
-                        "$HereDirNormalPath/install-ocaml.sh"
-                        "$DkmlNormalPath"
-                        "$OCamlLangGitCommit"
-                        "$DkmlHostAbi"
-                        "$ProgramNormalPath"
-                        "$ConfigureArgs"))
-                # and move into usr/bin/
-                if ("$ProgramRelGeneralBinDir" -ne "bin") {
-                    Invoke-GenericCommandWithProgress `
-                        -Command $ShExe -ArgumentList @(
-                            "-c",
-                            ("install -d '$ProgramGeneralBinUnixAbsPath' && " +
-                            "for b in $OCamlBinaries; do mv -v '$ProgramNormalPath'/bin/`$b '$ProgramGeneralBinUnixAbsPath'/; done")
-                        )
-                }
-            }
-        }
-    }
-
-    # END Compile/install system ocaml.exe
     # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------

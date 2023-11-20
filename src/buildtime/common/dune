@@ -5,7 +5,6 @@
   dkml-install.register
   dkml-component-ocamlcompiler-common.api
   dkml-component-staging-ocamlrun.api
-  dkml-component-staging-dkmlconfdir.api  
   bos
   logs))
 
