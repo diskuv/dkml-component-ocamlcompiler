@@ -42,7 +42,6 @@ build: [
   #   git submodule setup.
   #
   #   <dkmldir>/vendor/drc/
-  ["diskuvbox" "copy-dir" "%{dkml-runtime-common:lib}%/all" "dkmldir/vendor/drc/all"]
   ["diskuvbox" "copy-dir" "%{dkml-runtime-common:lib}%/unix" "dkmldir/vendor/drc/unix"]
   #   <dkmldir>/.dkmlroot
   ["diskuvbox" "copy-file" "%{dkml-runtime-common:lib}%/template.dkmlroot" "dkmldir/.dkmlroot"]
