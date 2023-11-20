@@ -18,7 +18,7 @@
     Use when embedding this script within another setup program
     that reports its own progress.
 .Parameter DkmlPath
-    DEPRECATED. The directory containing .dkmlroot
+    The directory containing .dkmlroot
 .Parameter TempParentPath
     Temporary directory. A subdirectory will be created within -TempParentPath.
     Defaults to $env:temp\diskuvocaml\setupmachine.
@@ -71,12 +71,16 @@ $InformationPreference = "Continue"
 
 $HereScript = $MyInvocation.MyCommand.Path
 $HereDir = (get-item $HereScript).Directory
-if ($DkmlPath) {
-    Write-Warning "setup-machine.ps1 -DkmlPath is deprecated"
+if (!$DkmlPath) {
+    $DkmlPath = $HereDir.Parent.Parent.FullName
+}
+if (!(Test-Path -Path $DkmlPath\.dkmlroot)) {
+    throw "Could not locate the DKML scripts. Thought DkmlPath was $DkmlPath"
 }
 
 $dsc = [System.IO.Path]::DirectorySeparatorChar
 $env:PSModulePath += "$([System.IO.Path]::PathSeparator)$HereDir${dsc}SingletonInstall"
+$env:PSModulePath += "$([System.IO.Path]::PathSeparator)$DkmlPath${dsc}vendor${dsc}drd${dsc}src${dsc}windows"
 Import-Module Deployers
 Import-Module Machine
 
