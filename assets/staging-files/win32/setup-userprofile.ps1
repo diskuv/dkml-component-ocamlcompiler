@@ -154,7 +154,6 @@ Import-Module UnixInvokers
 Import-Module Machine
 Import-Module DeploymentVersion
 Import-Module DeploymentHash # for Get-Sha256Hex16OfText
-Import-Module ListingParser
 
 # Make sure not Run as Administrator
 if ([System.Environment]::OSVersion.Platform -eq "Win32NT") {

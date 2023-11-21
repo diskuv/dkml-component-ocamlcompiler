@@ -37,69 +37,6 @@ module Os = struct
   end
 end
 
-let get_install_files ~part ~target_abi ~ocaml_ver =
-  match Installation_files.read (part ^ ".install") with
-  | None ->
-      raise
-        (Invalid_argument
-           (Printf.sprintf "The installation files did not have %s.install" part))
-  | Some contents ->
-      let open Astring in
-      let target_abi_string =
-        Dkml_install_api.Context.Abi_v2.to_canonical_string target_abi
-      in
-      let lines = String.cuts ~sep:"\n" contents in
-      let lines_lf =
-        (* Remove CR from line endings (and incidentally beginnings) if
-           present *)
-        List.map
-          (fun line ->
-            String.trim ~drop:(function '\r' -> true | _ -> false) line)
-          lines
-      in
-      let lines_non_empty =
-        (* Remove empty lines *)
-        List.filter (fun line -> String.length line > 0) lines_lf
-      in
-      let lines_no_comments =
-        (* Remove lines that start with # *)
-        List.filter
-          (fun line -> not (String.is_prefix ~affix:"#" line))
-          lines_non_empty
-      in
-      let add_ext filename ~ext_win32 ~ext_non_win32 =
-        if Dkml_install_api.Context.Abi_v2.is_windows target_abi then
-          filename ^ ext_win32
-        else filename ^ ext_non_win32
-      in
-      let list_of_tuples =
-        (* Convert lines into (binary, abi regex, version regex) *)
-        List.map
-          (fun line ->
-            match String.cuts ~sep:"\t" line with
-            | [ binary; ext_win32; ext_non_win32; abi_regex; version_regex ] ->
-                ( add_ext binary ~ext_win32 ~ext_non_win32,
-                  Re.Posix.compile_pat ("^" ^ abi_regex ^ "$"),
-                  Re.Posix.compile_pat ("^" ^ version_regex ^ "$") )
-            | _ ->
-                raise
-                  (Invalid_argument
-                     (Printf.sprintf "Invalid .install line: %s" line)))
-          lines_no_comments
-      in
-      let matching_binaries =
-        List.filter_map
-          (fun (binary_with_ext, abi_regex, version_regex) ->
-            match
-              ( Re.execp abi_regex target_abi_string,
-                Re.execp version_regex ocaml_ver )
-            with
-            | true, true -> Some binary_with_ext
-            | _ -> None)
-          list_of_tuples
-      in
-      matching_binaries
-
 (* Remove the subdirectories and whitelisted files of the installation
    directory.
 
@@ -152,10 +89,69 @@ let uninstall_controldir ~control_dir ~target_abi =
       "vsstudio.winsdk.txt";
     ]
   in
-  let ocaml_files = get_install_files ~part:"ocaml" ~target_abi ~ocaml_ver in
-  let full_files = get_install_files ~part:"full" ~target_abi ~ocaml_ver in
+  (* Created on-demand by [dkml init --system] and [with-dkml] *)
+  let ocaml_files =
+    let e s = if Sys.win32 then (s ^ ".exe") else s in
+    [
+      e "ocaml";
+      e "ocamlc.byte";
+      e "ocamlc";
+      e "ocamlc.opt";
+      e "ocamlcmt";
+      e "ocamlcp.byte";
+      e "ocamlcp";
+      e "ocamlcp.opt";
+      e "ocamldebug";
+      e "ocamldep.byte";
+      e "ocamldep";
+      e "ocamldep.opt";
+      e "ocamldoc";
+      e "ocamldoc.opt";
+      e "ocamllex.byte";
+      e "ocamllex";
+      e "ocamllex.opt";
+      e "ocamlmklib.byte";
+      e "ocamlmklib";
+      e "ocamlmklib.opt";
+      e "ocamlmktop.byte";
+      e "ocamlmktop";
+      e "ocamlmktop.opt";
+      e "ocamlobjinfo.byte";
+      e "ocamlobjinfo";
+      e "ocamlobjinfo.opt";
+      e "ocamlopt.byte";
+      e "ocamlopt";
+      e "ocamlopt.opt";
+      e "ocamloptp.byte";
+      e "ocamloptp";
+      e "ocamloptp.opt";
+      e "ocamlprof.byte";
+      e "ocamlprof";
+      e "ocamlprof.opt";
+      e "ocamlrun";
+      e "ocamlrund";
+      e "ocamlruni";
+      e "ocamlyacc";
+      e "ocamlnat";      
+    ]
+  in
+  let ocaml_win32_files =
+    if Sys.win32 then
+      [
+        "flexdll_initer_msvc64.obj";
+        "flexdll_initer_msvc.obj";
+        "default_amd64.manifest";
+        "default.manifest";
+        "flexdll_msvc64.obj";
+        "flexdll_msvc.obj";
+        "flexlink.byte.exe";
+        "flexlink.opt.exe";
+        "flexlink.exe";
+      ]
+    else []
+  in
   let usr_bin_files =
-    List.map (fun s -> "usr/bin/" ^ s) (ocaml_files @ full_files)
+    List.map (fun s -> "usr/bin/" ^ s) (ocaml_files @ ocaml_win32_files)
   in
   let files = root_files @ usr_bin_files in
   List.iter
