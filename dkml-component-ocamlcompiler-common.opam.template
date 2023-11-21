@@ -19,7 +19,8 @@ build: [
   ["diskuvbox" "copy-file" "%{dkml-runtime-common:lib}%/template.dkmlroot" "dkmldir/.dkmlroot"]
 
   #   <dkmldir>/vendor/dkml-compiler/
-  ["diskuvbox" "copy-dir" "%{dkml-compiler-src:lib}%/src" "dkmldir/vendor/dkml-compiler"]
+  ["diskuvbox" "copy-dir" "%{dkml-compiler-src:lib}%/src" "dkmldir/vendor/dkml-compiler/src"]
+  ["diskuvbox" "copy-dir" "%{dkml-compiler-src:lib}%/env" "dkmldir/vendor/dkml-compiler/env"]
 
   # Build component
   ["dune" "subst"] {dev}

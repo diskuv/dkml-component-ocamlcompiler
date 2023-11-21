@@ -24,10 +24,10 @@
   (base64                            (>= 3.5.0))
   (crunch                            (>= 3.3.1))
   (re                                (>= 1.10.0))
-  (dkml-compiler-src                 (>= 2.0.2))
+  (dkml-compiler-src                 (>= 2.1.0))
   (dkml-component-staging-ocamlrun   (>= 4.12.1~))
-  (dkml-runtime-common               (>= 2.0.2))
-  (dkml-runtime-distribution         (>= 2.0.2))
+  (dkml-runtime-common               (>= 2.1.0))
+  (dkml-runtime-distribution         (>= 2.1.0))
   (alcotest                          (and (>= 1.4.0) :with-test))))
 
 (package
@@ -38,14 +38,14 @@
  (depends
   (dkml-install (>= 0.2.0))
   (diskuvbox (>= 0.1.0))  
-  (dkml-compiler-src                 (>= 2.0.2))
+  (dkml-compiler-src                 (>= 2.1.0))
   (dkml-component-ocamlcompiler-common (= :version))
   (dkml-component-offline-unixutils  (>= 0.1.0))
   ; The hole carved to exclude ~dkml is so that we use the unmodified, compiled-from-master-branch
   ; of opam with versions that aligns both the semver (needed for winget among others) and the
   ; Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
   (dkml-component-offline-opamshim   (and (>= 2.2.0~) (or (< 2.2.0~dkml20220000) (> 2.2.0~dkml99999999))))
-  (dkml-runtime-common               (>= 2.0.2))
+  (dkml-runtime-common               (>= 2.1.0))
   (diskuvbox                         (>= 0.1.0))))
 
 (package
@@ -56,7 +56,7 @@
  (depends
   (dkml-install (>= 0.2.0))
   (diskuvbox (>= 0.1.0))
-  (dkml-compiler-src                 (>= 2.0.2))
+  (dkml-compiler-src                 (>= 2.1.0))
   (dkml-component-ocamlcompiler-common (= :version))
   (dkml-component-offline-unixutils  (>= 0.1.0))
   (dkml-component-staging-ocamlrun   (>= 4.12.1~))
@@ -64,5 +64,5 @@
   ; of opam with versions that aligns both the semver (needed for winget among others) and the
   ; Debian-based opam version. [~dkml] predates the [~alpha0~20221104, etc.] adjustment.
   (dkml-component-offline-opamshim   (and (>= 2.2.0~) (or (< 2.2.0~dkml20220000) (> 2.2.0~dkml99999999))))
-  (dkml-runtime-common               (>= 2.0.2))
+  (dkml-runtime-common               (>= 2.1.0))
   (diskuvbox                         (>= 0.1.0))))
