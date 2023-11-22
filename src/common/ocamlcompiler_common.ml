@@ -47,7 +47,7 @@ end
    * We don't uninstall usr/bin/ completely but use a whitelist just in
      case some future component places binaries here.
 *)
-let uninstall_controldir ~control_dir ~target_abi =
+let uninstall_controldir ~control_dir =
   List.iter
     (fun reldirname ->
       let program_dir = Fpath.(control_dir // v reldirname) in
@@ -91,7 +91,7 @@ let uninstall_controldir ~control_dir ~target_abi =
   in
   (* Created on-demand by [dkml init --system] and [with-dkml] *)
   let ocaml_files =
-    let e s = if Sys.win32 then (s ^ ".exe") else s in
+    let e s = if Sys.win32 then s ^ ".exe" else s in
     [
       e "ocaml";
       e "ocamlc.byte";
@@ -132,7 +132,7 @@ let uninstall_controldir ~control_dir ~target_abi =
       e "ocamlrund";
       e "ocamlruni";
       e "ocamlyacc";
-      e "ocamlnat";      
+      e "ocamlnat";
     ]
   in
   let ocaml_win32_files =

@@ -60,8 +60,6 @@ let execute_uninstall_user ctx =
           % Fpath.to_string (ctx.Context.path_eval "%{prefix}%")
           % "--scripts-dir"
           % Fpath.to_string important_paths.scriptsdir
-          % "--target-abi"
-          % Context.Abi_v2.to_canonical_string ctx.Context.target_abi_v2
           %% of_list (Array.to_list (Log_config.to_args ctx.Context.log_config)))
       in
       Staging_ocamlrun_api.spawn_ocamlrun ctx cmd

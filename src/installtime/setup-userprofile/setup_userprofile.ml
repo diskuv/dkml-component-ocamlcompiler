@@ -25,22 +25,16 @@ let install_vc_redist ~vc_redist_exe =
   Ok ()
 
 let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
-    control_dir msys2_dir_opt vc_redist_exe_opt =
+    control_dir msys2_dir_opt vc_redist_exe =
   let res =
     Dkml_install_api.Forward_progress.lift_result __POS__ Fmt.lines
       Dkml_install_api.Forward_progress.stderr_fatallog
     @@ Rresult.R.reword_error (Fmt.str "%a" Rresult.R.pp_msg)
     @@
     let ( let* ) = Rresult.R.bind in
-    let* () =
-      match vc_redist_exe_opt with
-      | None -> Ok ()
-      | Some vc_redist_exe ->
-          (* When we don't install Visual Studio (ex. Offline), we need
-             to manually install Visual C++ Redistributables (in case the
-             end-user has a new Windows PC). *)
-          install_vc_redist ~vc_redist_exe
-    in
+
+    (* Install VC redistributables *)
+    let* () = install_vc_redist ~vc_redist_exe in
 
     let* cygpath_opt = Bos.OS.Cmd.find_tool (Bos.Cmd.v "cygpath") in
     let* () =
@@ -80,7 +74,7 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
          during an installation. Confer:
          https://github.com/diskuv/dkml-installer-ocaml/issues/25.
     *)
-    Ocamlcompiler_common.uninstall_controldir ~control_dir ~target_abi;
+    Ocamlcompiler_common.uninstall_controldir ~control_dir;
     (* We cannot directly call PowerShell because we likely do not have
        administrator rights.
 
@@ -150,15 +144,15 @@ let target_abi_t =
 
 let offline_t = Arg.(value & flag & info [ "offline" ])
 
-let vc_redist_exe_opt_t =
+let vc_redist_exe_t =
   let doc =
     "The location of Visual C++ Redistributables (vc_redist.x64.exe or a \
      similar name specific to this machine's architecture)"
   in
-  let v_opt =
-    Arg.(value & opt (some file) None & info ~doc [ "vc-redist-exe" ])
+  let v =
+    Arg.(required & opt (some file) None & info ~doc [ "vc-redist-exe" ])
   in
-  Term.(const (Option.map Fpath.v) $ v_opt)
+  Term.(const Fpath.v $ v)
 
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
@@ -175,7 +169,7 @@ let () =
     Term.(
       const setup $ setup_log_t $ scripts_dir_t $ dkml_dir_t $ tmp_dir_t
       $ target_abi_t $ offline_t $ control_dir_t $ msys2_dir_opt_t
-      $ vc_redist_exe_opt_t)
+      $ vc_redist_exe_t)
   in
   let info =
     Cmd.info "setup-userprofile.bc"
