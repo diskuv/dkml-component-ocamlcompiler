@@ -16,9 +16,7 @@
   logs.cli
   logs.fmt
   fmt.cli
-  fmt.tty)
- (preprocess
-  (pps ppx_sexp_conv)))
+  fmt.tty))
 
 (install
  (section share)
