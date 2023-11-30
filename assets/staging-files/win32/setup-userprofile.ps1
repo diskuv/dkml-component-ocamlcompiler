@@ -844,33 +844,18 @@ try {
         # -----------
         # Modify PATH
         # -----------
+        #
+        # Want: usr\bin\ then bin\
+        # Why? Because immediately after installation the usr\bin\ is populated with precompiled binaries
+        #   like ocamlfind and ocamlc. Only after a [dkml init] or a [with-dkml] is bin\ filled with
+        #   ocamlopt, ocamlc and the full OCaml distribution. Yep ... ocamlc is present in bin\ as well.
+        #   Choose usr\bin\ocaml rather than bin\ocaml so the choice of [ocaml] is consistent before
+        #   and after [dkml init].
 
         $splitter = [System.IO.Path]::PathSeparator # should be ';' if we are running on Windows (yes, you can run Powershell on other operating systems)
 
         $userpath = [Environment]::GetEnvironmentVariable("PATH", "User")
         $userpathentries = $userpath -split $splitter # all of the User's PATH in a collection
-
-        # Prepend usr\bin\ to the User's PATH
-        #   remove any old deployments
-        $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramGeneralBinDir}
-        $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramGeneralBinDir)}
-        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelGeneralBinDir
-        foreach ($possibleDir in $PossibleDirs) {
-            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
-            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
-        }
-        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlParentHomeDir -SubPath $ProgramRelGeneralBinDir
-        foreach ($possibleDir in $PossibleDirs) {
-            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
-            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
-        }
-        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlLegacyParentHomeDir -SubPath $ProgramRelGeneralBinDir
-        foreach ($possibleDir in $PossibleDirs) {
-            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
-            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
-        }
-        #   add new PATH entry
-        $userpathentries = @( $ProgramGeneralBinDir ) + $userpathentries
 
         # Prepend bin\ to the User's PATH
         #   remove any old deployments
@@ -893,6 +878,28 @@ try {
         }
         #   add new PATH entry
         $userpathentries = @( $ProgramEssentialBinDir ) + $userpathentries
+
+        # Prepend usr\bin\ to the User's PATH
+        #   remove any old deployments
+        $userpathentries = $userpathentries | Where-Object {$_ -ne $ProgramGeneralBinDir}
+        $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $ProgramGeneralBinDir)}
+        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $InstallationPrefix -SubPath $ProgramRelGeneralBinDir
+        foreach ($possibleDir in $PossibleDirs) {
+            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+        }
+        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlParentHomeDir -SubPath $ProgramRelGeneralBinDir
+        foreach ($possibleDir in $PossibleDirs) {
+            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+        }
+        $PossibleDirs = Get-PossibleSlotPaths -ParentPath $DkmlLegacyParentHomeDir -SubPath $ProgramRelGeneralBinDir
+        foreach ($possibleDir in $PossibleDirs) {
+            $userpathentries = $userpathentries | Where-Object {$_ -ne $possibleDir}
+            $userpathentries = $userpathentries | Where-Object {$_ -ne (Get-Dos83ShortName $possibleDir)}
+        }
+        #   add new PATH entry
+        $userpathentries = @( $ProgramGeneralBinDir ) + $userpathentries
 
         # Remove non-DKML OCaml installs "...\OCaml\bin" like C:\OCaml\bin from the User's PATH
         # Confer: https://gitlab.com/diskuv/diskuv-ocaml/-/issues/4
