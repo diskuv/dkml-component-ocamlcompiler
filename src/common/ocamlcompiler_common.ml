@@ -89,8 +89,8 @@ let uninstall_controldir ~control_dir =
       "vsstudio.winsdk.txt";
     ]
   in
-  (* Created on-demand by [dkml init --system] and [with-dkml] *)
-  let ocaml_files =
+  (* Native code created on-demand by [dkml init --system] and [with-dkml] *)
+  let nativecode_ocaml_binaries =
     let e s = if Sys.win32 then s ^ ".exe" else s in
     [
       e "ocaml";
@@ -135,7 +135,7 @@ let uninstall_controldir ~control_dir =
       e "ocamlnat";
     ]
   in
-  let ocaml_win32_files =
+  let nativecode_ocaml_win32_binaries =
     if Sys.win32 then
       [
         "flexdll_initer_msvc64.obj";
@@ -150,10 +150,12 @@ let uninstall_controldir ~control_dir =
       ]
     else []
   in
-  let usr_bin_files =
-    List.map (fun s -> "usr/bin/" ^ s) (ocaml_files @ ocaml_win32_files)
+  let nativecode_bin_files =
+    List.map
+      (fun s -> "bin/" ^ s)
+      (nativecode_ocaml_binaries @ nativecode_ocaml_win32_binaries)
   in
-  let files = root_files @ usr_bin_files in
+  let files = root_files @ nativecode_bin_files in
   List.iter
     (fun relname ->
       let ( let* ) = Result.bind in
