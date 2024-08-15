@@ -75,6 +75,13 @@ if ($env:LOCALAPPDATA) {
 } elseif ($env:HOME) {
     $DkmlParentHomeDir = "$env:HOME/.local/share/dkml"
 }
+if ($env:LOCALAPPDATA) {
+    $DkmlParentNativeDir = "$env:LOCALAPPDATA\Programs\DkMLNative"
+} elseif ($env:XDG_DATA_HOME) {
+    $DkmlParentNativeDir = "$env:XDG_DATA_HOME/dkml-native"
+} elseif ($env:HOME) {
+    $DkmlParentNativeDir = "$env:HOME/.local/share/dkml-native"
+}
 if (-not $InstallationPrefix) {
     $InstallationPrefix = $DkmlParentHomeDir
 }
@@ -84,7 +91,7 @@ if (-not $InstallationPrefix) {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 5
+$ProgressTotalSteps = 6
 $ProgressId = $ParentProgressId + 1
 $global:ProgressStatus = $null
 
@@ -201,8 +208,30 @@ function Set-UserEnvironmentVariable {
     }
 }
 
+function Test-SubPath( [string]$directory, [string]$subpath ) {
+    $dPath = [IO.Path]::GetFullPath( $directory )
+    $sPath = [IO.Path]::GetFullPath( $subpath )
+    return $sPath.StartsWith( $dPath, [StringComparison]::OrdinalIgnoreCase )
+}
+
 $global:AdditionalDiagnostics = "`n`n"
 try {
+    # ----------------------------------------------------------------
+    # BEGIN Stop OCaml
+    #
+    # Needed because in-use executables can't be deleted/replaced on Windows.
+
+    $global:ProgressActivity = "Stop OCaml"
+    Write-ProgressStep
+
+    # We redo this six times because VSCode plugins (esp. OCaml plugin) will restart up to five times.
+    1..6 | % { Get-Process | ?{$_.path -and (Test-SubPath "$env:LOCALAPPDATA\opam" $_.path)} | Stop-Process -Force; Start-Sleep 1 }
+    1..6 | % { Get-Process | ?{$_.path -and (Test-SubPath "$ProgramPath" $_.path)} | Stop-Process -Force; Start-Sleep 1 }
+    1..6 | % { Get-Process | ?{$_.path -and (Test-SubPath "$DkmlLegacyParentHomeDir" $_.path)} | Stop-Process -Force; Start-Sleep 1 }
+    1..6 | % { Get-Process | ?{$_.path -and (Test-SubPath "$DkmlParentNativeDir" $_.path)} | Stop-Process -Force; Start-Sleep 1 }
+
+    # END Stop OCaml
+    # ----------------------------------------------------------------
 
     # ----------------------------------------------------------------
     # BEGIN Remove playground switch
