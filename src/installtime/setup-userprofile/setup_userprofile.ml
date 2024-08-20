@@ -74,6 +74,7 @@ let setup (_ : Log_config.t) scripts_dir dkml_dir temp_dir target_abi offline
          during an installation. Confer:
          https://github.com/diskuv/dkml-installer-ocaml/issues/25.
     *)
+    let* () = Ocamlcompiler_common.stop_ocaml ~scripts_dir ~control_dir in
     Ocamlcompiler_common.uninstall_controldir ~control_dir;
     (* We cannot directly call PowerShell because we likely do not have
        administrator rights.

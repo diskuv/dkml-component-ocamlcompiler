@@ -37,6 +37,29 @@ module Os = struct
   end
 end
 
+(* Call the PowerShell (legacy!) stop-ocaml.ps1 script. *)
+let stop_ocaml ~scripts_dir ~control_dir =
+  let ( let* ) = Result.bind in
+  (* We cannot directly call PowerShell because we likely do not have
+     administrator rights.
+
+     BUT BUT this is a Windows batch file that will not handle spaces
+     as it translates its command line arguments into PowerShell arguments.
+     So any path arguments should have `cygpath -ad` performed on them
+     so there are no spaces. *)
+  let stop_bat = Fpath.(v scripts_dir / "stop-ocaml.bat") in
+  let to83 = Os.Windows.get_dos83_short_path in
+  let* control_dir_83 = to83 control_dir in
+  let cmd =
+    Bos.Cmd.(
+      v (Fpath.to_string stop_bat)
+      % "-InstallationPrefix" % control_dir_83 % "-NoDeploymentSlot"
+      % "-SkipProgress")
+  in
+  Logs.info (fun l -> l "Stopping OCaml with@ @[%a@]" Bos.Cmd.pp cmd);
+  Dkml_install_api.log_spawn_onerror_exit ~id:"386d85db" cmd;
+  Ok ()
+
 (* Remove the subdirectories and whitelisted files of the installation
    directory.
 

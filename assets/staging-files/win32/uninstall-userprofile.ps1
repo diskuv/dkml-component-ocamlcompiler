@@ -91,7 +91,7 @@ if (-not $InstallationPrefix) {
 
 $global:ProgressStep = 0
 $global:ProgressActivity = $null
-$ProgressTotalSteps = 6
+$ProgressTotalSteps = 5
 $ProgressId = $ParentProgressId + 1
 $global:ProgressStatus = $null
 
@@ -208,31 +208,8 @@ function Set-UserEnvironmentVariable {
     }
 }
 
-function Test-SubPath( [string]$directory, [string]$subpath ) {
-    $dPath = [IO.Path]::GetFullPath( $directory )
-    $sPath = [IO.Path]::GetFullPath( $subpath )
-    return $sPath.StartsWith( $dPath, [StringComparison]::OrdinalIgnoreCase )
-}
-
 $global:AdditionalDiagnostics = "`n`n"
 try {
-    # ----------------------------------------------------------------
-    # BEGIN Stop OCaml
-    #
-    # Needed because in-use executables can't be deleted/replaced on Windows.
-
-    $global:ProgressActivity = "Stop OCaml"
-    Write-ProgressStep
-
-    # We redo this six times because VSCode plugins (esp. OCaml plugin) will restart up to five times.
-    1..6 | % { Get-Process | ?{$_.path -and (Test-SubPath "$env:LOCALAPPDATA\opam" $_.path)} | Stop-Process -Force; Start-Sleep 1 }
-    1..6 | % { Get-Process | ?{$_.path -and (Test-SubPath "$ProgramPath" $_.path)} | Stop-Process -Force; Start-Sleep 1 }
-    1..6 | % { Get-Process | ?{$_.path -and (Test-SubPath "$DkmlLegacyParentHomeDir" $_.path)} | Stop-Process -Force; Start-Sleep 1 }
-    1..6 | % { Get-Process | ?{$_.path -and (Test-SubPath "$DkmlParentNativeDir" $_.path)} | Stop-Process -Force; Start-Sleep 1 }
-
-    # END Stop OCaml
-    # ----------------------------------------------------------------
-
     # ----------------------------------------------------------------
     # BEGIN Remove playground switch
 
@@ -375,3 +352,5 @@ Write-Information "Thanks for using DkML!"
 Write-Information ""
 Write-Information ""
 Write-Information ""
+
+exit 0

@@ -945,3 +945,5 @@ Write-Information "-OR- (for advanced users) exit all of your Command Prompts, W
 Write-Information "PowerShells and IDEs like Visual Studio Code"
 Write-Information ""
 Write-Information ""
+
+exit 0

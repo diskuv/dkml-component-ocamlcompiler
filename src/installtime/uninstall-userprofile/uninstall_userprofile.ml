@@ -35,6 +35,7 @@ let do_uninstall ~scripts_dir ~control_dir ~is_audit =
   @@
   let ( let* ) = Rresult.R.bind in
   let* control_dir = Fpath.of_string control_dir in
+  let* () = Ocamlcompiler_common.stop_ocaml ~scripts_dir ~control_dir in
   let* () = uninstall_env ~scripts_dir ~control_dir ~is_audit in
   Ocamlcompiler_common.uninstall_controldir ~control_dir;
   Ok ()
