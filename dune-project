@@ -26,8 +26,8 @@
   (re                                (>= 1.10.0))
   (dkml-compiler-src                 (>= 2.1.0))
   (dkml-component-staging-ocamlrun   (>= 4.12.1~))
-  (dkml-runtime-common               (>= 2.1.0))
-  (dkml-runtime-distribution         (>= 2.1.0))
+  (dkml-runtime-common               (>= 2.1.2))
+  (dkml-runtime-distribution         (>= 2.1.2))
   (alcotest                          (and (>= 1.4.0) :with-test))))
 
 (package
