@@ -1,7 +1,7 @@
 (lang dune 3.6)
 
 (name dkml-component-ocamlcompiler)
-(version 4.14.2~v2.1.3)
+(version 4.14.2~v2.1.4)
 
 (generate_opam_files true)
 
